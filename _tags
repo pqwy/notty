@@ -1,0 +1,96 @@
+# OASIS_START
+# DO NOT EDIT (digest: da86dab7aabebd55f08b24b32b5e13ef)
+# Ignore VCS directories, you can use the same kind of rule outside
+# OASIS_START/STOP if you want to exclude directories that contains
+# useless stuff for the build process
+true: annot, bin_annot
+<**/.svn>: -traverse
+<**/.svn>: not_hygienic
+".bzr": -traverse
+".bzr": not_hygienic
+".hg": -traverse
+".hg": not_hygienic
+".git": -traverse
+".git": not_hygienic
+"_darcs": -traverse
+"_darcs": not_hygienic
+# Library notty
+"src/notty.cmxs": use_notty
+<src/*.ml{,i,y}>: oasis_library_notty_ccopt
+"src/native/winsize.c": oasis_library_notty_ccopt
+<src/notty.{cma,cmxa}>: oasis_library_notty_byte
+<src/*.ml{,i,y}>: oasis_library_notty_byte
+"src/native/winsize.c": oasis_library_notty_byte
+<src/notty.{cma,cmxa}>: use_libnotty_stubs
+<src/*.ml{,i,y}>: package(react)
+<src/*.ml{,i,y}>: package(unix)
+<src/*.ml{,i,y}>: package(uuseg.string)
+<src/*.ml{,i,y}>: package(uutf)
+"src/native/winsize.c": package(react)
+"src/native/winsize.c": package(unix)
+"src/native/winsize.c": package(uuseg.string)
+"src/native/winsize.c": package(uutf)
+# Library notty_lwt
+"lwt/notty_lwt.cmxs": use_notty_lwt
+<lwt/notty_lwt.{cma,cmxa}>: oasis_library_notty_lwt_byte
+<lwt/*.ml{,i,y}>: oasis_library_notty_lwt_byte
+<lwt/*.ml{,i,y}>: package(lwt)
+<lwt/*.ml{,i,y}>: package(lwt.unix)
+<lwt/*.ml{,i,y}>: package(react)
+<lwt/*.ml{,i,y}>: package(unix)
+<lwt/*.ml{,i,y}>: package(uuseg.string)
+<lwt/*.ml{,i,y}>: package(uutf)
+<lwt/*.ml{,i,y}>: use_notty
+# Executable speed
+<demos/speed.{native,byte}>: package(react)
+<demos/speed.{native,byte}>: package(unix)
+<demos/speed.{native,byte}>: package(unmark)
+<demos/speed.{native,byte}>: package(uuseg.string)
+<demos/speed.{native,byte}>: package(uutf)
+<demos/speed.{native,byte}>: use_notty
+<demos/*.ml{,i,y}>: package(unmark)
+# Executable testpatterns
+<demos/testpatterns.{native,byte}>: package(react)
+<demos/testpatterns.{native,byte}>: package(unix)
+<demos/testpatterns.{native,byte}>: package(uuseg.string)
+<demos/testpatterns.{native,byte}>: package(uutf)
+<demos/testpatterns.{native,byte}>: use_notty
+# Executable letters
+<demos/letters.{native,byte}>: package(react)
+<demos/letters.{native,byte}>: package(unix)
+<demos/letters.{native,byte}>: package(uuseg.string)
+<demos/letters.{native,byte}>: package(uutf)
+<demos/letters.{native,byte}>: use_notty
+# Executable keys
+<demos/keys.{native,byte}>: package(react)
+<demos/keys.{native,byte}>: package(unix)
+<demos/keys.{native,byte}>: package(uuseg.string)
+<demos/keys.{native,byte}>: package(uutf)
+<demos/keys.{native,byte}>: use_notty
+# Executable colors
+<demos/colors.{native,byte}>: package(react)
+<demos/colors.{native,byte}>: package(unix)
+<demos/colors.{native,byte}>: package(uuseg.string)
+<demos/colors.{native,byte}>: package(uutf)
+<demos/colors.{native,byte}>: use_notty
+# Executable sierpinski
+<demos/sierpinski.{native,byte}>: package(react)
+<demos/sierpinski.{native,byte}>: package(unix)
+<demos/sierpinski.{native,byte}>: package(uuseg.string)
+<demos/sierpinski.{native,byte}>: package(uutf)
+<demos/sierpinski.{native,byte}>: use_notty
+# Executable cuts
+<demos/cuts.{native,byte}>: package(react)
+<demos/cuts.{native,byte}>: package(unix)
+<demos/cuts.{native,byte}>: package(uuseg.string)
+<demos/cuts.{native,byte}>: package(uutf)
+<demos/cuts.{native,byte}>: use_notty
+<demos/*.ml{,i,y}>: package(react)
+<demos/*.ml{,i,y}>: package(unix)
+<demos/*.ml{,i,y}>: package(uuseg.string)
+<demos/*.ml{,i,y}>: package(uutf)
+<demos/*.ml{,i,y}>: use_notty
+# OASIS_STOP
+
+"rondom": -traverse
+"rondom": not_hygienic

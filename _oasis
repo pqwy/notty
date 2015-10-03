@@ -1,0 +1,104 @@
+OASISFormat:  0.4
+Name:         notty
+Version:      0.0.1
+Synopsis:     stuff
+Authors:      David Kaloper <david@numm.org>
+Maintainers:  David Kaloper <david@numm.org>
+License:      FreeBSD
+Homepage:     https://github.com/pqwy/notty
+Plugins:      META (0.4), DevFiles (0.4)
+BuildTools:   ocamlbuild
+AlphaFeatures:   ocamlbuild_more_args
+Description:
+  stuff
+OCamlVersion: >= 4.02.0
+
+Flag lwt
+  Description: Build Lwt support
+  Default:     true
+
+Flag benchmarks
+  Description: Build benchmarks
+  Default:     false
+
+Library notty
+  Path:          src/
+  Modules:       Notty
+  CSources:      native/winsize.c
+  BuildDepends:  unix, uutf, uuseg.string, react
+  ByteOpt:       -w A-4-33-40-41-42-43-34-44
+  CCOpt:         --std=c99 -Wall -Wextra -Werror -O3
+
+Library notty_lwt
+  Findlibparent: notty
+  Findlibname:   lwt
+  Path:          lwt/
+  Modules:       Notty_lwt
+  BuildDepends:  notty, lwt, lwt.unix
+  ByteOpt:       -w A-4-33-40-41-42-43-34-44
+  Build$:        flag(lwt)
+
+Executable speed
+  Path:           demos
+  Install:        false
+  CompiledObject: best
+  MainIs:         speed.ml
+  Build$:         flag(benchmarks)
+  BuildDepends:   notty, unmark
+
+Executable testpatterns
+  Path:           demos
+  Install:        false
+  CompiledObject: best
+  MainIs:         testpatterns.ml
+  Build$:         flag(tests)
+  BuildDepends:   notty
+
+Executable letters
+  Path:           demos
+  Install:        false
+  CompiledObject: best
+  MainIs:         letters.ml
+  Build$:         flag(tests)
+  BuildDepends:   notty
+
+Executable keys
+  Path:           demos
+  Install:        false
+  CompiledObject: best
+  MainIs:         keys.ml
+  Build$:         flag(tests)
+  BuildDepends:   notty
+
+Executable colors
+  Path:           demos
+  Install:        false
+  CompiledObject: best
+  MainIs:         colors.ml
+  Build$:         flag(tests)
+  BuildDepends:   notty
+
+Executable sierpinski
+  Path:           demos
+  Install:        false
+  CompiledObject: best
+  MainIs:         sierpinski.ml
+  Build$:         flag(tests)
+  BuildDepends:   notty
+
+Executable cuts
+  Path:           demos
+  Install:        false
+  CompiledObject: best
+  MainIs:         cuts.ml
+  Build$:         flag(tests)
+  BuildDepends:   notty
+
+Document api
+  Title:              Documentation and API reference
+  Type:               ocamlbuild (0.3)
+  BuildTools+:        ocamldoc
+  XOCamlbuildPath:    doc
+  XOCamlbuildModules: src/Notty, lwt/Notty_lwt
+  Install:            false
+  XOCamlbuildExtraArgs: -docflags -colorize-code,-charset,utf-8

@@ -924,3 +924,62 @@ let output_image ?cap chan i =
   Buffer.output_buffer chan buf
 
 let print_image = output_image stdout
+
+
+(* module Cc_twitch = struct
+
+  open Lwt
+  open React
+
+|+   let timestamp ~d =
+    let die = ref false in
+    let rec go () =
+      Lwt_unix.sleep d >>
+      if !die then return_unit else go () in
+    async go;
+    (fun () -> die := true) +|
+
+  let rec forever f a = f a >> forever f a
+
+  let o_when f = function Some a -> f a | _ -> ()
+
+  let p = Printf.printf
+
+  let every d =
+    let (e, set) = E.create () in
+    async (forever (fun () ->
+      Lwt_unix.sleep d >> return (set (Unix.gettimeofday()))));
+    e
+
+  let reactimate f =
+    let term = Cc_lwt.terminal ~winch:false ()
+    and now  = Unix.gettimeofday () in
+    let (size, s_size) = S.create (Cc_lwt.size term)
+    and (time, s_time) = S.create 0.
+    and (keys, s_keys) = E.create () in
+    let (image, die) = f ~time ~size ~keys in
+    let update ?size ?keys () =
+      let step = Step.create () in
+      s_time ~step (Unix.gettimeofday () -. now);
+      size |> o_when (s_size ~step);
+      keys |> o_when (s_keys ~step);
+      Step.execute step;
+      let i = S.value image in
+      if i <> term.Cc_lwt.trm.Tmachine.image then
+        Cc_lwt.update term i
+      else return_unit
+    in
+    async (forever (fun () ->
+      Cc_lwt.wait_resize term >|= fun size -> update ~size ()));
+    async (fun () ->
+      Cc_lwt.inputs term |> Lwt_stream.iter_s (fun keys -> update ~keys ()));
+    async (forever (fun () -> Lwt_unix.sleep 0.1 >> update ()));
+    let (s, w) = Lwt.wait () in
+    let hrs = E.map (fun _ ->
+      p "* ENTER!\n%!";
+      async (fun () -> Lwt_unix.sleep 0.1 >> return (p "* post y\n%!"; exit 0; wakeup w))
+|+       exit 0; Lwt.wakeup w +|
+    ) (E.once die) in
+    update () >> (p "* X\n%!"; s) >> (p "* YY\n%!"; Cc_lwt.release term)
+
+end *)
