@@ -1,0 +1,11 @@
+rondom
+
+_build
+setup.data
+setup.log
+
+*.native
+*.byte
+*.docdir
+
+gmon.out
