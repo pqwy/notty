@@ -1,0 +1,17 @@
+#include <caml/mlvalues.h>
+#include <sys/ioctl.h>
+#include <signal.h>
+
+CAMLprim value caml_cc_winsize (value vfd) {
+  int fd = Int_val (vfd);
+  struct winsize w;
+  if (ioctl (fd, TIOCGWINSZ, &w) >= 0)
+    return Val_int ((w.ws_col << 16) + w.ws_row);
+  else return Val_int (0);
+}
+
+#define __unit() value unit __attribute__((unused))
+
+CAMLprim value caml_cc_winch_number (__unit()) {
+  return Val_int (SIGWINCH);
+}
