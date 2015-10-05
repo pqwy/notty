@@ -86,6 +86,14 @@ Executable sierpinski
   Build$:         flag(tests)
   BuildDepends:   notty
 
+Executable sierpinski_lwt
+  Path:           demos
+  Install:        false
+  CompiledObject: best
+  MainIs:         sierpinski_lwt.ml
+  Build$:         flag(tests) && flag(lwt)
+  BuildDepends:   notty, notty.lwt
+
 Executable cuts
   Path:           demos
   Install:        false

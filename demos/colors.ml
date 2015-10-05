@@ -34,7 +34,7 @@ let image =
   let core16 =
     let c1  = map (fun (n, c) -> string A.(fg c) n) colors
     and c2  = map (fun (n, c) -> string A.(black @/ c @// empty) n) colors
-    in vcat c1 <|> space 1 0 <|> vcat c2
+    in vcat c1 <|> void 1 0 <|> vcat c2
   and rgb =
     let range = range 0 5 in
     range |> map (fun r ->
@@ -42,7 +42,7 @@ let image =
         range |> map (fun b ->
           char A.(bg (rgb ~r ~g ~b)) ' ' 1 1
         ) |> hcat
-      ) |> vcat <|> space 1 0
+      ) |> vcat <|> void 1 0
     ) |> hcat
   and gray =
     range 0 23 |> map (fun level ->
@@ -51,7 +51,7 @@ let image =
   and attr =
     styles |> map (fun (n, s) -> hpad 0 1 (string A.(s @+ empty) n)) |> hcat
   in
-  intersperse (space 0 1) [core16; rgb; gray; attr]
+  intersperse (void 0 1) [core16; rgb; gray; attr]
   |> vcat |> pad ~left:1 ~top:1
 
 let () = print image

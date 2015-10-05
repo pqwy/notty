@@ -23,10 +23,10 @@ let () = Unmark.warmup ()
 let () =
   let measure = `Cputime_ns in
 
-  Terminal.(Unmark.time_ex ~tag:"draw/update i3" ~n:1000
-    ~measure ~init:create ~fini:release (fun t -> update t i3));
-  Terminal.(Unmark.time_ex ~tag:"draw/update i5" ~n:1000
-    ~measure ~init:create ~fini:release (fun t -> update t i5));
+  Terminal.(Unmark.time_ex ~tag:"draw i3" ~n:1000
+    ~measure ~init:create ~fini:release (fun t -> image t i3));
+  Terminal.(Unmark.time_ex ~tag:"draw i5" ~n:1000
+    ~measure ~init:create ~fini:release (fun t -> image t i5));
 
   Unmark.time ~tag:"rasterize i2" ~measure ~n:300
     (fun () -> Operation.of_image (200, 200) i2);

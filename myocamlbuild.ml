@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 7b07760a30701130353fec1c6cd8ec5d) *)
+(* DO NOT EDIT (digest: 5089dcd93c08ed58a1deab830eda7b44) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -648,7 +648,7 @@ let package_default =
             [(OASISExpr.EBool true, S [A "-w"; A "A-4-33-40-41-42-43-34-44"])
             ])
        ];
-     includes = [("lwt", ["src"]); ("demos", ["src"])]
+     includes = [("lwt", ["src"]); ("demos", ["lwt"; "src"])]
   }
   ;;
 

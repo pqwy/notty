@@ -64,7 +64,7 @@ module Images = struct
     | n ->
         let sub = cantor (pred n) in
         hcat (List.replicate (pow 3 n) (square A.lightblue)) <->
-        (sub <|> space (pow 3 (n - 1)) 0 <|> sub)
+        (sub <|> void (pow 3 (n - 1)) 0 <|> sub)
 
   let checker n m c =
     let open I in
@@ -75,6 +75,11 @@ module Images = struct
     |> vcat
 
   let checker1 = checker 20 20 I.(char A.(bg magenta) ' ' 2 1)
+
+  let rec sierp color = let open I in function
+    | 1 -> pad ~right:1 @@ string A.(fg color) "◾"
+    | n -> let ss = sierp color (pred n) in ss <-> (ss <|> ss)
+
 end
 
 let ch c = `Uchar (Char.code c)
@@ -89,8 +94,8 @@ let simpleterm ~image ~step ~s =
     | `End -> ()
     | `Uchar _ | `Key _ as i ->
         match step s i with
-        | Some s -> Terminal.update term (image s); go s
+        | Some s -> Terminal.image term (image s); go s
         | None   -> ()
   in
-  Terminal.update term (image s);
+  Terminal.image term (image s);
   go s

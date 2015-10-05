@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: da86dab7aabebd55f08b24b32b5e13ef)
+# DO NOT EDIT (digest: f0968cf9ff6ea02cc523bd4036fa904a)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -79,6 +79,18 @@ true: annot, bin_annot
 <demos/sierpinski.{native,byte}>: package(uuseg.string)
 <demos/sierpinski.{native,byte}>: package(uutf)
 <demos/sierpinski.{native,byte}>: use_notty
+# Executable sierpinski_lwt
+<demos/sierpinski_lwt.{native,byte}>: package(lwt)
+<demos/sierpinski_lwt.{native,byte}>: package(lwt.unix)
+<demos/sierpinski_lwt.{native,byte}>: package(react)
+<demos/sierpinski_lwt.{native,byte}>: package(unix)
+<demos/sierpinski_lwt.{native,byte}>: package(uuseg.string)
+<demos/sierpinski_lwt.{native,byte}>: package(uutf)
+<demos/sierpinski_lwt.{native,byte}>: use_notty
+<demos/sierpinski_lwt.{native,byte}>: use_notty_lwt
+<demos/*.ml{,i,y}>: package(lwt)
+<demos/*.ml{,i,y}>: package(lwt.unix)
+<demos/*.ml{,i,y}>: use_notty_lwt
 # Executable cuts
 <demos/cuts.{native,byte}>: package(react)
 <demos/cuts.{native,byte}>: package(unix)

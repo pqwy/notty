@@ -15,6 +15,8 @@ let maccum ~empty ~append xs =
   in
   step xs
 
+let whenopt f = function Some x -> f x | None -> ()
+
 module Eq = struct
 
   let option ~eq a b = match (a, b) with
@@ -65,7 +67,7 @@ module List = struct
 end
 
 module String = struct
-  
+
   include String
 
   let of_char c0 =
@@ -112,7 +114,9 @@ module Int = struct
 end
 
 module Char = struct
+
   include Char
+
   let equal (a : t) (b : t) = a = b
 end
 
@@ -202,7 +206,8 @@ module Text = struct
     for i = 0 to n - 1 do
       let c = Array.unsafe_get arr i in
       if is_control_u c then
-        invalid_arg @@ sprn "Text.of_uchars: control character: u%04x" c
+        invalid_arg @@ sprn
+        "Text.of_uchars: control character: u%04x" c
     done;
     of_unicode @@ with_encoder @@ fun enc ->
       for i = 0 to n - 1 do
@@ -214,29 +219,27 @@ module Text = struct
       let chr = `Uchar u in
       for _ = 1 to n do ignore (Uutf.encode enc chr) done
 
-  let replicatec w c =
-    Ascii (String.make w (if is_control c then ' ' else c))
+  let replicatec w = function
+    | c when is_control c ->
+        invalid_arg @@ sprn
+        "Text.replicate: control character: %c" c
+    | c -> Ascii (String.make w c)
 
   let replicateu w = function
-    | u when is_control_u u || not (Uutf.is_uchar u) ->
-        of_unicode (encode_repeat w Uutf.u_rep)
-    | u when u >= 0x80 ->
-        of_unicode (encode_repeat w u)
-    | u -> replicatec w (Char.chr u)
+    | u when is_control_u u ->
+        invalid_arg @@ sprn
+        "Text.replicateu: control character: u%04x" u
+    | u when not (Uutf.is_uchar u) ->
+        invalid_arg @@ sprn
+        "Text.replicate: not a unicode scalar value: u%04x" u
+    | u when u >= 0x80 -> of_unicode (encode_repeat w u)
+    | u -> Ascii (String.make w (Char.chr u))
 
 end
 
 module A = struct
 
   module IS = List.Set (Char)
-
-  type style = char
-
-  let bold      = '1'
-  let italic    = '3'
-  let underline = '4'
-  let blink     = '5'
-  let reverse   = '7'
 
 
   type color = int
@@ -258,12 +261,6 @@ module A = struct
   let lightcyan    = 14
   let white        = 15
 
-  let to_index x = x
-  let of_index x =
-    if x < 0 || x > 255 then
-      invalid_arg "Cc.A.of_index: index outside of range [0, 255]"
-    else x
-
   let rgb ~r ~g ~b =
     if r < 0 || g < 0 || b < 0 || r > 5 || g > 5 || b > 5 then
       invalid_arg "Cc.A.rgb: a component outside of range [0, 5]"
@@ -274,10 +271,26 @@ module A = struct
       invalid_arg "Cc.A.gray: level outside of range [0, 23]"
     else level + 232
 
+(*   let to_index x = x
+  let of_index x =
+    if x < 0 || x > 255 then
+      invalid_arg "Cc.A.of_index: index outside of range [0, 255]"
+    else x *)
+
+
+  type style = char
+
+  let bold      = '1'
+  let italic    = '3'
+  let underline = '4'
+  let blink     = '5'
+  let reverse   = '7'
+
+
   type t = {
-    fg : color option;
-    bg : color option;
-    st : style list
+    fg : color option
+  ; bg : color option
+  ; st : style list
   }
 
   let empty = { fg = None; bg = None; st = []}
@@ -314,7 +327,7 @@ module I = struct
     | Zcompose of (t * t) * dim
     | Hcrop    of (t * int * int) * dim
     | Vcrop    of (t * int * int) * dim
-    | Space    of dim
+    | Void     of dim
 
   let width = function
     | Empty -> 0
@@ -324,7 +337,7 @@ module I = struct
     | Zcompose (_, (w, _)) -> w
     | Hcrop    (_, (w, _)) -> w
     | Vcrop    (_, (w, _)) -> w
-    | Space        (w, _)  -> w
+    | Void         (w, _)  -> w
 
   let height = function
     | Empty -> 0
@@ -334,7 +347,7 @@ module I = struct
     | Zcompose (_, (_, h)) -> h
     | Hcrop    (_, (_, h)) -> h
     | Vcrop    (_, (_, h)) -> h
-    | Space        (_, h)  -> h
+    | Void         (_, h)  -> h
 
   let empty = Empty
 
@@ -362,27 +375,27 @@ module I = struct
         and h = Int.max (height t1) (height t2) in
         Zcompose ((t1, t2), (w, h))
 
-  let space w h =
-    if w < 0 || h < 0 || (w = 0 && h = 0) then Empty else Space (w, h)
+  let void w h =
+    if w < 0 || h < 0 || (w = 0 && h = 0) then Empty else Void (w, h)
 
-  let lincrop crop space (++) init fini t =
+  let lincrop crop void (++) init fini t =
     match Int.(sign init, sign fini) with
     | (1, 1) -> crop init fini t
-    | (1, _) -> crop init 0 t ++ space (-fini)
-    | (_, 1) -> space (-init) ++ crop 0 fini t
-    | _      -> space (-init) ++ t ++ space (-fini)
+    | (1, _) -> crop init 0 t ++ void (-fini)
+    | (_, 1) -> void (-init) ++ crop 0 fini t
+    | _      -> void (-init) ++ t ++ void (-fini)
 
   let hcrop =
     let ctor left right t =
       let w = width t - left - right in
       if w > 0 then Hcrop ((t, left, right), (w, height t)) else Empty
-    in lincrop ctor (fun w -> space w 0) (<|>)
+    in lincrop ctor (fun w -> void w 0) (<|>)
 
   let vcrop =
     let ctor top bottom t =
       let h = height t - top - bottom in
       if h > 0 then Vcrop ((t, top, bottom), (width t, h)) else Empty
-    in lincrop ctor (space 0) (<->)
+    in lincrop ctor (void 0) (<->)
 
   let crop ?(left=0) ?(right=0) ?(top=0) ?(bottom=0) t =
     let t = if left <> 0 || right <> 0 then hcrop left right t else t in
@@ -457,7 +470,7 @@ module Operation = struct
   let rec scan x w row i k =
     let open I in match i with
 
-    | Empty | Space _ -> Skip w @: k
+    | Empty | Void _ -> Skip w @: k
 
     | Segment _ when row > 0 -> Skip w @: k
     | Segment (attr, text) ->
@@ -515,13 +528,13 @@ module Cap = struct
   let (&) op1 op2 buf = op1 buf; op2 buf
 
   type t = {
-    skip    : int -> op;
-    sgr     : A.t -> op;
-    newline : op;
-    clreol  : op;
-    cursvis : bool -> op;
-    cursat  : int -> int -> op;
-    altscr  : bool -> op
+    skip    : int -> op
+  ; sgr     : A.t -> op
+  ; newline : op
+  ; clreol  : op
+  ; cursvis : bool -> op
+  ; cursat  : int -> int -> op
+  ; altscr  : bool -> op
   }
 
   let i = string_of_int
@@ -536,8 +549,8 @@ module Cap = struct
       | x::xs -> b <| x; b <. ';'; wr b xs in
     b <| "\x1b["; wr b xs; b <. op
 
-  let ansi =
-    { skip    = (fun n b -> csi 'C' [i n] b)
+  let ansi = {
+      skip    = (fun n b -> csi 'C' [i n] b)
     ; newline = (fun b -> b <| "\x1bE")
     ; altscr  = (fun x b -> b <| if x then "\x1b[?1049h" else "\x1b[?1049l")
     ; cursat  = (fun w h b -> csi 'H' [i w; i h] b)
@@ -564,8 +577,8 @@ module Cap = struct
   and no1 _ _ = ()
   and no2 _ _ _ = ()
 
-  let dumb =
-    { skip    = (fun n b -> for _ = 1 to n do b <. ' ' done)
+  let dumb = {
+      skip    = (fun n b -> for _ = 1 to n do b <. ' ' done)
     ; newline = (fun b -> b <| "\n")
     ; altscr  = no1
     ; cursat  = no2
@@ -578,7 +591,8 @@ end
 
 module Render = struct
 
-  let buffer_for img = Buffer.create I.(width img * height img)
+  let buffer_for img =
+    Buffer.create I.(width img * height img * 2)
 
   let to_buffer cap dim img buf =
     let open Cap in
@@ -656,7 +670,7 @@ module Unescape = struct
     | `Cseq "21~"            -> Some (`Fn 10)
     | `Cseq "23~"            -> Some (`Fn 11)
     | `Cseq "24~"            -> Some (`Fn 12)
-    
+
     | _ -> None
 
 
@@ -697,8 +711,8 @@ module Unescape = struct
   ]
 
   type t = {
-    dec : Uutf.decoder;
-    mutable state : (uchar, res) xd
+    dec : Uutf.decoder
+  ; mutable state : (uchar, res) xd
   }
 
   let next t =
@@ -714,7 +728,7 @@ module Unescape = struct
     match next t with
     | `Uchar _ | `End | `Await as r -> r
     | `Malformed _ -> next_k t
-    | `Esc e -> 
+    | `Esc e ->
         match key_of_control_code e with
         | Some c -> `Key c
         | None   -> next_k t
@@ -736,13 +750,15 @@ end
 
 module Tmachine = struct
 
+  (* XXX This is sad. This should be a composable, stateless transducer. *)
+
   type t = {
-    cap           : Cap.t;
-    frags         : string Queue.t;
-    mutable curs  : (int * int) option;
-    mutable dim   : (int * int);
-    mutable image : I.t;
-    mutable dead  : bool
+    cap           : Cap.t
+  ; frags         : string Queue.t
+  ; mutable curs  : (int * int) option
+  ; mutable dim   : (int * int)
+  ; mutable image : I.t
+  ; mutable dead  : bool
   }
 
   let emitv t xs = Queue.addv t.frags xs
@@ -768,11 +784,13 @@ module Tmachine = struct
     ; Cap.get (cursor t.cap t.curs)
   ]
 
+  let set_size t dim = t.dim <- dim
+
   let resize t dim = t.dim <- dim; refresh t
 
   let cursor t curs = t.curs <- curs; emitv t [Cap.get (cursor t.cap curs)]
 
-  let image t curs image = t.image <- image; t.curs <- curs; refresh t
+  let image t image = t.image <- image; refresh t
 
   let finish t =
     if t.dead then false else begin
@@ -812,21 +830,56 @@ module IO_helpers = struct
     let old_hdl = Sys.(signal signum (Signal_handle (fun _ -> f ()))) in
     `Revert (fun () -> Sys.set_signal signum old_hdl)
 
+  let output_image_gen ~to_fd ~write ?cap chan i =
+    let fd = to_fd chan in
+    let cap = match cap with
+      | Some cap -> cap
+      | None     -> cap_for_fd fd
+    and dim = match winsize fd with
+      | Some (w, _) -> I.(w, height i)
+      | None        -> I.(width i, height i) in
+    let buf = Render.buffer_for i in
+    Render.to_buffer cap dim i buf;
+    write chan buf
+
 end
 
 module Terminal = struct
 
   open IO_helpers
 
-  type event = [ `End | `Uchar of uchar | `Key of Unescape.key ]
+  module Winch = struct
+
+    module M = Map.Make (Int)
+
+    type remove = int
+
+    let id = ref 0
+
+    and hs = lazy (
+      let r = ref M.empty in
+      set_winch_handler (fun () -> !r |> M.iter (fun _ f -> f ())) |> ignore;
+      r
+    )
+
+    let update f = let m = Lazy.force hs in m := f !m
+
+    let add fd f =
+      let x = !id in
+      incr id;
+      M.add x (fun () -> winsize fd |> whenopt f) |> update;
+      x
+
+    let remove x = update (M.remove x)
+  end
 
   module Input = struct
 
     type t = {
-      fd      : Unix.file_descr;
-      flt     : Unescape.t;
-      ibuf    : bytes;
-      cleanup : unit -> unit
+      fd      : Unix.file_descr
+    ; flt     : Unescape.t
+    ; ibuf    : bytes
+    ; cleanup : unit -> unit
     }
 
     let create fd =
@@ -834,8 +887,6 @@ module Terminal = struct
       and ibuf = Bytes.create 64
       and `Revert cleanup = setup_tcattr fd in
       { fd; flt; ibuf; cleanup }
-
-    let release t = t.cleanup ()
 
     let rec input t =
       match Unescape.next_k t.flt with
@@ -847,23 +898,12 @@ module Terminal = struct
   end
 
   type t = {
-    output : out_channel;
-    trm    : Tmachine.t;
-    input  : Input.t;
-    winch  : bool ref * (unit -> unit)
+    output   : out_channel
+  ; trm      : Tmachine.t
+  ; input    : Input.t
+  ; winched  : bool ref
+  ; unwinch  : Winch.remove Lazy.t
   }
-
-  let hook_winch cond =
-    let r = ref false in
-    let f =
-      if cond then
-        let `Revert f = set_winch_handler (fun () -> r := true) in f
-      else (fun () -> ()) in
-    (r, f)
-
-  let unwinch (_, f) = f ()
-
-  let wdrain (r, _) = let w = !r in if w then r := false; w
 
   let rec write t =
     match Tmachine.output t.trm with
@@ -872,114 +912,47 @@ module Terminal = struct
 
   let release t =
     if Tmachine.finish t.trm then begin
-      unwinch t.winch;
-      Input.release t.input;
+      Winch.remove Lazy.(force t.unwinch);
+      t.input.Input.cleanup ();
       write t
     end
 
-  let size t =
-    match winsize Unix.(descr_of_out_channel t.output) with
-    | Some d -> d | _ -> (0, 0)
+  let set_size t dim = Tmachine.set_size t.trm dim
+  let redraw t       = Tmachine.refresh t.trm; write t
+  let image t image  = Tmachine.image t.trm image; write t
+  let cursor t curs  = Tmachine.cursor t.trm curs; write t
+  let size t         = Tmachine.size t.trm
 
-  let resize t dim = Tmachine.resize t.trm dim; write t
-
-  let create ?(dispose=true) ?(winch=true) ?(input=Unix.stdin) ?(output=Unix.stdout) () =
-    let trm   = Tmachine.create (cap_for_fd input)
-    and input = Input.create input
-    and och   = Unix.out_channel_of_descr output
-    and winch = hook_winch winch in
-    let t     = { output = och ; trm; input; winch } in
+  let create ?(dispose=true) ?(autosize=true) ?(input=Unix.stdin) ?(output=Unix.stdout) () =
+    let rec t = {
+        output  = Unix.out_channel_of_descr output
+      ; trm     = Tmachine.create (cap_for_fd input)
+      ; input   = Input.create input
+      ; winched = ref false
+      ; unwinch = lazy (
+          Winch.add output (fun dim ->
+            t.winched := true; set_size t dim; if autosize then redraw t
+          ))
+      } in
+    (winsize output |> whenopt (set_size t));
+    redraw t;
+    ignore (Lazy.force t.unwinch);
     if dispose then at_exit (fun () -> release t);
-    resize t (size t);
     t
 
-  let rec input_w t =
-    if wdrain t.winch then `Winch (size t) else
-    try Input.input t.input
-    with Unix.Unix_error (Unix.EINTR, _, _) -> input_w t
-
   let rec input t =
-    match input_w t with
-    | `Winch dim -> resize t dim; input t
-    | (`Uchar _ | `Key _ | `End) as r -> r
-
-  let refresh t = Tmachine.refresh t.trm; write t
-  let update t ?cursor image = Tmachine.image t.trm cursor image; write t
+    t.winched := false;
+    try Input.input t.input with
+    | Unix.Unix_error (Unix.EINTR, _, _) when !(t.winched) -> input t
 
 end
 
 type attr  = A.t
 type image = I.t
 
-let output_image ?cap chan i =
-  let fd = Unix.descr_of_out_channel chan in
-  let cap = match cap with
-    | Some cap -> cap
-    | None     -> IO_helpers.cap_for_fd fd
-  and dim = match IO_helpers.winsize fd with
-    | Some (w, _) -> I.(w, height i)
-    | None        -> I.(width i, height i) in
-  let buf = Render.buffer_for i in
-  Render.to_buffer cap dim i buf;
-  Buffer.output_buffer chan buf
+let output_image =
+  IO_helpers.output_image_gen
+    ~to_fd:Unix.descr_of_out_channel
+    ~write:Buffer.output_buffer
 
 let print_image = output_image stdout
-
-
-(* module Cc_twitch = struct
-
-  open Lwt
-  open React
-
-|+   let timestamp ~d =
-    let die = ref false in
-    let rec go () =
-      Lwt_unix.sleep d >>
-      if !die then return_unit else go () in
-    async go;
-    (fun () -> die := true) +|
-
-  let rec forever f a = f a >> forever f a
-
-  let o_when f = function Some a -> f a | _ -> ()
-
-  let p = Printf.printf
-
-  let every d =
-    let (e, set) = E.create () in
-    async (forever (fun () ->
-      Lwt_unix.sleep d >> return (set (Unix.gettimeofday()))));
-    e
-
-  let reactimate f =
-    let term = Cc_lwt.terminal ~winch:false ()
-    and now  = Unix.gettimeofday () in
-    let (size, s_size) = S.create (Cc_lwt.size term)
-    and (time, s_time) = S.create 0.
-    and (keys, s_keys) = E.create () in
-    let (image, die) = f ~time ~size ~keys in
-    let update ?size ?keys () =
-      let step = Step.create () in
-      s_time ~step (Unix.gettimeofday () -. now);
-      size |> o_when (s_size ~step);
-      keys |> o_when (s_keys ~step);
-      Step.execute step;
-      let i = S.value image in
-      if i <> term.Cc_lwt.trm.Tmachine.image then
-        Cc_lwt.update term i
-      else return_unit
-    in
-    async (forever (fun () ->
-      Cc_lwt.wait_resize term >|= fun size -> update ~size ()));
-    async (fun () ->
-      Cc_lwt.inputs term |> Lwt_stream.iter_s (fun keys -> update ~keys ()));
-    async (forever (fun () -> Lwt_unix.sleep 0.1 >> update ()));
-    let (s, w) = Lwt.wait () in
-    let hrs = E.map (fun _ ->
-      p "* ENTER!\n%!";
-      async (fun () -> Lwt_unix.sleep 0.1 >> return (p "* post y\n%!"; exit 0; wakeup w))
-|+       exit 0; Lwt.wakeup w +|
-    ) (E.once die) in
-    update () >> (p "* X\n%!"; s) >> (p "* YY\n%!"; Cc_lwt.release term)
-
-end *)
