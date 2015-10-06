@@ -1,17 +1,28 @@
 # OASIS_START
-# DO NOT EDIT (digest: 8c42ded84a4ed002632e35ac1e38a17f)
+# DO NOT EDIT (digest: 86ad6e88412c633033e7054f50ea4777)
 version = "0.0.1"
-description = "stuff"
-requires = "unix uutf uuseg.string react"
+description = "Declaring terminals"
+requires = "unix uutf uuseg"
 archive(byte) = "notty.cma"
 archive(byte, plugin) = "notty.cma"
 archive(native) = "notty.cmxa"
 archive(native, plugin) = "notty.cmxs"
 exists_if = "notty.cma"
+package "unix" (
+ version = "0.0.1"
+ description = "Declaring terminals"
+ requires = "notty unix"
+ archive(byte) = "notty_unix.cma"
+ archive(byte, plugin) = "notty_unix.cma"
+ archive(native) = "notty_unix.cmxa"
+ archive(native, plugin) = "notty_unix.cmxs"
+ exists_if = "notty_unix.cma"
+)
+
 package "lwt" (
  version = "0.0.1"
- description = "stuff"
- requires = "notty lwt lwt.unix"
+ description = "Declaring terminals"
+ requires = "notty notty.unix lwt lwt.unix"
  archive(byte) = "notty_lwt.cma"
  archive(byte, plugin) = "notty_lwt.cma"
  archive(native) = "notty_lwt.cmxa"

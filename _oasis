@@ -1,17 +1,21 @@
-OASISFormat:  0.4
-Name:         notty
-Version:      0.0.1
-Synopsis:     stuff
-Authors:      David Kaloper <david@numm.org>
-Maintainers:  David Kaloper <david@numm.org>
-License:      FreeBSD
-Homepage:     https://github.com/pqwy/notty
-Plugins:      META (0.4), DevFiles (0.4)
-BuildTools:   ocamlbuild
-AlphaFeatures:   ocamlbuild_more_args
+OASISFormat:   0.4
+Name:          notty
+Version:       0.0.1
+Synopsis:      Declaring terminals
+Authors:       David Kaloper <david@numm.org>
+Maintainers:   David Kaloper <david@numm.org>
+License:       FreeBSD
+Homepage:      https://github.com/pqwy/notty
+Plugins:       META (0.4), DevFiles (0.4)
+BuildTools:    ocamlbuild
+OCamlVersion:  >= 4.02.0
+AlphaFeatures: ocamlbuild_more_args
 Description:
-  stuff
-OCamlVersion: >= 4.02.0
+  A declarative terminal graphics library
+
+Flag unix
+  Description: Build Unix support
+  Default:     true
 
 Flag lwt
   Description: Build Lwt support
@@ -24,19 +28,28 @@ Flag benchmarks
 Library notty
   Path:          src/
   Modules:       Notty
-  CSources:      native/winsize.c
-  BuildDepends:  unix, uutf, uuseg.string, react
+  BuildDepends:  unix, uutf, uuseg
   ByteOpt:       -w A-4-33-40-41-42-43-34-44
+
+Library notty_unix
+  Findlibparent: notty
+  Findlibname:   unix
+  Path:          unix/
+  Modules:       Notty_unix
+  CSources:      native/winsize.c
   CCOpt:         --std=c99 -Wall -Wextra -Werror -O3
+  BuildDepends:  notty, unix
+  ByteOpt:       -w A-4-33-40-41-42-43-34-44
+  Build$:        flag(unix)
 
 Library notty_lwt
   Findlibparent: notty
   Findlibname:   lwt
   Path:          lwt/
   Modules:       Notty_lwt
-  BuildDepends:  notty, lwt, lwt.unix
+  BuildDepends:  notty, notty.unix, lwt, lwt.unix
   ByteOpt:       -w A-4-33-40-41-42-43-34-44
-  Build$:        flag(lwt)
+  Build$:        flag(unix) && flag(lwt)
 
 Executable speed
   Path:           demos
@@ -44,7 +57,7 @@ Executable speed
   CompiledObject: best
   MainIs:         speed.ml
   Build$:         flag(benchmarks)
-  BuildDepends:   notty, unmark
+  BuildDepends:   notty.unix, unmark
 
 Executable testpatterns
   Path:           demos
@@ -52,7 +65,7 @@ Executable testpatterns
   CompiledObject: best
   MainIs:         testpatterns.ml
   Build$:         flag(tests)
-  BuildDepends:   notty
+  BuildDepends:   notty.unix
 
 Executable letters
   Path:           demos
@@ -60,7 +73,7 @@ Executable letters
   CompiledObject: best
   MainIs:         letters.ml
   Build$:         flag(tests)
-  BuildDepends:   notty
+  BuildDepends:   notty.unix
 
 Executable keys
   Path:           demos
@@ -68,7 +81,7 @@ Executable keys
   CompiledObject: best
   MainIs:         keys.ml
   Build$:         flag(tests)
-  BuildDepends:   notty
+  BuildDepends:   notty.unix
 
 Executable colors
   Path:           demos
@@ -76,7 +89,7 @@ Executable colors
   CompiledObject: best
   MainIs:         colors.ml
   Build$:         flag(tests)
-  BuildDepends:   notty
+  BuildDepends:   notty.unix
 
 Executable sierpinski
   Path:           demos
@@ -84,7 +97,7 @@ Executable sierpinski
   CompiledObject: best
   MainIs:         sierpinski.ml
   Build$:         flag(tests)
-  BuildDepends:   notty
+  BuildDepends:   notty.unix
 
 Executable sierpinski_lwt
   Path:           demos
@@ -100,13 +113,21 @@ Executable cuts
   CompiledObject: best
   MainIs:         cuts.ml
   Build$:         flag(tests)
-  BuildDepends:   notty
+  BuildDepends:   notty.unix
+
+Executable thisbig
+  Path:           demos
+  Install:        false
+  CompiledObject: best
+  MainIs:         thisbig.ml
+  Build$:         flag(tests)
+  BuildDepends:   notty.unix
 
 Document api
   Title:              Documentation and API reference
   Type:               ocamlbuild (0.3)
   BuildTools+:        ocamldoc
   XOCamlbuildPath:    doc
-  XOCamlbuildModules: src/Notty, lwt/Notty_lwt
+  XOCamlbuildModules: src/Notty, unix/Notty_unix, lwt/Notty_lwt
   Install:            false
   XOCamlbuildExtraArgs: -docflags -colorize-code,-charset,utf-8

@@ -1,7 +1,8 @@
 open Notty
-open Common
+open Notty_unix
 
-open Images
+open Common
+open Common.Images
 
 let input_proc_str str =
   let input = Unescape.create () in

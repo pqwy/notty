@@ -1,5 +1,7 @@
-open Notty
 open Lwt
+
+open Notty
+open Notty_unix
 
 let whenopt f = function Some x -> f x | None -> ()
 
@@ -10,6 +12,8 @@ let write_fd fd b =
       Lwt_unix.write fd b acc (n - acc) >>= fun w -> go (acc + w)
     else return_unit in
   go 0
+
+let (</>) a b = pick [(a >|= fun x -> `Left x); (b >|= fun x -> `Right x)]
 
 module Lwt_condition = struct
 
@@ -23,21 +27,15 @@ module Lwt_condition = struct
 
   let unburst ~t c =
     let d = create () in
-    let rec go last =
-      wait c >>= fun x ->
-        last := false;
-        let pending = ref true in
-        async (fun () ->
-          Lwt_unix.sleep t >|= fun () ->
-            if !pending then broadcast d x);
-        go pending in
-    async (fun () -> go (ref false));
-    d
+    let rec delay x =
+      Lwt_unix.sleep t </> wait c >>= function
+        | `Left () -> broadcast d x; start ()
+        | `Right x -> delay x
+    and start () = wait c >>= delay in
+    async start; d
 end
 
 module Terminal = struct
-
-  open IO_helpers
 
   let winches = lazy (
     let c = Lwt_condition.create () in
@@ -47,7 +45,7 @@ module Terminal = struct
 
   let next_winch () = Lwt_condition.wait (Lazy.force winches)
 
-  let create_input_stream fd =
+  let input_stream fd =
     let `Revert f = setup_tcattr (Lwt_unix.unix_file_descr fd) in
     let stream =
       let flt  = Unescape.create ()
@@ -65,10 +63,10 @@ module Terminal = struct
     (stream, f)
 
   type t = {
-    ochan  : Lwt_io.output_channel;
-    trm    : Tmachine.t;
-    input  : [`Uchar of uchar | `Key of Unescape.key] Lwt_stream.t * (unit -> unit);
-    size_c : (int * int) Lwt_condition.t
+    ochan  : Lwt_io.output_channel
+  ; trm    : Tmachine.t
+  ; input  : [`Uchar of uchar | `Key of Unescape.key] Lwt_stream.t * (unit -> unit)
+  ; size_c : (int * int) Lwt_condition.t
   }
 
   let next_resize t = Lwt_condition.wait t.size_c
@@ -88,7 +86,7 @@ module Terminal = struct
   let cursor t curs  = Tmachine.cursor t.trm curs; write t
   let set_size t dim = Tmachine.set_size t.trm dim
 
-  let create_size_sig fd =
+  let resizes fd =
     let fd = Lwt_unix.unix_file_descr fd in
     Lwt_condition.(
       Lazy.force winches |> unburst ~t:0.1 |> fmap (fun () -> winsize fd)
@@ -105,8 +103,8 @@ module Terminal = struct
     let t = {
         trm    = Tmachine.create (cap_for_fd fd)
       ; ochan  = Lwt_io.(of_fd ~mode:output) output
-      ; input  = create_input_stream input
-      ; size_c = create_size_sig output
+      ; input  = input_stream input
+      ; size_c = resizes output
       } in
     async (fun () -> (winsize fd |> whenopt (set_size t)); redraw t);
     async (winch_monitor autosize t);
@@ -120,8 +118,10 @@ module Terminal = struct
 end
 
 let output_image =
-  IO_helpers.output_image_gen
+  output_image_gen
     ~to_fd:Lwt_unix.unix_file_descr
     ~write:(fun fd buf -> write_fd fd (Buffer.contents buf))
 
 let print_image = output_image Lwt_unix.stdout
+
+let winsize = winsize

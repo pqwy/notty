@@ -76,13 +76,17 @@ module Images = struct
 
   let checker1 = checker 20 20 I.(char A.(bg magenta) ' ' 2 1)
 
-  let rec sierp color = let open I in function
-    | 1 -> pad ~right:1 @@ string A.(fg color) "◾"
-    | n -> let ss = sierp color (pred n) in ss <-> (ss <|> ss)
+  let rec sierp c n = I.(
+    if n > 1 then
+      let ss = sierp c (pred n) in ss <-> (ss <|> ss)
+    else hpad 1 0 (string A.(fg c) "◾")
+  )
 
 end
 
 let ch c = `Uchar (Char.code c)
+
+open Notty_unix
 
 let print i =
   print_image i; print_string "\n"; flush stdout

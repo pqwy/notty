@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 5089dcd93c08ed58a1deab830eda7b44) *)
+(* DO NOT EDIT (digest: f6021fed074374b882bf25855e399448) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -608,11 +608,24 @@ open Ocamlbuild_plugin;;
 let package_default =
   {
      MyOCamlbuildBase.lib_ocaml =
-       [("notty", ["src"], []); ("notty_lwt", ["lwt"], [])];
-     lib_c = [("notty", "src/", [])];
+       [
+          ("notty", ["src"], []);
+          ("notty_unix", ["unix"], []);
+          ("notty_lwt", ["lwt"], [])
+       ];
+     lib_c = [("notty_unix", "unix/", [])];
      flags =
        [
-          (["oasis_library_notty_ccopt"; "compile"],
+          (["oasis_library_notty_byte"; "ocaml"; "link"; "byte"],
+            [(OASISExpr.EBool true, S [A "-w"; A "A-4-33-40-41-42-43-34-44"])
+            ]);
+          (["oasis_library_notty_byte"; "ocaml"; "ocamldep"; "byte"],
+            [(OASISExpr.EBool true, S [A "-w"; A "A-4-33-40-41-42-43-34-44"])
+            ]);
+          (["oasis_library_notty_byte"; "ocaml"; "compile"; "byte"],
+            [(OASISExpr.EBool true, S [A "-w"; A "A-4-33-40-41-42-43-34-44"])
+            ]);
+          (["oasis_library_notty_unix_ccopt"; "compile"],
             [
                (OASISExpr.EBool true,
                  S
@@ -629,13 +642,13 @@ let package_default =
                       A "-O3"
                    ])
             ]);
-          (["oasis_library_notty_byte"; "ocaml"; "link"; "byte"],
+          (["oasis_library_notty_unix_byte"; "ocaml"; "link"; "byte"],
             [(OASISExpr.EBool true, S [A "-w"; A "A-4-33-40-41-42-43-34-44"])
             ]);
-          (["oasis_library_notty_byte"; "ocaml"; "ocamldep"; "byte"],
+          (["oasis_library_notty_unix_byte"; "ocaml"; "ocamldep"; "byte"],
             [(OASISExpr.EBool true, S [A "-w"; A "A-4-33-40-41-42-43-34-44"])
             ]);
-          (["oasis_library_notty_byte"; "ocaml"; "compile"; "byte"],
+          (["oasis_library_notty_unix_byte"; "ocaml"; "compile"; "byte"],
             [(OASISExpr.EBool true, S [A "-w"; A "A-4-33-40-41-42-43-34-44"])
             ]);
           (["oasis_library_notty_lwt_byte"; "ocaml"; "link"; "byte"],
@@ -648,7 +661,12 @@ let package_default =
             [(OASISExpr.EBool true, S [A "-w"; A "A-4-33-40-41-42-43-34-44"])
             ])
        ];
-     includes = [("lwt", ["src"]); ("demos", ["lwt"; "src"])]
+     includes =
+       [
+          ("unix", ["src"]);
+          ("lwt", ["src"; "unix"]);
+          ("demos", ["lwt"; "src"; "unix"])
+       ]
   }
   ;;
 
@@ -656,6 +674,6 @@ let conf = {MyOCamlbuildFindlib.no_automatic_syntax = false}
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default conf package_default;;
 
-# 660 "myocamlbuild.ml"
+# 678 "myocamlbuild.ml"
 (* OASIS_STOP *)
 Ocamlbuild_plugin.dispatch dispatch_default;;

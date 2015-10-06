@@ -4,9 +4,10 @@
     Notty is a terminal library that revolves around construction and
     composition of displayable {{!I}images}.
 
-    It provides simple image {{!print_image}output}, a {{!Terminal} terminal}
-    abstraction with input and output, and standalone image {{!Render}rendering}
-    and escape sequence {{!Unescape}parsing}.
+    This module provides the core {{!I}image} abstraction, and standalone
+    {{!Render}rendering} and escape sequence {{!Unescape}parsing}. It does not
+    depend on any platform code, and does not interact with the environment.
+    Input and output are provided by {!Notty_unix} and {!Notty_lwt}.
 
     {b Note} [Notty] assumes that the terminal is using UTF-8 for input and
     output. Things might break arbitrarily if this is not the case.
@@ -14,6 +15,7 @@
     {b Note} [Notty] does not use terminfo. If your terminal is particularly
     idiosyncratic, things might fail to work. Get in touch with the author to
     expand support. *)
+
 
 (** {1 Interface} *)
 
@@ -24,7 +26,7 @@ type attr
 (** Visual characteristics of displayed text. *)
 
 type image
-(** The core data type of things that can be output to a terminal. *)
+(** Things that can be output to a terminal. *)
 
 (** [A] is for attribute.
 
@@ -434,161 +436,7 @@ module Tmachine : sig
 
   val size : t -> (int * int)
 end
-
-(** Random handy bits for writing outputs.
-
-    {b Note} This is a private interface. *)
-module IO_helpers : sig
-
-  val winsize : Unix.file_descr -> (int * int) option
-  val cap_for_fd : Unix.file_descr -> Cap.t
-  val setup_tcattr : Unix.file_descr -> [`Revert of (unit -> unit)]
-  val set_winch_handler : (unit -> unit) -> [ `Revert of (unit -> unit) ]
-  val output_image_gen :
-    to_fd:('fd -> Unix.file_descr) ->
-    write:('fd -> Buffer.t -> 'r) ->
-    ?cap:Cap.t -> 'fd -> image -> 'r
-end
 (**/**)
-
-(** Full-screen terminal IO. *)
-module Terminal : sig
-
-  type t
-  (** An interactive terminal, combining input and output. *)
-
-  (** {1 Construction and destruction} *)
-
-  val create : ?dispose:bool ->
-               ?autosize:bool ->
-               ?input:Unix.file_descr ->
-               ?output:Unix.file_descr ->
-               unit -> t
-  (** [create ~dispose ~autosize ~input ~output ()] is a fresh {{!t}terminal},
-      giving structured access to [input] and [output] suitable for full-screen
-      terminal programs.
-
-      [create] has the following side effects:
-      {ul
-      {- [Unix.tcsetattr] is applied to [input] to disable {e echo} and {e
-         canonical mode}.}
-      {- [output] is set to {e alternate screen mode} and the cursor is hidden
-         using the appropriate escape sequence.}
-      {- [SIGWINCH] signal, normally ignored, is handled. This means that
-         IO in your program will now be interrupted by [EINTR] on every window
-         resize.}}
-
-      [dispose] arranges for automatic {{!release}cleanup} of the terminal
-      before the process terminates. The downside is that a reference to this
-      terminal is retained until the program exits. Default to [true].
-
-      [autosize] activates automatic {{!redraw}redrawing} of output whenever
-      the window is resized. Defaults to [true].
-
-      [input] is the input file descriptor. Defaults to [stdin].
-
-      [output] is the output file descriptor. Defaults to [stdout].
-
-      {{!Cap}Capabilities} are determined the same as with {!output_image}.
-
-      {b Note} It is probably a poor idea to attach several {{!t}terminals} to
-      the same [input] or [output]. *)
-
-  val release : t -> unit
-  (** Dispose of this terminal. Original behavior of input is reinstated, the
-      output is cleared, cursor is restored and alternate mode is terminated.
-      (See {{!create}create}.) *)
-
-  (** {1 Commands} *)
-
-  val image : t -> image -> unit
-  (** Sets a new {{!Notty.image}[image]} and redraws the terminal. *)
-
-  val redraw : t -> unit
-  (** Redraws the terminal. Useful if the output might have become garbled. *)
-
-  val cursor  : t -> (int * int) option -> unit
-  (** Sets and redraws the cursor. [None] is hidden cursor. [Some (col, row)]
-      is cursor at column [col] and row [row]. The origin is at [(1, 1)] in the
-      upper-left corner. *)
-
-  (** {1 Input} *)
-
-  val input : t -> [ `End | `Uchar of uchar | `Key of Unescape.key ]
-  (** Wait for new input to arrive.
-
-      {ul
-      {- [`End] means the input stream has ended.}
-      {- [`Uchar u] is the next unicode character in the input.}
-      {- [`Key k] is the next special key.}}
-
-      See {!Unescape.next_k}.
-
-      If [t] has {{!create}[autosize]}, [input] will silently restart and mask
-      any [SIGWINCH] delivered while the call is in progress. *)
-
-  (** {1 Properties} *)
-
-  val size : t -> (int * int)
-  (** [size t] is the current size of the terminal's output tty. *)
-
-  (** {1 Window size change notifications} *)
-
-  (** Manual [SIGWINCH] handling.
-
-      Unix delivers notifications about tty size changes through the [SIGWINCH]
-      signal. A handler for this signal is installed as soon as a new terminal
-      is {{!create}created}. Replacing this global [SIGWINCH] handler through
-      the [Sys] module will cause this module to malfunction, as size change
-      notifications will no longer be delivered.
-
-      You might still wish to intercept this signal, however. For example, if
-      you are using a more complex event loop, you might want to disable
-      {{!create}[autosize]} and manually schedule {{!redraw}terminal updates}.
-
-      This module allows one to listen to [SIGWINCH] without conflicting with
-      the rest of the machinery. *)
-  module Winch : sig
-
-    type remove
-    (** Removal token. *)
-
-    val add : Unix.file_descr -> ((int * int) -> unit) -> remove
-    (** [add fd f] registers a [SIGWINCH] handler. Every time the signal is
-        delivered, [f] is called with the current size of the tty backing [fd].
-        If [fd] is not a tty, [f] is never called.
-
-        Handlers are called in the order of their registration. *)
-
-    val remove : remove -> unit
-    (** [remove r] removes the handler associated with the removal token [r].
-        Does nothing if the handler was already removed. *)
-  end
-end
-
-val output_image : ?cap:Cap.t -> out_channel -> image -> unit
-(** [output_image ~cap channel i] writes the image [i] to [channel].
-
-    Height of the output is the height of [i], while the width is width of the
-    tty out_channel is backed by, or width of [i] if this is not the case.
-
-    Note that no leading or trailing characters are produced.
-    This means that:
-    {ul
-    {- an image 1-cell high can be a part of a line of text, preceded and/or
-       followed by any other output;}
-    {- if the cursor is first positioned on the first column, image of any
-       height can be printed; and}
-    {- simply outputting an image higher than 1 when the cursor has advanced
-       past colum 1 will result in broken graphics. }}
-
-    Auto-detection for [cap] merely checks that both the environment variable
-    [$TERM] is set, and the file descriptor backing [channel] [Unix.isatty]. If
-    both are true, {{!Cap.ansi}ANSI} escapes are used. Otherwise,
-    {{!Cap.dumb}no} escapes are used. *)
-
-val print_image : image -> unit
-(** {{!output_image}Output image} to [stdout]. *)
 
 
 (** {1 Examples}
@@ -596,43 +444,47 @@ val print_image : image -> unit
 {b Note} There are further examples in the [/demos] directory in the source
 tree.
 
-{{!print_image}[print_image]} does not add a newline, so assume a helper:
+We assume the module has been opened:
 
-{[let print_endl i = print_image i; print_char '\n' ]}
-*)
+{[open Notty]}
 
-(** {2 Hello}
+And use a helper output routine from {!Notty_unix}:
 
-Output "rad" with default foreground and background:
+{[let print_i i =
+  Notty_unix.print_image i;
+  print_char '\n'
+]}
 
-{[let () = print_endl (I.string A.empty "rad") ]} *)
+{2 Hello}
 
-(** {2 Hello, with colors}
+Output ["rad"] with default foreground and background:
 
-Output "rad" in rad letters:
+{[let () = print_i (I.string A.empty "rad") ]}
 
-{[let () = print_endl (I.string A.(fg red) "rad") ]}
-*)
+{2 Hello, with colors}
 
-(** {2 Padding and spacing}
+Output ["rad"] in rad letters:
 
-Output "rad" and "stuff" in different colors and with a space between:
+{[let () = print_i (I.string A.(fg red) "rad") ]}
+
+{2 Padding and spacing}
+
+Output ["rad"] and ["stuff"] in different colors and with a space between:
 
 {[let () =
   let i = I.(
     string A.(fg red) "rad " <|> string A.(white @/ bg red) "stuff"
-  ) in print_endl i]}
+  ) in print_i i]}
 
-Output "rad stuff" with the second word hanging on a line below:
+Output ["rad stuff"] with the second word hanging on a line below:
 
 {[let () =
   let attr = A.(white @/ bg red) in
   let i = I.(
     string attr "rad" <|> pad ~top:1 ~left:1 (string attr "stuff")
-  ) in print_endl i]}
-*)
+  ) in print_i i]}
 
-(** {2 More geometry}
+{2 More geometry}
 
 Sierpinski triangle:
 
@@ -648,13 +500,24 @@ i.e. the source is UTF-8 encoded.
 
 Print a triangle:
 
-{[let () = print_endl (sierp 5)]}
+{[let () = print_i (sierp 7)]}
 
-Print a triangle overlaid over its copy shifted one cell to the right:
+Print a triangle overlaid over its shifted copy:
 
 {[let () =
-  let s = sierp 5 in
-  print_endl I.(s <^> hpad 1 0 s)
+  let s = sierp 7 in
+  print_i I.(s <^> hpad 1 0 s)
+]}
+
+Print a triangle that fits into your terminal:
+
+{[let winsize_ch chan =
+  Notty_unix.winsize (Unix.descr_of_out_channel chan)
+let () =
+  let steps = match winsize_ch stdout with
+    | None -> 0
+    | Some (w, _) -> int_of_float (log (float w) /. log 2.) in
+  print_i (sierp steps)
 ]}
 
 Blinkenlights:
@@ -668,31 +531,34 @@ let image =
   A.[red; green; yellow; blue; magenta; cyan]
   |> List.mapi I.(fun i c -> pad ~top:i ~left:(2*i) (rad i c))
   |> I.zcat
-let () = print_endl image
+let () = print_i image
 ]}
 
 {b Note} Usage of {{!A.blink}[blink]} might be regulated by law in some
 jurisdictions.
 
-*)
-
-(** {2 Simple interaction}
+{2 Simple interaction}
 
 {[
+open Notty_unix
+
 let () =
   let img (double, n) =
     let s = sierp n in
     if double then I.(s <^> hpad 1 0 s) else s in
   let rec update t state =
-    Terminal.image t (img state); loop t state
-  and loop t (double, n as state) =
+    Terminal.image t (img state); wait t state
+  and wait t (double, n as state) =
     match Terminal.input t with
     | `Key `Left  -> update t (double, max 1 (n - 1))
     | `Key `Right -> update t (double, min 8 (n + 1))
     | `Key `Enter -> ()
     | `Uchar 0x20 -> update t (not double, n)
-    | _           -> loop t state
+    | _           -> wait t state
   in
   let t = Terminal.create () in
-  update t (false, 1)
-]} *)
+  update t (false, 1);
+  Terminal.release t
+]}
+
+*)
