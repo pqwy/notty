@@ -50,9 +50,9 @@ module Images = struct
 
   let i5 =
     let open I in
-    tile 5 1 @@
-      List.(range 0 15 |> map (fun i -> pad ~top:i ~left:(i*2) i2)
-                        |> zcat)
+    tile 5 1 @@ List.(
+      range 0 15 |> map (fun i -> pad ~top:i ~left:(i*2) i2) |> zcat
+    )
 
 
   let square color = I.string A.(fg color) "◾"
@@ -66,13 +66,9 @@ module Images = struct
         hcat (List.replicate (pow 3 n) (square A.lightblue)) <->
         (sub <|> void (pow 3 (n - 1)) 0 <|> sub)
 
-  let checker n m c =
-    let open I in
-    let w = width c in
-    let line i = List.replicate (m/2) i |> hcat in
-    List.replicate (n/2)
-      (line (hpad 0 w c) <-> line (hpad w 0 c))
-    |> vcat
+  let checker n m i =
+    let w = I.width i in
+    I.(tile (n/2) (m/2) (hpad 0 w i <-> hpad w 0 i))
 
   let checker1 = checker 20 20 I.(char A.(bg magenta) ' ' 2 1)
 

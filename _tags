@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: d5bc6a5e0dbc50916b691d9eb198ffc4)
+# DO NOT EDIT (digest: b8891a5e9a57d1855e3a9555bb306aec)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -16,11 +16,18 @@ true: annot, bin_annot
 "_darcs": not_hygienic
 # Library notty
 "src/notty.cmxs": use_notty
+<src/*.ml{,i,y}>: oasis_library_notty_ccopt
+"src/native/wcwidth.c": oasis_library_notty_ccopt
 <src/notty.{cma,cmxa}>: oasis_library_notty_byte
 <src/*.ml{,i,y}>: oasis_library_notty_byte
+"src/native/wcwidth.c": oasis_library_notty_byte
+<src/notty.{cma,cmxa}>: use_libnotty_stubs
 <src/*.ml{,i,y}>: package(unix)
 <src/*.ml{,i,y}>: package(uuseg)
 <src/*.ml{,i,y}>: package(uutf)
+"src/native/wcwidth.c": package(unix)
+"src/native/wcwidth.c": package(uuseg)
+"src/native/wcwidth.c": package(uutf)
 # Library notty_unix
 "unix/notty_unix.cmxs": use_notty_unix
 <unix/*.ml{,i,y}>: oasis_library_notty_unix_ccopt

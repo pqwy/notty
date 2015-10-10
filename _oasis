@@ -28,6 +28,8 @@ Flag benchmarks
 Library notty
   Path:          src/
   Modules:       Notty
+  CSources:      native/wcwidth.c
+  CCOpt:         --std=c99 -Wall -Wextra -Werror -O3
   BuildDepends:  unix, uutf, uuseg
   ByteOpt:       -w A-4-33-40-41-42-43-34-44
 

@@ -1,5 +1,17 @@
+(*
+ * XXX
+ * Interim.
+ * Waaayy too bad. Depends on the locale. Returns completely bogus -1 for many
+ * scalar values which are rendered as 1
+ *)
+external c_wcwidth : int -> int = "caml_notty_wcwidth" "noalloc"
 
 type uchar = int
+
+exception Undefined_width of uchar
+
+let uwidth u =
+  match c_wcwidth u with -1 -> raise (Undefined_width u) | n -> n
 
 let maccum ~empty ~append xs =
   let rec step = function
@@ -22,6 +34,7 @@ module Eq = struct
 
   let rec list ~eq xs ys = match (xs, ys) with
     | (x::xss, y::yss) -> eq x y && list ~eq xss yss
+    | ([], [])         -> true
     | _                -> false
 end
 
@@ -104,10 +117,13 @@ module Int = struct
   type t = int
 
   let max (a : t) (b : t) = if a > b then a else b
+  let min (a : t) (b : t) = if a < b then a else b
   let compare (a : t) (b : t) = compare a b
   let sign (a : t) = compare a 0
   let equal (a : t) (b : t) = a = b
 end
+
+let between (x : int) a b = a <= x && x <= b
 
 module Char = struct
 
@@ -122,25 +138,6 @@ module Text = struct
     | Ascii of string
     | Utf8  of string * int array * int
 
-  let graphemes ?encoding str =
-    let dec = Uutf.decoder ?encoding (`String str)
-    and seg = Uuseg.create `Grapheme_cluster in
-    let rec pull acc =
-      let i = Uutf.decoder_byte_count dec in
-      match Uutf.decode dec with
-      | `Await        -> assert false
-      | `End          -> push acc i `End
-      | `Malformed _  -> push acc i (`Uchar Uutf.u_rep)
-      | `Uchar _ as u -> push acc i u
-    and push acc i x =
-      match Uuseg.add seg x with
-      | `Boundary -> push (i::acc) i `Await
-      | `Uchar _  -> push acc i `Await
-      | `Await    -> pull acc
-      | `End      -> acc
-    in
-    Array.of_list (List.rev (pull [])) (* XXX faster *)
-
   let to_string = function
     | Utf8 (s, _, _) -> s
     | Ascii s        -> s
@@ -151,45 +148,80 @@ module Text = struct
 
   let empty = Ascii ""
 
-  let sub t off len =
-    let w = width t in
-    if off >= w then empty else
-    let len = if off + len > w then w - off else len in
-    match t with
-    | Ascii s -> Ascii (String.sub s off len)
-    | Utf8 (s, ix, _) ->
-        let i   = ix.(off)
-        and j   = ix.(off + len) in
-        let s'  = String.sub s i (j - i)
-        and ix' = Array.sub ix off (len + 1) in
-        for k = 0 to len - 1 do ix'.(k) <- ix'.(k) - i done;
-        Utf8 (s', ix', len)
+  let graphemes ?encoding str =
+    let dec = Uutf.decoder ?encoding (`String str)
+    and seg = Uuseg.create `Grapheme_cluster in
+    let rec go is w i evt =
+      match Uuseg.add seg evt with
+      | `Await ->
+        ( let i = Uutf.decoder_byte_count dec in
+          match Uutf.decode dec with
+          | `Await -> assert false
+          | `Malformed _ -> go is w i (`Uchar Uutf.u_rep)
+          | `End | `Uchar _ as evt -> go is w i evt )
+      | `Boundary ->
+          let is = match w with 0 -> is | 1 -> i::is | _ -> i::(-1)::is
+          in go is 0 0 `Await
+      | `Uchar u -> go is (w + uwidth u) i `Await
+      | `End -> is
+    in
+    Array.of_list (List.rev (go [0] 0 0 `Await))
 
-  let is_control_u u = u < 0x20 || u = 0x7f
-  let is_ascii_u   u = u < 0x80
+  let dead = ' '
 
-  let is_control c = is_control_u (Char.code c)
-  let is_ascii   c = is_ascii_u   (Char.code c)
+  let sub t x w =
+    let w1 = width t in
+    if w = 0 || x >= w1 then empty else
+      let w = Int.min w (w1 - x) in
+      match t with
+      | Ascii s -> Ascii (String.sub s x w)
+      | Utf8 (s, ix, _) ->
+          let (l1, i) = match ix.(x) with
+            | -1 -> (true, ix.(x + 1) - 1) | i -> (false, i)
+          and (l2, j) = match ix.(x + w) with
+            | -1 -> (true, ix.(x + w - 1) + 1) | j -> (false, j) in
+          let n = j - i in
+          let s = String.init n @@ fun k ->
+            if l1 && k = 0 || l2 && k = n - 1 then dead else s.[k + i]
+          and ix = Array.init (w + 1) @@ fun k ->
+            if k = 0 then 0 else if k = w then n else max (-1) (ix.(k + x) - 1)
+          in Utf8 (s, ix, w)
+
+  let code = Char.code
+
+  let is_control_u u = between u 0x01 0x1f || between u 0x7f 0x9f
+  let is_ascii_u   u = u <= 0x7f
+
+  let is_control c = is_control_u (code c)
+  let is_ascii   c = is_ascii_u   (code c)
+
+  let err_invalid_uchar msg u = invalid_arg (Printf.sprintf msg u)
+
+  let err_ctrl_uchar =
+    err_invalid_uchar "Notty: cannot render control char: 0x%02x"
+
+  let err_undef_width =
+    err_invalid_uchar "Notty: cannot render char with width undefined \
+                       in the current locale: 0x%02x"
+
+  let of_ascii str =
+    String.iter (fun c -> if is_control c then err_ctrl_uchar (code c)) str;
+    Ascii str
 
   let of_unicode str =
-    let ix = graphemes ~encoding:`UTF_8 str in
+    let ix =
+      try graphemes ~encoding:`UTF_8 str
+      with Undefined_width u -> err_undef_width u in
     Utf8 (str, ix, Array.length ix - 1)
 
-  let is_ascii_s s =
+  let is_ascii_s str =
     let rec go i =
-      if i >= String.length s then true
-      else is_ascii s.[i] && go (succ i) in
+      if i >= String.length str then true
+      else is_ascii str.[i] && go (succ i) in
     go 0
 
-  let sprn = Printf.sprintf
-
-  let of_string s =
-    for i = 0 to String.length s - 1 do
-      let c = String.unsafe_get s i in
-      if is_control c then
-        invalid_arg @@ sprn "Text.of_string: control character: %c" c
-    done;
-    if is_ascii_s s then Ascii s else of_unicode s
+  let of_string str =
+    if is_ascii_s str then of_ascii str else of_unicode str
 
   let with_encoder f =
     let buf = Buffer.create 16 in
@@ -198,17 +230,8 @@ module Text = struct
     Buffer.contents buf
 
   let of_uchars arr =
-    let n = Array.length arr in
-    for i = 0 to n - 1 do
-      let c = Array.unsafe_get arr i in
-      if is_control_u c then
-        invalid_arg @@ sprn
-        "Text.of_uchars: control character: u%04x" c
-    done;
     of_unicode @@ with_encoder @@ fun enc ->
-      for i = 0 to n - 1 do
-        Uutf.encode enc (`Uchar (Array.unsafe_get arr i)) |> ignore
-      done
+      Array.iter (fun c -> Uutf.encode enc (`Uchar c) |> ignore) arr
 
   let encode_repeat n u =
     with_encoder @@ fun enc ->
@@ -216,18 +239,13 @@ module Text = struct
       for _ = 1 to n do Uutf.encode enc chr |> ignore done
 
   let replicatec w = function
-    | c when is_control c ->
-        invalid_arg @@ sprn
-        "Text.replicate: control character: %c" c
+    | c when is_control c -> err_ctrl_uchar (code c)
     | c -> Ascii (String.make w c)
 
   let replicateu w = function
-    | u when is_control_u u ->
-        invalid_arg @@ sprn
-        "Text.replicateu: control character: u%04x" u
+    | u when is_control_u u -> err_ctrl_uchar u
     | u when not (Uutf.is_uchar u) ->
-        invalid_arg @@ sprn
-        "Text.replicate: not a unicode scalar value: u%04x" u
+        err_invalid_uchar "Notty: not unicode scalar value: u+%04x" u
     | u when u >= 0x80 -> of_unicode (encode_repeat w u)
     | u -> Ascii (String.make w (Char.chr u))
 

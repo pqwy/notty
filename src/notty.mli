@@ -98,12 +98,12 @@ module A : sig
 
   (** {{!attr}Attribute} describes visual appearance of fragments of text.
 
-      They combine a foreground and a background {{!color}color} with a set of
-      {{!style}styles}. Either color can be {e missing} from an attribute, in
-      which case the terminal's {e default} foreground (resp. background) is
-      used.
+      Attributes combine a foreground and a background {{!color}color} with a
+      set of {{!style}styles}. Either color can be {e missing} from an
+      attribute, in which case the terminal's {e default} foreground (resp.
+      background) is used.
 
-      Attributes are used to construct primitive {{!I}images}. *)
+      They are used to construct primitive {{!I}images}. *)
 
   val empty : attr
   (** [empty] is the attribute with no foreground or background color and with
@@ -157,8 +157,9 @@ module I : sig
       absolute placement.
 
       {b Note.} Text fragments in images generally must not contain control
-      characters. These are taken to be code points in the interval
-      [0x00 - 0x1f], together with [0x7f]. *)
+      characters. These are taken to be code points in the intervals [0x00 -
+      0x1f] (the {b C0} set) and [0x80 - 0x9f] (the {b C1} set), and [0x7f], the
+      backspace character. *)
 
   (** {1 Image properties} *)
 
@@ -314,6 +315,11 @@ v} *)
       [align]. *)
 end
 
+(** {1 Low-level interface} *)
+
+(** You can ignore it, unless you are porting [Notty] to a new platform not
+    supported by the existing IO backends. *)
+
 (** Terminal capabilities.
 
     This module describes how to output things so that a terminal understands
@@ -448,7 +454,7 @@ We assume the module has been opened:
 
 {[open Notty]}
 
-And use a helper output routine from {!Notty_unix}:
+As the core module has no IO, we borrow a helper from {!Notty_unix}:
 
 {[let print_i i =
   Notty_unix.print_image i;
