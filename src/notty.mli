@@ -20,7 +20,8 @@
 (** {1 Interface} *)
 
 type uchar = int
-(** A lone unicode code point. *)
+(** A lone unicode
+   {{: http://unicode.org/glossary/#unicode_scalar_value}scalar value}. *)
 
 type attr
 (** Visual characteristics of displayed text. *)
@@ -156,50 +157,82 @@ module I : sig
       Once constructed, image can be rendered and only at that point it obtains
       absolute placement.
 
-      {b Note.} Text fragments in images generally must not contain control
-      characters. These are taken to be code points in the intervals [0x00 -
-      0x1f] (the {b C0} set) and [0x80 - 0x9f] (the {b C1} set), and [0x7f], the
-      backspace character. *)
+      {b Note.} Text fragments in images generally must not contain
+      {{!cwidth}control characters}.
 
-  (** {1 Image properties} *)
+      {1:cwidth Character width}
+
+      To correctly compute the geometry, [Notty] must be able to predict the
+      column width of individual characters as rendered by the terminal.
+      Unfortunately, this is a surprisingly difficult task.
+
+      For example: even on a modern Linux system, a collection of different
+      terminal emulators is likely to disagree on some, or all of [U+00ad],
+      [U+0cbf], and [U+2029]. At the same time, they will disagree with the
+      system's {{:
+      http://pubs.opengroup.org/onlinepubs/009695399/functions/wcwidth.html}
+      [wcwidth]} on whether the majority of possible scalar values is even {e
+      renderable}.
+
+      [Notty] {{!uwidth}uses} a simple and predictable width algorithm, based on
+      Markus Kuhn's {{: https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c}portable
+      [wcwidth]}:
+      {ul
+      {- Control characters (but no other characters) have undefined width.}
+      {- Characters with {{: http://www.unicode.org/reports/tr11/tr11-29.html}
+         East Asian Width} {e Fullwidth} or {e Wide} have a width of [2].}
+      {- Characters with
+         {{: http://unicode.org/glossary/#general_category}General Category}
+         {e Mn}, {e Me}, and {e Cf} have a width of [0].}
+      {- {e Most} other characters have a width of [1].}}
+
+      {b Control characters} are characters in the ranges [0x01-0x1f] ({b C1}
+      without [0x00]), [0x80-0x9f] ({b C2}), and [0x7f] (Backspace). This is the
+      {{: http://unicode.org/glossary/#general_category}General Category} {e Cc}
+      without [0x00].
+
+
+      {1 Image properties} *)
 
   val height : image -> int
   val width  : image -> int
 
   (** {1 Primitive constructors} *)
 
-  val empty  : image
+  val empty : image
   (** [empty] is a zero-sized image. *)
 
   val string : attr -> string -> image
   (** [string attr string] is an image consisting of text [string] with display
        attributes [attr]. [string] is assumed to be a valid UTF-8 sequence.
 
-       @raise Invalid_argument if [string] contains control characters. *)
+       @raise Invalid_argument if [string] contains {{!cwidth}control
+       characters}. *)
 
   val uchars : attr -> int array -> image
   (** [uchars attr array] is an image consisting of unicode characters in
       [array].
 
-      @raise Invalid_argument if [array] contains control characters. *)
+      @raise Invalid_argument if [array] contains {{!cwidth}control
+      characters}.  *)
 
   val char : attr -> char -> int -> int -> image
   (** [char attr c w h] is a [w * h] grid with character [c] in every cell.
 
-      @raise Invalid_argument if [c] is a control character. *)
+      @raise Invalid_argument if [c] is a {{!cwidth}control character}. *)
 
   val uchar : attr -> [ `Uchar of uchar ] -> int -> int -> image
   (** [uchar attr (`Uchar u) w h] is a [w * h] grid with the unicode character
       [u] in every cell.
 
-      @raise Invalid_argument if [u] is a control character. *)
+      @raise Invalid_argument if [u] is a {{!cwidth}control character}. *)
 
   val void  : int -> int -> image
   (** [void w h] is a [w * h] rectangle of transparent cells.
 
       [void] is magical: it has geometry, but no displayable content. This is
       different, for example, from the space character [0x20], which renders as
-      a cell filled with background color. This means that [void] interacts
+      a cell filled with the background color. This means that [void] interacts
       specially with {{!(<^>)}overlays}.
 
       It makes no sense to have negative [w] or [h] so [void] degenerates to
@@ -210,7 +243,7 @@ module I : sig
   (** {1 Image composition}
 
       Three basic composition modes allow construction of more complex images
-      from simples ones.
+      from simpler ones.
 
       Images form a monoid under all three of {{!(<|>)}[<|>]}, {{!(<->)}[<->]}
       and {{!(<^>)}[<^>]}, with {{!empty}[empty]} as the identity. *)
@@ -255,7 +288,15 @@ i1 = [x.x]   i1 <^> i2 = [xyxy]
 i2 = [yyyy]
 v} *)
 
-  (** {1 Cropping} *)
+  (** {1 Cropping}
+
+      Horizontal cropping has a special interaction with unicode:
+      {ul
+      {- Strings within images are cropped at {{:
+         http://unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries}grapheme
+         cluster} boundaries.}
+      {- When a crop splits a {{!cwidth}wide character} in two, the remaining
+         half is replaced by [0x20], Space.}} *)
 
   val hcrop : int -> int -> image -> image
   (** [hcrop left right i] is [i] with [left] leftmost, and [right] rightmost
@@ -315,9 +356,9 @@ v} *)
       [align]. *)
 end
 
-(** {1 Low-level interface} *)
+(** {1 Low-level interface}
 
-(** You can ignore it, unless you are porting [Notty] to a new platform not
+    You can ignore it, unless you are porting [Notty] to a new platform not
     supported by the existing IO backends. *)
 
 (** Terminal capabilities.
@@ -414,6 +455,7 @@ module Unescape : sig
 end
 
 (**/**)
+
 (** Core rasterizer.
 
     {b Note} This is a private interface. *)
@@ -443,6 +485,15 @@ module Tmachine : sig
   val size : t -> (int * int)
 end
 (**/**)
+
+(** {1 Character width} *)
+
+val uwidth : uchar -> int
+(** [uwidth u] is the number of character cells ([0], [1] or [2]) [u] will
+    occupy horizontally. (See {{!I.cwidth}width}.)
+
+    @raise Invalid_argument if [u] is a control character, or not a unicode
+    scalar value in the sense of [Uutf.is_uchar]. *)
 
 
 (** {1 Examples}

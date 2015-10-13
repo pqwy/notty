@@ -1,17 +1,37 @@
-(*
- * XXX
- * Interim.
- * Waaayy too bad. Depends on the locale. Returns completely bogus -1 for many
- * scalar values which are rendered as 1
- *)
-external c_wcwidth : int -> int = "caml_notty_wcwidth" "noalloc"
 
 type uchar = int
 
-exception Undefined_width of uchar
+let between (x : int) a b = a <= x && x <= b
 
-let uwidth u =
-  match c_wcwidth u with -1 -> raise (Undefined_width u) | n -> n
+let (u_gc, u_eaw) = Uucp.(Gc.general_category, Break.east_asian_width)
+
+let err_uwidth msg u =
+  invalid_arg (Printf.sprintf "Notty.uwidth: %s: u+%04x" msg u)
+
+let uwidth = function
+  (* C0 (without 0x00) + C1 + TAB. *)
+  | u when between u 1 0x1f || between u 0x7f 0x9f ->
+      err_uwidth "control character" u
+  (* 0x00 is actually safe to (non-)render. *)
+  | 0 -> 0
+  (* Soft Hyphen. *)
+  | 0xad -> 1
+  (* Line/Paragraph Separator. *)
+  | 0x2028|0x2029 -> 0
+  (* Kannada Vowel Sign I/E: `Mn, non-spacing combiners,
+     but treated as 1 by glibc and FreeBSD's libc. *)
+  | 0xcbf|0xcc6 -> 1
+  (* Euro-centric fast path. *)
+  | u when u <= 0x2ff -> 1
+  | u when not (Uutf.is_uchar u) ->
+      err_uwidth "not a unicode scalar value" u
+  (* Wide east-asian. *)
+  | u when (let w = u_eaw u in w = `W || w = `F) -> 2
+  (* Non-spacing, unless stated otherwise. *)
+  | u when (let c = u_gc u in c = `Mn || c = `Me || c = `Cf) -> 0
+  (* ...or else. *)
+  | _ -> 1
+
 
 let maccum ~empty ~append xs =
   let rec step = function
@@ -22,8 +42,7 @@ let maccum ~empty ~append xs =
     | []       -> []
     | [a]      -> [a]
     | a::b::xs -> append a b :: accum xs
-  in
-  step xs
+  in step xs
 
 module Eq = struct
 
@@ -75,6 +94,11 @@ module List = struct
   end
 end
 
+module Char = struct
+  include Char
+  let equal (a : t) b = a = b
+end
+
 module String = struct
 
   include String
@@ -91,9 +115,9 @@ module String = struct
     let b = Bytes.create 3 in
     Bytes.(unsafe_set b 0 c0; unsafe_set b 1 c1; unsafe_set b 2 c2; to_string b)
 
-  let of_uchar   u1       = of_char   (Char.chr u1)
-  let of_uchar_2 u1 u2    = of_char_2 (Char.chr u1) (Char.chr u2)
-  let of_uchar_3 u1 u2 u3 = of_char_3 (Char.chr u1) (Char.chr u2) (Char.chr u3)
+  let of_uchar   u1       = Char.(of_char   (chr u1))
+  let of_uchar_2 u1 u2    = Char.(of_char_2 (chr u1) (chr u2))
+  let of_uchar_3 u1 u2 u3 = Char.(of_char_3 (chr u1) (chr u2) (chr u3))
 
   let of_uchars_rev = function
     | []         -> ""
@@ -120,15 +144,6 @@ module Int = struct
   let min (a : t) (b : t) = if a < b then a else b
   let compare (a : t) (b : t) = compare a b
   let sign (a : t) = compare a 0
-  let equal (a : t) (b : t) = a = b
-end
-
-let between (x : int) a b = a <= x && x <= b
-
-module Char = struct
-
-  include Char
-
   let equal (a : t) (b : t) = a = b
 end
 
@@ -170,9 +185,10 @@ module Text = struct
   let dead = ' '
 
   let sub t x w =
+    let open Int in
     let w1 = width t in
     if w = 0 || x >= w1 then empty else
-      let w = Int.min w (w1 - x) in
+      let w = min w (w1 - x) in
       match t with
       | Ascii s -> Ascii (String.sub s x w)
       | Utf8 (s, ix, _) ->
@@ -200,25 +216,23 @@ module Text = struct
   let err_ctrl_uchar =
     err_invalid_uchar "Notty: cannot render control char: 0x%02x"
 
-  let err_undef_width =
+(*   let err_undef_width =
     err_invalid_uchar "Notty: cannot render char with width undefined \
-                       in the current locale: 0x%02x"
+                       in the current locale: 0x%02x" *)
 
   let of_ascii str =
     String.iter (fun c -> if is_control c then err_ctrl_uchar (code c)) str;
     Ascii str
 
   let of_unicode str =
-    let ix =
-      try graphemes ~encoding:`UTF_8 str
-      with Undefined_width u -> err_undef_width u in
+    let ix = graphemes ~encoding:`UTF_8 str in
     Utf8 (str, ix, Array.length ix - 1)
 
   let is_ascii_s str =
     let rec go i =
       if i >= String.length str then true
-      else is_ascii str.[i] && go (succ i) in
-    go 0
+      else let c = str.[i] in is_ascii c && c <> '\000' && go (succ i)
+    in go 0
 
   let of_string str =
     if is_ascii_s str then of_ascii str else of_unicode str
@@ -277,18 +291,18 @@ module A = struct
 
   let rgb ~r ~g ~b =
     if r < 0 || g < 0 || b < 0 || r > 5 || g > 5 || b > 5 then
-      invalid_arg "Cc.A.rgb: a component outside of range [0, 5]"
+      invalid_arg "Notty.A.rgb: a component outside of range [0, 5]"
     else r * 36 + g * 6 + b + 16
 
   let gray ~level =
     if level < 0 || level > 23 then
-      invalid_arg "Cc.A.gray: level outside of range [0, 23]"
+      invalid_arg "Notty.A.gray: level outside of range [0, 23]"
     else level + 232
 
 (*   let to_index x = x
   let of_index x =
     if x < 0 || x > 255 then
-      invalid_arg "Cc.A.of_index: index outside of range [0, 255]"
+      invalid_arg "Notty.A.of_index: index outside of range [0, 255]"
     else x *)
 
 

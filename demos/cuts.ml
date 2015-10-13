@@ -16,13 +16,28 @@ let cuts i =
 
 let colors = A.[red; green; yellow; blue; magenta; cyan]
 
+let patterns = [
+  "desu"
+; ".◾e\204\129●."
+; "(茶‸茶‶)"
+; "(⌐■_■)"
+(* ; "¯\\(ツ)/¯" *)
+(* ; "ಠ_ಠ" *)
+(* ; "ಡ_ಡ" *)
+(* ; "\xe0\xb2\xa0\x5f\xe0\xb1\x83" *)
+(* ; "ತಎತ" *)
+(* ; "ಥ_ಥ" *)
+; "ᕕ( ᐛ )ᕗ"
+(* ; "ᕙ(⇀‸↼‶)ᕗ" *)
+(* ; "ᕦ(ò_óˇ)ᕤ" *)
+(* ; "\x28\x20\xcd\xa1\xc2\xb0\x20\xcd\x9c\xca\x96\x20\xcd\xa1\xc2\xb0\x29" *)
+]
+
+
 let () =
   let open I in
-  let s1 = "desu"
-  and s2 = ".◾e\204\129●."
-  and s3 = ".茶.茶." in
 
-  [s1; s2; s3] |> List.map (fun s ->
+  patterns |> List.map (fun s ->
     cuts (string A.(lightmagenta @/ bg darkgray) s)
   ) |> I.vcat |> print;
 

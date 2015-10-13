@@ -10,8 +10,7 @@ Plugins:       META (0.4), DevFiles (0.4)
 BuildTools:    ocamlbuild
 OCamlVersion:  >= 4.02.0
 AlphaFeatures: ocamlbuild_more_args
-Description:
-  A declarative terminal graphics library
+Description:   A declarative terminal graphics library
 
 Flag unix
   Description: Build Unix support
@@ -28,9 +27,7 @@ Flag benchmarks
 Library notty
   Path:          src/
   Modules:       Notty
-  CSources:      native/wcwidth.c
-  CCOpt:         --std=c99 -Wall -Wextra -Werror -O3
-  BuildDepends:  unix, uutf, uuseg
+  BuildDepends:  unix, uucp, uuseg, uutf
   ByteOpt:       -w A-4-33-40-41-42-43-34-44
 
 Library notty_unix
@@ -122,6 +119,14 @@ Executable thisbig
   Install:        false
   CompiledObject: best
   MainIs:         thisbig.ml
+  Build$:         flag(tests)
+  BuildDepends:   notty.unix
+
+Executable runes
+  Path:           demos
+  Install:        false
+  CompiledObject: best
+  MainIs:         runes.ml
   Build$:         flag(tests)
   BuildDepends:   notty.unix
 
