@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 7c3998d17f7cac9a26857faaccf3f7b8)
+# DO NOT EDIT (digest: 29b66a6c025ec0fec1e208f0b0470d63)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -130,6 +130,13 @@ true: annot, bin_annot
 <demos/runes.{native,byte}>: package(uutf)
 <demos/runes.{native,byte}>: use_notty
 <demos/runes.{native,byte}>: use_notty_unix
+# Executable escapes
+<demos/escapes.{native,byte}>: package(unix)
+<demos/escapes.{native,byte}>: package(uucp)
+<demos/escapes.{native,byte}>: package(uuseg)
+<demos/escapes.{native,byte}>: package(uutf)
+<demos/escapes.{native,byte}>: use_notty
+<demos/escapes.{native,byte}>: use_notty_unix
 <demos/*.ml{,i,y}>: package(unix)
 <demos/*.ml{,i,y}>: package(uucp)
 <demos/*.ml{,i,y}>: package(uuseg)

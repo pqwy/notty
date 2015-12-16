@@ -27,7 +27,7 @@ Flag benchmarks
 Library notty
   Path:          src/
   Modules:       Notty
-  BuildDepends:  unix, uucp, uuseg, uutf
+  BuildDepends:  uucp, uuseg, uutf
   ByteOpt:       -w A-4-33-40-41-42-43-34-44
 
 Library notty_unix
@@ -129,6 +129,15 @@ Executable runes
   MainIs:         runes.ml
   Build$:         flag(tests)
   BuildDepends:   notty.unix
+
+Executable escapes
+  Path:           demos
+  Install:        false
+  CompiledObject: best
+  MainIs:         escapes.ml
+  Build$:         flag(tests)
+  BuildDepends:   notty.unix
+
 
 Document api
   Title:              Documentation and API reference
