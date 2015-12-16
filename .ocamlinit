@@ -1,0 +1,49 @@
+#require "uucp,uuseg,uutf"
+#directory "_build/src"
+#load "notty.cma"
+
+#require "unix"
+#directory "_build/unix"
+#load "notty_unix.cma"
+
+#require "lwt,lwt.unix"
+#directory "_build/lwt"
+#load "notty_lwt.cma"
+
+
+#require "sequence"
+
+let rec range a b f =
+  if a <= b then (f a; range (succ a) b f)
+
+let scalars = Uucp.Uchar.iter
+
+let intervals_v s f =
+  let a = ref None in
+  let g (x, v) = match !a with
+    | None -> a := Some (x, x, v)
+    | Some (l0, l1, v0 as r) ->
+        if x = l1 + 1 && v0 = v then
+          a := Some (l0, x, v0)
+        else (a := Some (x, x, v); f r) in
+  s g; match !a with Some r -> f r | _ -> ()
+
+let intervals s f =
+  Sequence.(s |> map (fun x -> (x, ())) |> intervals_v)
+    (fun (l0, l1, ()) -> f (l0, l1))
+
+let is_gc gc u = Uucp.Gc.general_category u = gc
+
+let encode ?(encoding=`UTF_8) s =
+  let b = Buffer.create 10 in
+  let enc = Uutf.encoder encoding (`Buffer b) in
+  s (fun u -> Uutf.encode enc (`Uchar u) |> ignore);
+  Uutf.encode enc `End |> ignore;
+  Buffer.contents b
+
+let decode ?(encoding=`UTF_8) str =
+  let rec loop d = match Uutf.decode d with
+    | `Uchar u -> u :: loop d
+    | `Malformed bs -> invalid_arg ("malformed: " ^ bs)
+    | _ -> [] in
+  loop (Uutf.decoder ~encoding (`String str)) 

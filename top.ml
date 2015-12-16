@@ -1,8 +1,0 @@
-#require "uutf,uuseg"
-#require "react"
-#directory "_build/src"
-#load "notty.cma"
-#directory "_build/unix"
-#load "notty_unix.cma"
-#directory "_build/lwt"
-#load "notty_lwt.cma"
