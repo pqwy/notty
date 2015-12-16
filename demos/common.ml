@@ -32,6 +32,16 @@ module List = struct
 
 end
 
+module String = struct
+
+  include String
+
+  let repeat n str =
+    let b = Buffer.create 16 in
+    for i = 1 to n do Buffer.add_string b str done;
+    Buffer.contents b
+end
+
 module Images = struct
 
   let i1 =
