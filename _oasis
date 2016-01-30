@@ -27,7 +27,7 @@ Flag benchmarks
 Library notty
   Path:          src/
   Modules:       Notty
-  BuildDepends:  uucp, uuseg, uutf
+  BuildDepends:  uucp, uuseg, uutf, rresult
   ByteOpt:       -w A-4-33-40-41-42-43-34-44
 
 Library notty_unix

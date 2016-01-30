@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 29b66a6c025ec0fec1e208f0b0470d63)
+# DO NOT EDIT (digest: 00e4a5ff3e5a384778d5b4a2e4b7ab6a)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -18,7 +18,7 @@ true: annot, bin_annot
 "src/notty.cmxs": use_notty
 <src/notty.{cma,cmxa}>: oasis_library_notty_byte
 <src/*.ml{,i,y}>: oasis_library_notty_byte
-<src/*.ml{,i,y}>: package(unix)
+<src/*.ml{,i,y}>: package(rresult)
 <src/*.ml{,i,y}>: package(uucp)
 <src/*.ml{,i,y}>: package(uuseg)
 <src/*.ml{,i,y}>: package(uutf)
@@ -30,11 +30,13 @@ true: annot, bin_annot
 <unix/*.ml{,i,y}>: oasis_library_notty_unix_byte
 "unix/native/winsize.c": oasis_library_notty_unix_byte
 <unix/notty_unix.{cma,cmxa}>: use_libnotty_unix_stubs
+<unix/*.ml{,i,y}>: package(rresult)
 <unix/*.ml{,i,y}>: package(unix)
 <unix/*.ml{,i,y}>: package(uucp)
 <unix/*.ml{,i,y}>: package(uuseg)
 <unix/*.ml{,i,y}>: package(uutf)
 <unix/*.ml{,i,y}>: use_notty
+"unix/native/winsize.c": package(rresult)
 "unix/native/winsize.c": package(unix)
 "unix/native/winsize.c": package(uucp)
 "unix/native/winsize.c": package(uuseg)
@@ -46,6 +48,7 @@ true: annot, bin_annot
 <lwt/*.ml{,i,y}>: oasis_library_notty_lwt_byte
 <lwt/*.ml{,i,y}>: package(lwt)
 <lwt/*.ml{,i,y}>: package(lwt.unix)
+<lwt/*.ml{,i,y}>: package(rresult)
 <lwt/*.ml{,i,y}>: package(unix)
 <lwt/*.ml{,i,y}>: package(uucp)
 <lwt/*.ml{,i,y}>: package(uuseg)
@@ -53,6 +56,7 @@ true: annot, bin_annot
 <lwt/*.ml{,i,y}>: use_notty
 <lwt/*.ml{,i,y}>: use_notty_unix
 # Executable speed
+<demos/speed.{native,byte}>: package(rresult)
 <demos/speed.{native,byte}>: package(unix)
 <demos/speed.{native,byte}>: package(unmark)
 <demos/speed.{native,byte}>: package(uucp)
@@ -62,6 +66,7 @@ true: annot, bin_annot
 <demos/speed.{native,byte}>: use_notty_unix
 <demos/*.ml{,i,y}>: package(unmark)
 # Executable testpatterns
+<demos/testpatterns.{native,byte}>: package(rresult)
 <demos/testpatterns.{native,byte}>: package(unix)
 <demos/testpatterns.{native,byte}>: package(uucp)
 <demos/testpatterns.{native,byte}>: package(uuseg)
@@ -69,6 +74,7 @@ true: annot, bin_annot
 <demos/testpatterns.{native,byte}>: use_notty
 <demos/testpatterns.{native,byte}>: use_notty_unix
 # Executable letters
+<demos/letters.{native,byte}>: package(rresult)
 <demos/letters.{native,byte}>: package(unix)
 <demos/letters.{native,byte}>: package(uucp)
 <demos/letters.{native,byte}>: package(uuseg)
@@ -76,6 +82,7 @@ true: annot, bin_annot
 <demos/letters.{native,byte}>: use_notty
 <demos/letters.{native,byte}>: use_notty_unix
 # Executable keys
+<demos/keys.{native,byte}>: package(rresult)
 <demos/keys.{native,byte}>: package(unix)
 <demos/keys.{native,byte}>: package(uucp)
 <demos/keys.{native,byte}>: package(uuseg)
@@ -83,6 +90,7 @@ true: annot, bin_annot
 <demos/keys.{native,byte}>: use_notty
 <demos/keys.{native,byte}>: use_notty_unix
 # Executable colors
+<demos/colors.{native,byte}>: package(rresult)
 <demos/colors.{native,byte}>: package(unix)
 <demos/colors.{native,byte}>: package(uucp)
 <demos/colors.{native,byte}>: package(uuseg)
@@ -90,6 +98,7 @@ true: annot, bin_annot
 <demos/colors.{native,byte}>: use_notty
 <demos/colors.{native,byte}>: use_notty_unix
 # Executable sierpinski
+<demos/sierpinski.{native,byte}>: package(rresult)
 <demos/sierpinski.{native,byte}>: package(unix)
 <demos/sierpinski.{native,byte}>: package(uucp)
 <demos/sierpinski.{native,byte}>: package(uuseg)
@@ -99,6 +108,7 @@ true: annot, bin_annot
 # Executable sierpinski_lwt
 <demos/sierpinski_lwt.{native,byte}>: package(lwt)
 <demos/sierpinski_lwt.{native,byte}>: package(lwt.unix)
+<demos/sierpinski_lwt.{native,byte}>: package(rresult)
 <demos/sierpinski_lwt.{native,byte}>: package(unix)
 <demos/sierpinski_lwt.{native,byte}>: package(uucp)
 <demos/sierpinski_lwt.{native,byte}>: package(uuseg)
@@ -110,6 +120,7 @@ true: annot, bin_annot
 <demos/*.ml{,i,y}>: package(lwt.unix)
 <demos/*.ml{,i,y}>: use_notty_lwt
 # Executable cuts
+<demos/cuts.{native,byte}>: package(rresult)
 <demos/cuts.{native,byte}>: package(unix)
 <demos/cuts.{native,byte}>: package(uucp)
 <demos/cuts.{native,byte}>: package(uuseg)
@@ -117,6 +128,7 @@ true: annot, bin_annot
 <demos/cuts.{native,byte}>: use_notty
 <demos/cuts.{native,byte}>: use_notty_unix
 # Executable thisbig
+<demos/thisbig.{native,byte}>: package(rresult)
 <demos/thisbig.{native,byte}>: package(unix)
 <demos/thisbig.{native,byte}>: package(uucp)
 <demos/thisbig.{native,byte}>: package(uuseg)
@@ -124,6 +136,7 @@ true: annot, bin_annot
 <demos/thisbig.{native,byte}>: use_notty
 <demos/thisbig.{native,byte}>: use_notty_unix
 # Executable runes
+<demos/runes.{native,byte}>: package(rresult)
 <demos/runes.{native,byte}>: package(unix)
 <demos/runes.{native,byte}>: package(uucp)
 <demos/runes.{native,byte}>: package(uuseg)
@@ -131,12 +144,14 @@ true: annot, bin_annot
 <demos/runes.{native,byte}>: use_notty
 <demos/runes.{native,byte}>: use_notty_unix
 # Executable escapes
+<demos/escapes.{native,byte}>: package(rresult)
 <demos/escapes.{native,byte}>: package(unix)
 <demos/escapes.{native,byte}>: package(uucp)
 <demos/escapes.{native,byte}>: package(uuseg)
 <demos/escapes.{native,byte}>: package(uutf)
 <demos/escapes.{native,byte}>: use_notty
 <demos/escapes.{native,byte}>: use_notty_unix
+<demos/*.ml{,i,y}>: package(rresult)
 <demos/*.ml{,i,y}>: package(unix)
 <demos/*.ml{,i,y}>: package(uucp)
 <demos/*.ml{,i,y}>: package(uuseg)

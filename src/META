@@ -1,8 +1,8 @@
 # OASIS_START
-# DO NOT EDIT (digest: ad78c2b0a3ad64237ed66091e591833f)
+# DO NOT EDIT (digest: fa0378ec006fb4acda46e4e3a8bddbd8)
 version = "0.0.1"
 description = "Declaring terminals"
-requires = "unix uucp uuseg uutf"
+requires = "uucp uuseg uutf rresult"
 archive(byte) = "notty.cma"
 archive(byte, plugin) = "notty.cma"
 archive(native) = "notty.cmxa"

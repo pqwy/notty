@@ -159,52 +159,42 @@ module I : sig
 
       {1:ctrls Control characters}
 
-      These are taken to be characters in the ranges [0x01-0x1f]
-      ({b C0} without [0x00]) and [0x80-0x9f] ({b C1}), and [0x7f] (BACKSPACE).
-      This is the {{: http://unicode.org/glossary/#general_category}General
-      Category} {e Cc} without [0x00].
+      These are taken to be characters in the ranges [0x00-0x1f] ({b C0}) and
+      [0x80-0x9f] ({b C1}), and [0x7f] (BACKSPACE). This is the
+      {{: http://unicode.org/glossary/#general_category}Unicode general
+      category} {e Cc}.
 
       As control characters directly influence the cursor positioning, they
       cannot be used to create images.
 
       {1:cwidth Unicode vs. Text geometry}
 
-      To correctly compute the geometry, [Notty] must be able to predict the
-      column width of individual characters as rendered by the terminal.
-      Unfortunately, this is a surprisingly difficult task.
+      [Notty] uses [Uucp.Break.tty_width_hint] to guess the width of text
+      fragments when computing geometry, and it suffers from the same
+      shortcomings:
 
-      For example: on a modern Linux system, a collection of different
-      terminal emulators is likely to disagree on some, or all of [u+00ad],
-      [u+0cbf], and [u+2029]. At the same time, they will disagree with the
-      {{: http://pubs.opengroup.org/onlinepubs/009695399/functions/wcwidth.html}
-      system's [wcwidth]} on whether the majority of possible scalar values is
-      {e even renderable}.
-
-      [Notty] {{!uwidth}uses} a simple and predictable width algorithm, based on
-      Markus Kuhn's {{: https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c}portable
-      [wcwidth]}:
       {ul
-      {- Control characters (but no other characters) have undefined width.}
-      {- Characters with {{: http://www.unicode.org/reports/tr11/tr11-29.html}
-         East Asian Width} {e Fullwidth} or {e Wide} have a width of [2].}
-      {- Characters with
-         {{: http://unicode.org/glossary/#general_category}General Category}
-         {e Mn}, {e Me}, and {e Cf} have a width of [0].}
-      {- {e Most} other characters have a width of [1].}
-      {- The width of a string of text is the sum of widths of its constituent
-         scalar values.}}
+      {- Geometry in general works for alphabets and east asian scripts, mostly
+         works for abjad scripts, and is a matter of luck for abugidas.}
+      {- East asian scripts work better when in
+         {{:http://unicode.org/glossary/#normalization_form_c}NFC}.}
+      {- Emoji tend to be consistent with the actual rendering, and the actual
+         rendering tends to be wrong.}}
 
-      This approach works well for
-      {{: https://en.wikipedia.org/wiki/Alphabet}alphabetic}, and
-      {{: https://en.wikipedia.org/wiki/Syllabary}syllabic} and
-      {{: https://en.wikipedia.org/wiki/Logogram}logographic} east Asian
-      scripts. It seems to work for
-      {{: https://en.wikipedia.org/wiki/Abjad}abjad} scripts but
-      {{: http://unicode.org/reports/tr9/}bidirectionality} is not taken into
-      account. And it mostly breaks down with
-      {{: https://en.wikipedia.org/wiki/Abugida}abugida} scripts. The latter are in
-      any case rendered inconsistently across contemporary terminals, so expect
-      the horizontal geometry of your Devanagari, Tamil, or Kannada to break.
+      When in doubt, see
+      {{: http://erratique.ch/software/uucp/doc/Uucp.Break.html#VALtty_width_hint}
+      [Uucp.Break.tty_width_hint]}.
+
+      Unicode also has a special interaction with {{!hcrop}horizontal cropping}:
+      {ul
+      {- Strings within images are cropped at {{:
+         http://unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries}grapheme
+         cluster} boundaries. This means that scalar value sequences that are
+         rendered combined, or overlaid, stay unbroken.}
+      {- When a crop splits a wide character in two, the remaining half is
+         replaced by [0x20] (SPACE). Hence, character-cell-accurate cropping is
+         possible even in the presence of characters that horizontally occupy
+         more than one cell.}}
 
       {1 Image properties} *)
 
@@ -218,10 +208,10 @@ module I : sig
 
   val string : attr -> string -> image
   (** [string attr string] is an image consisting of text [string] with display
-       attributes [attr]. [string] is assumed to be a valid UTF-8 sequence.
+       attributes [attr].
 
-       @raise Invalid_argument if [string] contains {{!ctrls}control
-       characters}. *)
+       @raise Invalid_argument if [string] is not a valid UTF-8 sequence, or
+       contains {{!ctrls}control characters}. *)
 
   val uchars : attr -> int array -> image
   (** [uchars attr array] is an image consisting of unicode characters in
@@ -313,18 +303,10 @@ v} *)
 
       For example:
       {ul
-      {- [hcrop 1 1 [abc] = [b]]}
       {- [hcrop 0 1 [abc] = [ab]]}
+      {- [hcrop 1 1 [abc] = [b]]}
       {- [hcrop (-1) 1 [abc] = void 1 1 <|> hcrop 0 1 [abc] = [.ab]]}
-      {- [hcrop 2 2 [abc] = empty]}}
-
-      {b Unicode} has a special interaction with horizontal cropping:
-      {ul
-      {- Strings within images are cropped at {{:
-         http://unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries}grapheme
-         cluster} boundaries.}
-      {- When a crop splits a {{!cwidth}wide character} in two, the remaining
-         half is replaced by [0x20] (SPACE).}} *)
+      {- [hcrop 2 2 [abc] = empty]}} *)
 
   val vcrop : int -> int -> image -> image
   (** [vcrop top bottom i] is analogous to {{!hcrop}[hcrop]}, but operating
@@ -445,7 +427,7 @@ module Unescape : sig
       {- [`Key (k, mods)] is keyboard input.
 
          [k] is either a {{!special}special key}, or [`Uchar u] where [u] is
-         {!uchar}. This value is guaranteed not to be a {b C0} or {b C1}
+         {!uchar}. This value is guaranteed not to be a
          {{!I.ctrls}control character}, and is safe to directly use in
          constructing {!image}s.
 
@@ -550,16 +532,6 @@ module Tmachine : sig
   val size : t -> (int * int)
 end
 (**/**)
-
-(** {1 Character width} *)
-
-val uwidth : uchar -> int
-(** [uwidth u] is the number of character cells ([0], [1] or [2]) [u] will
-    occupy horizontally. (See {{!I.cwidth}width}.)
-
-    @raise Invalid_argument if [u] is a control character, or not a unicode
-    scalar value in the sense of [Uutf.is_uchar]. *)
-
 
 (** {1 Examples}
 

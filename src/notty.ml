@@ -1,38 +1,11 @@
 
 type uchar = int
 
-let between (x : int) a b = a <= x && x <= b
+let (&.) f g x = f (g x)
+
 let btw (x : int) a b = a <= x && x <= b
 
-
-let (u_gc, u_eaw) = Uucp.(Gc.general_category, Break.east_asian_width)
-
-let err_uwidth msg u =
-  invalid_arg (Printf.sprintf "Notty.uwidth: %s: u+%04x" msg u)
-
-let uwidth = function
-  (* C0 (without 0x00) + C1 + TAB. *)
-  | u when between u 1 0x1f || between u 0x7f 0x9f ->
-      err_uwidth "control character" u
-  (* 0x00 is actually safe to (non-)render. *)
-  | 0 -> 0
-  (* Soft Hyphen. *)
-  | 0xad -> 1
-  (* Line/Paragraph Separator. *)
-  | 0x2028|0x2029 -> 0
-  (* Kannada Vowel Sign I/E: `Mn, non-spacing combiners,
-     but treated as 1 by glibc and FreeBSD's libc. *)
-  | 0xcbf|0xcc6 -> 1
-  (* Euro-centric fast path. *)
-  | u when u <= 0x2ff -> 1
-  | u when not (Uutf.is_uchar u) ->
-      err_uwidth "not a unicode scalar value" u
-  (* Wide east-asian. *)
-  | u when (let w = u_eaw u in w = `W || w = `F) -> 2
-  (* Non-spacing, unless stated otherwise. *)
-  | u when (let c = u_gc u in c = `Mn || c = `Me || c = `Cf) -> 0
-  (* ...or else. *)
-  | _ -> 1
+let invalid_arg_s fmt = Printf.ksprintf invalid_arg fmt
 
 
 let maccum ~empty ~append xs =
@@ -96,17 +69,39 @@ module List = struct
   end
 end
 
+module Uchar = struct
+
+  let is_c0 u = btw u 0x00 0x1f
+  let is_c1 u = btw u 0x7f 0x9f
+  let is_control u = is_c0 u || is_c1 u
+  let is_ascii u = u = u land 0x7f
+end
+
 module Char = struct
 
   include Char
 
   let equal (a : t) b = a = b
-  let is x = x = x land 0xff
+  let is_control c = Uchar.is_control (code c)
+  let is_ascii   c = Uchar.is_ascii   (code c)
 end
 
 module String = struct
 
   include String
+
+  let fold_left f s str =
+    let acc = ref s in
+    for i = 0 to length str - 1 do acc := f !acc str.[i] done;
+    !acc
+
+  let for_all f = fold_left (fun a c -> a && f c) true
+
+  let find f str =
+    let n = length str in
+    let rec go f str i =
+      if i < n then if f str.[i] then Some i else go f str (succ i) else None
+    in go f str 0
 
   let of_char c0 =
     let b = Bytes.create 1 in
@@ -161,7 +156,23 @@ module Option = struct
   let (>>=) a f = match a with Some x -> f x | _ -> None
 end
 
+module Utf8 = struct
+
+  let with_encoder ?(hint=16) f =
+    let buf = Buffer.create hint in
+    let enc = Uutf.encoder `UTF_8 (`Buffer buf) in
+    f enc; Uutf.encode enc `End |> ignore;
+    Buffer.contents buf
+
+  let of_uchars arr =
+    let n = Array.length arr in
+    with_encoder ~hint:n @@ fun enc ->
+      for i = 0 to n - 1 do Uutf.encode enc (`Uchar arr.(i)) |> ignore done
+end
+
 module Text = struct
+
+  open Rresult
 
   type t =
     | Ascii of string
@@ -186,15 +197,16 @@ module Text = struct
         ( let i = Uutf.decoder_byte_count dec in
           match Uutf.decode dec with
           | `Await -> assert false
-          | `Malformed _ -> go is w i (`Uchar Uutf.u_rep)
+          | `Malformed _ as err -> Error err
           | `End | `Uchar _ as evt -> go is w i evt )
       | `Boundary ->
           let is = match w with 0 -> is | 1 -> i::is | _ -> i::(-1)::is
           in go is 0 0 `Await
-      | `Uchar u -> go is (w + uwidth u) i `Await
-      | `End -> is
+      | `Uchar u when Uchar.is_control u -> Error (`Control u)
+      | `Uchar u -> go is (w + Uucp.Break.tty_width_hint u) i `Await
+      | `End -> Ok is
     in
-    Array.of_list (List.rev (go [0] 0 0 `Await))
+    go [0] 0 0 `Await >>| (Array.of_list &. List.rev)
 
   let dead = ' '
 
@@ -217,66 +229,35 @@ module Text = struct
             if k = 0 then 0 else if k = w then n else max (-1) (ix.(k + x) - 1)
           in Utf8 (s, ix, w)
 
-  let code = Char.code
+  let (code, chr, is_control, is_ascii) = Char.(code, chr, is_control, is_ascii)
 
-  let is_control_u u = between u 0x01 0x1f || between u 0x7f 0x9f
-  let is_ascii_u   u = u <= 0x7f
-
-  let is_control c = is_control_u (code c)
-  let is_ascii   c = is_ascii_u   (code c)
-
-  let err_invalid_uchar msg u = invalid_arg (Printf.sprintf msg u)
-
-  let err_ctrl_uchar =
-    err_invalid_uchar "Notty: cannot render control char: 0x%02x"
-
-(*   let err_undef_width =
-    err_invalid_uchar "Notty: cannot render char with width undefined \
-                       in the current locale: 0x%02x" *)
+  let err_ctrl_uchar = invalid_arg_s "Notty: control char: 0x%02x (from: %s)"
+  let err_malformed  = invalid_arg_s "Notty: malformed UTF-8: %s (from: %s)"
 
   let of_ascii str =
-    String.iter (fun c -> if is_control c then err_ctrl_uchar (code c)) str;
-    Ascii str
+    match String.find is_control str with
+    | Some i -> err_ctrl_uchar (code str.[i]) str
+    | None   -> Ascii str
 
   let of_unicode str =
-    let ix = graphemes ~encoding:`UTF_8 str in
-    Utf8 (str, ix, Array.length ix - 1)
-
-  let is_ascii_s str =
-    let rec go i =
-      if i >= String.length str then true
-      else let c = str.[i] in is_ascii c && c <> '\000' && go (succ i)
-    in go 0
+    match graphemes ~encoding:`UTF_8 str with
+    | Ok ix                  -> Utf8 (str, ix, Array.length ix - 1)
+    | Error (`Malformed err) -> err_malformed err str
+    | Error (`Control u)     -> err_ctrl_uchar u str
 
   let of_string str =
-    if is_ascii_s str then of_ascii str else of_unicode str
+    if String.for_all is_ascii str then of_ascii str else of_unicode str
 
-  let with_encoder f =
-    let buf = Buffer.create 16 in
-    let enc = Uutf.encoder `UTF_8 (`Buffer buf) in
-    f enc; Uutf.encode enc `End |> ignore;
-    Buffer.contents buf
+  let of_uchars = of_string &. Utf8.of_uchars
 
-  let of_uchars arr =
-    of_unicode @@ with_encoder @@ fun enc ->
-      Array.iter (fun c -> Uutf.encode enc (`Uchar c) |> ignore) arr
+  let replicatec w c =
+    let str = String.make w c in
+    if is_control c then err_ctrl_uchar (code c) str else Ascii str
 
-  let encode_repeat n u =
-    with_encoder @@ fun enc ->
-      let chr = `Uchar u in
-      for _ = 1 to n do Uutf.encode enc chr |> ignore done
-
-  let replicatec w = function
-    | c when is_control c -> err_ctrl_uchar (code c)
-    | c -> Ascii (String.make w c)
-
-  let replicateu w = function
-    | u when is_control_u u -> err_ctrl_uchar u
-    | u when not (Uutf.is_uchar u) ->
-        err_invalid_uchar "Notty: not unicode scalar value: u+%04x" u
-    | u when u >= 0x80 -> of_unicode (encode_repeat w u)
-    | u -> Ascii (String.make w (Char.chr u))
-
+  let replicateu w u =
+    if Uchar.is_ascii u then replicatec w (chr u)
+    else of_unicode @@ Utf8.with_encoder ~hint:w @@ fun enc ->
+      for _ = 1 to w do Uutf.encode enc (`Uchar u) |> ignore done
 end
 
 module A = struct
@@ -714,8 +695,8 @@ module Unescape = struct
     | 0x1b::0x5b::0x4d::a::b::c::xs -> Esc_M (a, b, c) :: demux xs
     | 0x1b::(0x5b::xs as xs0) ->
         let (r, xs) = csi xs |> Option.get (C0 '\x1b', xs0) in r :: demux xs
-    | (0x1b::0x4f::x::xs|0x8f::x::xs)
-      when Char.is x                      -> SS2 (chr x) :: demux xs
+    | (0x1b::0x4f::x::xs | 0x8f::x::xs)
+      when Uchar.is_ascii x               -> SS2 (chr x) :: demux xs
     | 0x1b::x::xs when btw x 0x40 0x5f    -> C1 (chr x) :: demux xs
     | x::xs when btw x 0x80 0x9f          -> C1 (chr (x - 0x40)) :: demux xs
     | x::xs when btw x 0 0x1f || x = 0x7f -> C0 (chr x) :: demux xs
