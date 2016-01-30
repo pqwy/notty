@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 00e4a5ff3e5a384778d5b4a2e4b7ab6a)
+# DO NOT EDIT (digest: 34ba2568194dbfbc1950f97f9bd44620)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -56,15 +56,22 @@ true: annot, bin_annot
 <lwt/*.ml{,i,y}>: use_notty
 <lwt/*.ml{,i,y}>: use_notty_unix
 # Executable speed
-<demos/speed.{native,byte}>: package(rresult)
-<demos/speed.{native,byte}>: package(unix)
-<demos/speed.{native,byte}>: package(unmark)
-<demos/speed.{native,byte}>: package(uucp)
-<demos/speed.{native,byte}>: package(uuseg)
-<demos/speed.{native,byte}>: package(uutf)
-<demos/speed.{native,byte}>: use_notty
-<demos/speed.{native,byte}>: use_notty_unix
-<demos/*.ml{,i,y}>: package(unmark)
+<benchmarks/speed.{native,byte}>: package(rresult)
+<benchmarks/speed.{native,byte}>: package(unix)
+<benchmarks/speed.{native,byte}>: package(unmark)
+<benchmarks/speed.{native,byte}>: package(uucp)
+<benchmarks/speed.{native,byte}>: package(uuseg)
+<benchmarks/speed.{native,byte}>: package(uutf)
+<benchmarks/speed.{native,byte}>: use_notty
+<benchmarks/speed.{native,byte}>: use_notty_unix
+<benchmarks/*.ml{,i,y}>: package(rresult)
+<benchmarks/*.ml{,i,y}>: package(unix)
+<benchmarks/*.ml{,i,y}>: package(unmark)
+<benchmarks/*.ml{,i,y}>: package(uucp)
+<benchmarks/*.ml{,i,y}>: package(uuseg)
+<benchmarks/*.ml{,i,y}>: package(uutf)
+<benchmarks/*.ml{,i,y}>: use_notty
+<benchmarks/*.ml{,i,y}>: use_notty_unix
 # Executable testpatterns
 <demos/testpatterns.{native,byte}>: package(rresult)
 <demos/testpatterns.{native,byte}>: package(unix)

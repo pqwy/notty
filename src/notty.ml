@@ -71,9 +71,7 @@ end
 
 module Uchar = struct
 
-  let is_c0 u = btw u 0x00 0x1f
-  let is_c1 u = btw u 0x7f 0x9f
-  let is_control u = is_c0 u || is_c1 u
+  let is_ctrl  u = btw u 0x00 0x1f || btw u 0x7f 0x9f
   let is_ascii u = u = u land 0x7f
 end
 
@@ -82,8 +80,8 @@ module Char = struct
   include Char
 
   let equal (a : t) b = a = b
-  let is_control c = Uchar.is_control (code c)
-  let is_ascii   c = Uchar.is_ascii   (code c)
+  let is_ctrl  c = Uchar.is_ctrl  (code c)
+  let is_ascii c = Uchar.is_ascii (code c)
 end
 
 module String = struct
@@ -103,37 +101,15 @@ module String = struct
       if i < n then if f str.[i] then Some i else go f str (succ i) else None
     in go f str 0
 
-  let of_char c0 =
-    let b = Bytes.create 1 in
-    Bytes.(unsafe_set b 0 c0; to_string b)
-
-  let of_char_2 c0 c1 =
-    let b = Bytes.create 2 in
-    Bytes.(unsafe_set b 0 c0; unsafe_set b 1 c1; to_string b)
-
-  let of_char_3 c0 c1 c2 =
-    let b = Bytes.create 3 in
-    Bytes.(unsafe_set b 0 c0; unsafe_set b 1 c1; unsafe_set b 2 c2; to_string b)
-
-  let of_uchar   u1       = Char.(of_char   (chr u1))
-  let of_uchar_2 u1 u2    = Char.(of_char_2 (chr u1) (chr u2))
-  let of_uchar_3 u1 u2 u3 = Char.(of_char_3 (chr u1) (chr u2) (chr u3))
-
-  let of_uchars_rev = function
-    | []         -> ""
-    | [u0]       -> of_uchar   u0
-    | [u1;u0]    -> of_uchar_2 u0 u1
-    | [u2;u1;u0] -> of_uchar_3 u0 u1 u2
-    | ucs ->
-        let rec rlen n a = function
-          | []    -> (n, a)
-          | c::cs -> rlen (n + 1) (c::a) cs in
-        let rec wr b i = function
-          | []    -> b
-          | c::cs -> Bytes.set b i (Char.chr c); wr b (i + 1) cs in
-        let (n, ucs) = rlen 0 [] ucs in
-        Bytes.to_string @@ wr (Bytes.create n) 0 ucs
-
+  let of_uchars_rev = let open Bytes in function
+    | []   -> ""
+    | [u0] -> let b = create 1 in unsafe_set b 0 Char.(chr u0); b
+    | ucs  ->
+        let n = List.length ucs in
+        let rec go bs i = function
+          | []    -> bs
+          | x::xs -> unsafe_set bs i (Char.chr x); go bs (pred i) xs in
+        go (create n) (n - 1) ucs
 end
 
 module Int = struct
@@ -202,7 +178,7 @@ module Text = struct
       | `Boundary ->
           let is = match w with 0 -> is | 1 -> i::is | _ -> i::(-1)::is
           in go is 0 0 `Await
-      | `Uchar u when Uchar.is_control u -> Error (`Control u)
+      | `Uchar u when Uchar.is_ctrl u -> Error (`Control u)
       | `Uchar u -> go is (w + Uucp.Break.tty_width_hint u) i `Await
       | `End -> Ok is
     in
@@ -229,13 +205,13 @@ module Text = struct
             if k = 0 then 0 else if k = w then n else max (-1) (ix.(k + x) - 1)
           in Utf8 (s, ix, w)
 
-  let (code, chr, is_control, is_ascii) = Char.(code, chr, is_control, is_ascii)
+  let (code, chr, is_ctrl, is_ascii) = Char.(code, chr, is_ctrl, is_ascii)
 
   let err_ctrl_uchar = invalid_arg_s "Notty: control char: 0x%02x (from: %s)"
   let err_malformed  = invalid_arg_s "Notty: malformed UTF-8: %s (from: %s)"
 
   let of_ascii str =
-    match String.find is_control str with
+    match String.find is_ctrl str with
     | Some i -> err_ctrl_uchar (code str.[i]) str
     | None   -> Ascii str
 
@@ -252,7 +228,7 @@ module Text = struct
 
   let replicatec w c =
     let str = String.make w c in
-    if is_control c then err_ctrl_uchar (code c) str else Ascii str
+    if is_ctrl c then err_ctrl_uchar (code c) str else Ascii str
 
   let replicateu w u =
     if Uchar.is_ascii u then replicatec w (chr u)

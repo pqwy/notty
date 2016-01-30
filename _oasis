@@ -51,7 +51,7 @@ Library notty_lwt
   Build$:        flag(unix) && flag(lwt)
 
 Executable speed
-  Path:           demos
+  Path:           benchmarks
   Install:        false
   CompiledObject: best
   MainIs:         speed.ml
