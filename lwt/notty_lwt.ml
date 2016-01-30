@@ -5,13 +5,11 @@ open Notty_unix
 
 let whenopt f = function Some x -> f x | None -> ()
 
-let write_fd fd b =
-  let n = Bytes.length b in
-  let rec go acc =
-    if acc < n then
-      Lwt_unix.write fd b acc (n - acc) >>= fun w -> go (acc + w)
-    else return_unit in
-  go 0
+let output_buffer fd buf =
+  let rec go b off = function
+    | 0 -> return_unit
+    | n -> Lwt_unix.write fd b off n >>= fun w -> go b (off + w) (n - w) in
+  go (Buffer.contents buf) 0 (Buffer.length buf)
 
 let (</>) a b = pick [(a >|= fun x -> `Left x); (b >|= fun x -> `Right x)]
 
@@ -21,16 +19,14 @@ module Lwt_condition = struct
 
   let fmap f c =
     let d = create () in
-    let rec go () =
-      wait c >>= fun x -> f x |> whenopt (broadcast d); go ()
+    let rec go () = wait c >>= fun x -> f x |> whenopt (broadcast d); go ()
     in (async go; d)
 
   let unburst ~t c =
     let d = create () in
-    let rec delay x =
-      Lwt_unix.sleep t </> wait c >>= function
-        | `Left () -> broadcast d x; start ()
-        | `Right x -> delay x
+    let rec delay x = Lwt_unix.sleep t </> wait c >>= function
+      | `Left () -> broadcast d x; start ()
+      | `Right x -> delay x
     and start () = wait c >>= delay in
     async start; d
 end
@@ -51,12 +47,12 @@ module Terminal = struct
       let flt  = Unescape.create ()
       and ibuf = Bytes.create 64 in
       let rec read () =
-        match Unescape.next_k flt with
-        | `Uchar _ | `Key _ as r -> return_some r
+        match Unescape.next flt with
+        | #Unescape.event as r -> return_some r
         | `End   -> return_none
         | `Await ->
-            Lwt_unix.read fd ibuf 0 Bytes.(length ibuf) >>=
-              fun n -> Unescape.input flt ibuf 0 n; read ()
+            Lwt_unix.read fd ibuf 0 Bytes.(length ibuf) >>= fun n ->
+              Unescape.input flt ibuf 0 n; read ()
       in Lwt_stream.from read
     in
     Lwt_stream.on_terminate stream f;
@@ -65,7 +61,7 @@ module Terminal = struct
   type t = {
     ochan  : Lwt_io.output_channel
   ; trm    : Tmachine.t
-  ; input  : [`Uchar of uchar | `Key of Unescape.key] Lwt_stream.t * (unit -> unit)
+  ; input  : Unescape.event Lwt_stream.t * (unit -> unit)
   ; size_c : (int * int) Lwt_condition.t
   }
 
@@ -106,9 +102,10 @@ module Terminal = struct
       ; input  = input_stream input
       ; size_c = resizes output
       } in
-    async (fun () -> (winsize fd |> whenopt (set_size t)); redraw t);
+    async (fun () -> winsize fd |> whenopt (set_size t); redraw t);
     async (winch_monitor autosize t);
-    if dispose then at_exit (fun () -> async (fun () -> release t));
+    if dispose then
+      Lwt_sequence.add_r (fun () -> release t) Lwt_main.exit_hooks |> ignore;
     t
 
   let input t = fst t.input
@@ -120,8 +117,8 @@ end
 let output_image =
   output_image_gen
     ~to_fd:Lwt_unix.unix_file_descr
-    ~write:(fun fd buf -> write_fd fd (Buffer.contents buf))
+    ~write:output_buffer
 
-let print_image = output_image Lwt_unix.stdout
+let print_image = output_image ~cap:(cap_for_fd Unix.stdout) Lwt_unix.stdout
 
-let winsize = winsize
+let winsize fd = winsize (Lwt_unix.unix_file_descr fd)

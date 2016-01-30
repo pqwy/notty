@@ -157,22 +157,28 @@ module I : sig
       Once constructed, image can be rendered and only at that point it obtains
       absolute placement.
 
-      {b Note.} Text fragments in images generally must not contain
-      {{!cwidth}control characters}.
+      {1:ctrls Control characters}
 
-      {1:cwidth Character width}
+      These are taken to be characters in the ranges [0x01-0x1f]
+      ({b C0} without [0x00]) and [0x80-0x9f] ({b C1}), and [0x7f] (BACKSPACE).
+      This is the {{: http://unicode.org/glossary/#general_category}General
+      Category} {e Cc} without [0x00].
+
+      As control characters directly influence the cursor positioning, they
+      cannot be used to create images.
+
+      {1:cwidth Unicode vs. Text geometry}
 
       To correctly compute the geometry, [Notty] must be able to predict the
       column width of individual characters as rendered by the terminal.
       Unfortunately, this is a surprisingly difficult task.
 
-      For example: even on a modern Linux system, a collection of different
-      terminal emulators is likely to disagree on some, or all of [U+00ad],
-      [U+0cbf], and [U+2029]. At the same time, they will disagree with the
-      system's {{:
-      http://pubs.opengroup.org/onlinepubs/009695399/functions/wcwidth.html}
-      [wcwidth]} on whether the majority of possible scalar values is even {e
-      renderable}.
+      For example: on a modern Linux system, a collection of different
+      terminal emulators is likely to disagree on some, or all of [u+00ad],
+      [u+0cbf], and [u+2029]. At the same time, they will disagree with the
+      {{: http://pubs.opengroup.org/onlinepubs/009695399/functions/wcwidth.html}
+      system's [wcwidth]} on whether the majority of possible scalar values is
+      {e even renderable}.
 
       [Notty] {{!uwidth}uses} a simple and predictable width algorithm, based on
       Markus Kuhn's {{: https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c}portable
@@ -184,13 +190,21 @@ module I : sig
       {- Characters with
          {{: http://unicode.org/glossary/#general_category}General Category}
          {e Mn}, {e Me}, and {e Cf} have a width of [0].}
-      {- {e Most} other characters have a width of [1].}}
+      {- {e Most} other characters have a width of [1].}
+      {- The width of a string of text is the sum of widths of its constituent
+         scalar values.}}
 
-      {b Control characters} are characters in the ranges [0x01-0x1f] ({b C1}
-      without [0x00]), [0x80-0x9f] ({b C2}), and [0x7f] (Backspace). This is the
-      {{: http://unicode.org/glossary/#general_category}General Category} {e Cc}
-      without [0x00].
-
+      This approach works well for
+      {{: https://en.wikipedia.org/wiki/Alphabet}alphabetic}, and
+      {{: https://en.wikipedia.org/wiki/Syllabary}syllabic} and
+      {{: https://en.wikipedia.org/wiki/Logogram}logographic} east Asian
+      scripts. It seems to work for
+      {{: https://en.wikipedia.org/wiki/Abjad}abjad} scripts but
+      {{: http://unicode.org/reports/tr9/}bidirectionality} is not taken into
+      account. And it mostly breaks down with
+      {{: https://en.wikipedia.org/wiki/Abugida}abugida} scripts. The latter are in
+      any case rendered inconsistently across contemporary terminals, so expect
+      the horizontal geometry of your Devanagari, Tamil, or Kannada to break.
 
       {1 Image properties} *)
 
@@ -206,26 +220,26 @@ module I : sig
   (** [string attr string] is an image consisting of text [string] with display
        attributes [attr]. [string] is assumed to be a valid UTF-8 sequence.
 
-       @raise Invalid_argument if [string] contains {{!cwidth}control
+       @raise Invalid_argument if [string] contains {{!ctrls}control
        characters}. *)
 
   val uchars : attr -> int array -> image
   (** [uchars attr array] is an image consisting of unicode characters in
       [array].
 
-      @raise Invalid_argument if [array] contains {{!cwidth}control
+      @raise Invalid_argument if [array] contains {{!ctrls}control
       characters}.  *)
 
   val char : attr -> char -> int -> int -> image
   (** [char attr c w h] is a [w * h] grid with character [c] in every cell.
 
-      @raise Invalid_argument if [c] is a {{!cwidth}control character}. *)
+      @raise Invalid_argument if [c] is a {{!ctrls}control character}. *)
 
   val uchar : attr -> [ `Uchar of uchar ] -> int -> int -> image
   (** [uchar attr (`Uchar u) w h] is a [w * h] grid with the unicode character
       [u] in every cell.
 
-      @raise Invalid_argument if [u] is a {{!cwidth}control character}. *)
+      @raise Invalid_argument if [u] is a {{!ctrls}control character}. *)
 
   val void  : int -> int -> image
   (** [void w h] is a [w * h] rectangle of transparent cells.
@@ -288,15 +302,7 @@ i1 = [x.x]   i1 <^> i2 = [xyxy]
 i2 = [yyyy]
 v} *)
 
-  (** {1 Cropping}
-
-      Horizontal cropping has a special interaction with unicode:
-      {ul
-      {- Strings within images are cropped at {{:
-         http://unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries}grapheme
-         cluster} boundaries.}
-      {- When a crop splits a {{!cwidth}wide character} in two, the remaining
-         half is replaced by [0x20], Space.}} *)
+  (** {1 Cropping} *)
 
   val hcrop : int -> int -> image -> image
   (** [hcrop left right i] is [i] with [left] leftmost, and [right] rightmost
@@ -310,14 +316,22 @@ v} *)
       {- [hcrop 1 1 [abc] = [b]]}
       {- [hcrop 0 1 [abc] = [ab]]}
       {- [hcrop (-1) 1 [abc] = void 1 1 <|> hcrop 0 1 [abc] = [.ab]]}
-      {- [hcrop 2 2 [abc] = empty]}} *)
+      {- [hcrop 2 2 [abc] = empty]}}
+
+      {b Unicode} has a special interaction with horizontal cropping:
+      {ul
+      {- Strings within images are cropped at {{:
+         http://unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries}grapheme
+         cluster} boundaries.}
+      {- When a crop splits a {{!cwidth}wide character} in two, the remaining
+         half is replaced by [0x20] (SPACE).}} *)
 
   val vcrop : int -> int -> image -> image
   (** [vcrop top bottom i] is analogous to {{!hcrop}[hcrop]}, but operating
       vertically. *)
 
-  val crop  : ?left:int -> ?right:int -> ?top:int -> ?bottom:int -> image -> image
-  (** [crop left right top bottom i = vcrop left right (hcrop top bottom i)]
+  val crop : ?left:int -> ?right:int -> ?top:int -> ?bottom:int -> image -> image
+  (** {v crop left right top bottom i = vcrop left right (hcrop top bottom i) v}
 
       Missing parameters default to [0]. *)
 
@@ -399,59 +413,110 @@ end
 
 (** Directly deal with escape sequences in the input.
 
-    Demultiplex escape sequences from characters in byte streams. Useful for
-    building input abstractions other than {!Terminal}. *)
+    Escape sequence demultiplexer and decoder. Useful for building custom
+    terminal input abstractions. *)
 module Unescape : sig
 
-  type esc = [ `C0 of char | `C1 of string | `Cseq of string ]
-
-  type key = [
-      `Up | `Down | `Right | `Left
-    | `Pg_up | `Pg_dn
-    | `Ins | `Del
-    | `Home | `End
-    | `Fn of int
-(*     | `C0 of char *)
-    | `Bs
-    | `Enter
-    | `Tab
+  type special = [
+    `Escape
+  | `Enter
+  | `Tab
+  | `Backspace
+  | `Up | `Down | `Left | `Right
+  | `Pg_up | `Pg_dn | `Home | `End
+  | `Insert | `Delete
+  | `Fn of int
   ]
+  (** A selection of extra keys on the keyboard. *)
 
-  val key_of_control_code : esc -> key option
-  (** [key_of_control_code seq] is the interpretation of the {{!esc}escape
-      sequence} [seq] as a {{!key}special key}, if any. *)
+  type button = [ `LMB | `MMB | `RMB | `Scroll_up | `Scroll_dn ]
+  (** Mouse buttons. *)
+
+  type mods = [ `Meta | `Ctrl ] list
+  (** Modifier state. *)
+
+  type event = [
+  | `Key   of [ special | `Uchar of uchar ] * mods
+  | `Mouse of [ `Press of button | `Drag | `Release ] * (int * int) * mods
+  ]
+  (** Things that terminals say to applications.
+
+      {ul
+      {- [`Key (k, mods)] is keyboard input.
+
+         [k] is either a {{!special}special key}, or [`Uchar u] where [u] is
+         {!uchar}. This value is guaranteed not to be a {b C0} or {b C1}
+         {{!I.ctrls}control character}, and is safe to directly use in
+         constructing {!image}s.
+
+         [mods] are the extra {{!mods}modifier keys}.
+
+         }
+      {- [`Mouse (event, (x, y), mods)] is mouse input.
+
+         [event] is the actual mouse event: {!button} press, release, or motion
+         of the mouse with buttons depressed.
+
+         [(x, y)] are colum and row position of the mouse. The origin is
+         [(1,1)], the upper-left corner.
+
+         {b Note} Every [`Press (`LMB|`MMB|`RMB)] generates a corresponding
+         [`Release], but there is no portable way to detect which button was
+         released. [`Scroll_up] and [`Scroll_dn] presses are not followed by
+         releases.
+
+         }}
+
+      Terminal input protocols are historical cruft, and heavily overload the
+      ASCII range. For instance:
+      {ul
+      {- It is impossible to distinguish lower- and upper-case ASCII
+         characters if {b Ctrl} is pressed;}
+      {- several combinations of key-presses are aliased as special keys; and}
+      {- in a UTF-8 encoded stream, there is no representation for non-ASCII
+          characters with modifier keys.}}
+
+      This means that many values that inhabit the [event] type are impossible
+      in practice, while some denote multiple different user actions.
+
+      {b Note} Terminals vary widely in their capability, or willingness, to
+      signal modifier keys. Perform own experiments before relying on elaborate
+      combinations. *)
+
+  val decode : uchar list -> event list
+  (** [decode us] gives the events represented by [us].
+
+      [us] are assumed to have been generated in a burst, and the end of the
+      list is taken to mean a pause.
+      Therefore, [decode us1 @ decode us2 <> decode (us1 @ us2)] if [us1] ends
+      with a partial escape sequence, including a lone [\x1b].
+
+      Unsupported escape sequences are silently discarded. *)
 
   type t
-  (** Input decoding filter. *)
+  (** Input decoding filter.
+
+      The filter should be {{!input}fed} strings, which it first decodes from
+      UTF-8, and then extracts the input events.
+
+      Malformed UTF-8 input bytes and unrecognized escape sequences are silently
+      discarded. *)
 
   val create : unit -> t
-  (** [create ()] is a new, empty {{!t}filter}. The filter should be
-      {{!input}fed} strings, which it first decodes from UTF-8, and then
-      separates control sequences from other characters.
-
-      Malformed UTF-8 input bytes are discarded. *)
+  (** [create ()] is a new, empty filter. *)
 
   val input : t -> string -> int -> int -> unit
   (** [input t string i j] feeds [string] into the filter's input buffer.
-      [j = 0] signals the end of input.
 
-      [input] should be called on a particular filter only after it generated
-      [`Await], and it should not be called again until the next [`Await]. *)
+      [j = 0] signals the end of input. *)
 
-  val next : t -> [ `End | `Await | `Esc of esc | `Uchar of uchar | `Malformed of string ]
-  (** [next t] is the next event in the filter's input stream.
+  val next : t -> [ event | `Await | `End ]
+  (** [next t] is the next {!event} in the filter's input stream:
 
       {ul
-      {- [`End] means end of input.}
-      {- [`Await] means that the filter expects {{!input}more input}.}
-      {- [`Malformed s] is an ill-formed escape sequence.}
-      {- [`Esc e] is a well-formed escape sequence.}
-      {- [`Uchar u] is a unicode character.}} *)
-
-  val next_k : t -> [ `End | `Await | `Key of key | `Uchar of uchar ]
-  (** [next_k t] behaves like {{!next}[next]}, except that it interprets the
-      escape sequences as special keys. Unrecognized and [`Malformed]
-      sequences are silently discarded. *)
+      {- [`Await] means that the filter needs {{!input}more input}.}
+      {- [`End] means that the input ended.}
+      {- [#event] is an {{!event}input event}.}} *)
 end
 
 (**/**)
@@ -607,11 +672,11 @@ let () =
     Terminal.image t (img state); wait t state
   and wait t (double, n as state) =
     match Terminal.input t with
-    | `Key `Left  -> update t (double, max 1 (n - 1))
-    | `Key `Right -> update t (double, min 8 (n + 1))
-    | `Key `Enter -> ()
-    | `Uchar 0x20 -> update t (not double, n)
-    | _           -> wait t state
+    | `Key (`Enter,_)      -> ()
+    | `Key (`Left,_)       -> update t (double, max 1 (n - 1))
+    | `Key (`Right,_)      -> update t (double, min 8 (n + 1))
+    | `Key (`Uchar 0x20,_) -> update t (not double, n)
+    | _                    -> wait t state
   in
   let t = Terminal.create () in
   update t (false, 1);

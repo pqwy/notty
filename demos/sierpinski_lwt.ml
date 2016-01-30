@@ -13,10 +13,10 @@ let main () =
   let rec go s =
     T.image term (img s) >>= fun () ->
     Lwt_stream.next (T.input term) >>= function
-      | e when e = ch 'q'   -> return_unit
-      | `Key (`Up|`Left)    -> go (max 1 (s - 1))
-      | `Key (`Down|`Right) -> go (min 10 (s + 1))
-      | _                   -> go s
+      | `Key (`Uchar 113, _) -> return_unit
+      | `Key ((`Up|`Left), _) -> go (max 1 (s - 1))
+      | `Key ((`Down|`Right), _) -> go (min 10 (s + 1))
+      | _ -> go s
   in
   go 1
 

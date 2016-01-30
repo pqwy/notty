@@ -32,7 +32,7 @@ module Terminal = struct
   module Winch = struct
 
     module M = Map.Make (struct
-      type t = int let compare (a:int) b = compare a b
+      type t = int let compare (a:t) b = compare a b
     end)
 
     type remove = int
@@ -45,15 +45,15 @@ module Terminal = struct
       r
     )
 
-    let update f = let m = Lazy.force hs in m := f !m
+    let mmap f = let m = Lazy.force hs in m := f !m
 
     let add fd f =
       let x = !id in
       incr id;
-      M.add x (fun () -> winsize fd |> whenopt f) |> update;
+      M.add x (fun () -> winsize fd |> whenopt f) |> mmap;
       x
 
-    let remove x = update (M.remove x)
+    let remove x = mmap (M.remove x)
   end
 
   module Input = struct
@@ -67,17 +67,16 @@ module Terminal = struct
 
     let create fd =
       let flt  = Unescape.create ()
-      and ibuf = Bytes.create 64
+      and ibuf = Bytes.create 256
       and `Revert cleanup = setup_tcattr fd in
       { fd; flt; ibuf; cleanup }
 
     let rec input t =
-      match Unescape.next_k t.flt with
-      | `End | `Uchar _ | `Key _ as r -> r
+      match Unescape.next t.flt with
+      | #Unescape.event | `End as r -> r
       | `Await ->
           let n = Unix.read t.fd t.ibuf 0 Bytes.(length t.ibuf) in
           Unescape.input t.flt t.ibuf 0 n; input t
-
   end
 
   type t = {
@@ -117,7 +116,7 @@ module Terminal = struct
             t.winched <- true; set_size t dim; if autosize then redraw t
           ))
       } in
-    (winsize output |> whenopt (set_size t));
+    winsize output |> whenopt (set_size t);
     redraw t;
     Lazy.force t.unwinch |> ignore;
     if dispose then at_exit (fun () -> release t);
@@ -147,4 +146,4 @@ let output_image =
     ~to_fd:Unix.descr_of_out_channel
     ~write:Buffer.output_buffer
 
-let print_image = output_image stdout
+let print_image = output_image ~cap:(cap_for_fd Unix.stdout) stdout

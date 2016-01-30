@@ -34,7 +34,7 @@ module Terminal : sig
 
       [dispose] arranges for automatic {{!release}cleanup} of the terminal
       before the process terminates. The downside is that a reference to this
-      terminal is retained until the program exits. Default to [true].
+      terminal is retained until the program exits. Defaults to [true].
 
       [autosize] activates automatic {{!redraw}redrawing} of output whenever
       the window is resized. Defaults to [true].
@@ -45,13 +45,12 @@ module Terminal : sig
 
       {{!Cap}Capabilities} are detected as in {!output_image}.
 
-      {b Note} It is probably a poor idea to attach several {{!t}terminals} to
+      {b Note} It is probably a poor idea to create multiple terminals sharing
       the same [input] or [output]. *)
 
   val release : t -> unit
   (** Dispose of this terminal. Original behavior of input is reinstated, the
-      output is cleared, cursor is restored and alternate mode is terminated.
-      (See {{!create}create}.) *)
+      output is cleared, cursor is restored and alternate mode is terminated.  *)
 
   (** {1 Commands} *)
 
@@ -62,21 +61,15 @@ module Terminal : sig
   (** Redraws the terminal. Useful if the output might have become garbled. *)
 
   val cursor : t -> (int * int) option -> unit
-  (** Sets and redraws the cursor. [None] is hidden cursor. [Some (col, row)]
-      is cursor at column [col] and row [row]. The origin is at [(1, 1)] in the
-      upper-left corner. *)
+  (** Sets and redraws the cursor.
+
+      [None] hides it. [Some (x, y)] places it at column [x] and row [y], with
+      the origin at [(1, 1)], mapping to the upper-left corner. *)
 
   (** {1 Input} *)
 
-  val input : t -> [ `End | `Uchar of uchar | `Key of Unescape.key ]
-  (** Wait for new input to arrive.
-
-      {ul
-      {- [`End] means the input stream has ended.}
-      {- [`Uchar u] is the next unicode character in the input.}
-      {- [`Key k] is the next special key.}}
-
-      See {!Unescape.next_k}.
+  val input : t -> [ Unescape.event | `End ]
+  (** Wait for new input {!Notty.Unescape.event} to arrive.
 
       If [t] has {{!create}[autosize]}, [input] will silently restart and mask
       any [SIGWINCH] delivered while the call is in progress. *)
@@ -100,8 +93,8 @@ module Terminal : sig
       more complex event handling, you might want to disable
       {{!create}[autosize]} and manually schedule {{!redraw}terminal updates}.
 
-      This module allows one to listen to [SIGWINCH] without conflicting with
-      the rest of the machinery. *)
+      This module allows listening to [SIGWINCH] without conflicting with the
+      rest of the machinery. *)
   module Winch : sig
 
     type remove
@@ -115,8 +108,8 @@ module Terminal : sig
         Handlers are called in the order of their registration. *)
 
     val remove : remove -> unit
-    (** [remove r] removes the handler associated with the removal token [r].
-        Does nothing if the handler was already removed. *)
+    (** [remove r] removes the handler associated with [r]. Does nothing if the
+        handler was already removed. *)
   end
 end
 
@@ -131,8 +124,8 @@ val output_image : ?cap:Cap.t -> out_channel -> image -> unit
     {ul
     {- an image 1-cell high can be a part of a line of text, preceded and/or
        followed by any other output;}
-    {- if the cursor is first positioned on the first column, image of any
-       height can be printed; and}
+    {- if the cursor is on on the first column, image of any height can be
+       printed; and}
     {- simply outputting an image higher than 1 when the cursor has advanced
        past colum 1 will result in broken graphics. }}
 
@@ -142,15 +135,15 @@ val output_image : ?cap:Cap.t -> out_channel -> image -> unit
     Otherwise, {{!Cap.dumb}no} escapes are used. *)
 
 val print_image : image -> unit
-(** {{!output_image}Output image} to [stdout]. *)
+(** [output_image stdout] *)
 
 val winsize : Unix.file_descr -> (int * int) option
 (** [winsize fd] is [Some (w, h)] in character cells if [Unix.isatty fd],
     and [None] otherwise. *)
 
 (**/**)
-(** {2 Private interfaces}
 
+(** {2 Private interfaces}
     These are subject to change. *)
 val cap_for_fd        : Unix.file_descr -> Cap.t
 val setup_tcattr      : Unix.file_descr -> [ `Revert of (unit -> unit) ]

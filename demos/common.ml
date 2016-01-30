@@ -102,8 +102,8 @@ let simpleterm ~image ~step ~s =
   let rec go s =
     match Terminal.input term with
     | `End -> ()
-    | `Uchar _ | `Key _ as i ->
-        match step s i with
+    | #Unescape.event as e ->
+        match step s e with
         | Some s -> Terminal.image term (image s); go s
         | None   -> ()
   in

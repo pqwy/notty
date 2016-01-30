@@ -1,10 +1,10 @@
-(** [Notty] IO for [Unix] and [Lwt].
+(** [Notty] IO [Lwt] on [Unix].
 
     This is an IO module for {!Notty}. Consult its {{!Notty}documentation} for
     the basics.
 
     It mirrors {!Notty_unix} and the corresponding operations behave
-    analogously. Consult its {{!Notty_unix}documentation} for details.  *)
+    analogously. Consult its {{!Notty_unix}documentation} for more info. *)
 open Notty
 
 (** Full-screen terminal IO with concurrency. *)
@@ -36,11 +36,9 @@ module Terminal : sig
 
   (** {1 Input} *)
 
-  val input : t -> [ `Uchar of uchar | `Key of Unescape.key ] Lwt_stream.t
-  (** [input t] is the stream of inputs this terminal receives. There is only
-      one one such stream, in the sense of [==].
-
-      See {!Notty_unix.Terminal.input} and {!Notty.Unescape.next_k}. *)
+  val input : t -> Unescape.event Lwt_stream.t
+  (** [input t] is the stream of received input {!Notty.Unescape.event}s.
+      Repeated invocations return the same stream in the sense of [==]. *)
 
   (** {1 Properties} *)
 
@@ -49,7 +47,7 @@ module Terminal : sig
   (** {1 Window size change notifications} *)
 
   (** {{!create}Creating} a {{!t}terminal} will install a [SIGWINCH] handler.
-      These operations allow the user to monitor deliveries of this signal.
+      These operations allow the user to monitor deliveries of that signal.
 
       See {!Notty_unix.Terminal.Winch}. *)
 
@@ -57,16 +55,17 @@ module Terminal : sig
   (** [next_winch ()] is a thread completing after the next [SIGWINCH]. *)
 
   val next_resize : t -> (int * int) Lwt.t
-  (** [next_resize t] is a thread completing after the next [SIGWINCH].
-      Yields the {{!t}terminal's} output tty size at that moment. *)
+  (** [next_resize t] is a thread completing after the next [SIGWINCH],
+      yielding [t]'s output tty size at that moment. *)
 end
 
 val output_image : ?cap:Cap.t -> Lwt_unix.file_descr -> image -> unit Lwt.t
-(** Outputs the {{!image}image} on the file descriptor. See
-   {!Notty_unix.output_image}. *)
+(** Outputs the {{!image}image} on the file descriptor.
+
+    See {!Notty_unix.output_image}. *)
 
 val print_image : image -> unit Lwt.t
-(** {{!output_image}Output image} to [stdout]. *)
+(** [output_image stdout] *)
 
-val winsize : Unix.file_descr -> (int * int) option
-(** Window size. Same as {!Notty_unix.winsize}. *)
+val winsize : Lwt_unix.file_descr -> (int * int) option
+(** See {!Notty_unix.winsize}. *)

@@ -4,13 +4,13 @@ open Notty_unix
 open Common
 open Common.Images
 
-let input_proc_str ?(n=1) str =
-  let open Unescape in
-  let rec drain i =
-    match next i with `Await|`End -> () | _ -> drain i in
-  let i  = create ()
-  and sn = String.length str in
-  for _ = 1 to n do input i str 0 sn; drain i done
+(* let input_proc_str ?(n=1) str = *)
+(*   let open Unescape in *)
+(*   let rec drain i = *)
+(*     match next_escape i with `Await|`End -> () | _ -> drain i in *)
+(*   let i  = create () *)
+(*   and sn = String.length str in *)
+(*   for _ = 1 to n do input i str 0 sn; drain i done *)
 
 let escapes =
   "\027[5~\027[6~\027[1~\027[4~\027OP\027OQ\027OR\027OS\027[15~\027[17~\027[18~\027[19~\027[20~\027[21~\027[23~\027[24~"
@@ -47,10 +47,10 @@ let () = Unmark.warmup ()
 let () =
   let measure = `Cputime in
 
-  Unmark.time ~tag:"read escapes" ~measure ~n:100
-    (fun () -> input_proc_str ~n:1000 escapes);
-  Unmark.time ~tag:"read characters" ~measure ~n:100
-    (fun () -> input_proc_str ~n:1000 chars)
+  (* Unmark.time ~tag:"read escapes" ~measure ~n:100 *)
+  (*   (fun () -> input_proc_str ~n:1000 escapes); *)
+  (* Unmark.time ~tag:"read characters" ~measure ~n:100 *)
+  (*   (fun () -> input_proc_str ~n:1000 chars) *)
 
 (* let () = *)
 (*   let measure = `Cputime_ns in *)
@@ -60,7 +60,8 @@ let () =
 (*     (fun () -> I.string A.empty s1); *)
 (*   Unmark.time ~tag:"construct big string" ~measure ~n:1000 *)
 (*     (fun () -> I.string A.empty s2); *)
-(*   () *)
+
+  ()
 
 (* let () = *)
 (*   input_proc_str ~n:500000 escapes *)

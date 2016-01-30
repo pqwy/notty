@@ -2,6 +2,8 @@
 type uchar = int
 
 let between (x : int) a b = a <= x && x <= b
+let btw (x : int) a b = a <= x && x <= b
+
 
 let (u_gc, u_eaw) = Uucp.(Gc.general_category, Break.east_asian_width)
 
@@ -95,8 +97,11 @@ module List = struct
 end
 
 module Char = struct
+
   include Char
+
   let equal (a : t) b = a = b
+  let is x = x = x land 0xff
 end
 
 module String = struct
@@ -145,6 +150,15 @@ module Int = struct
   let compare (a : t) (b : t) = compare a b
   let sign (a : t) = compare a 0
   let equal (a : t) (b : t) = a = b
+end
+
+module Option = struct
+
+  let map f = function Some x -> Some (f x) | _ -> None
+  let get def = function Some x -> x | _ -> def
+  let to_list = function Some x -> [x] | _ -> []
+  let (>|=) a f = map f a
+  let (>>=) a f = match a with Some x -> f x | _ -> None
 end
 
 module Text = struct
@@ -564,6 +578,7 @@ module Cap = struct
   ; cursvis : bool -> op
   ; cursat  : int -> int -> op
   ; altscr  : bool -> op
+  ; mouse   : bool -> op
   }
 
   let i = string_of_int
@@ -585,6 +600,8 @@ module Cap = struct
     ; cursat  = (fun w h b -> csi 'H' [i w; i h] b)
     ; clreol  = (fun b -> b <| "\x1b[K")
     ; cursvis = (fun x b -> b <| if x then "\x1b[34h\x1b[?25h" else "\x1b[?25l")
+    ; mouse   = (fun x b -> b <| if x then "\x1b[?1000;1002;1005;1015;1006h"
+                                      else "\x1b[?1000;1002;1005;1015;1006l")
     ; sgr     =
       fun attr b ->
         b <| "\x1b[0";
@@ -614,6 +631,7 @@ module Cap = struct
     ; clreol  = no0
     ; cursvis = no1
     ; sgr     = no1
+    ; mouse   = no1
     }
 
 end
@@ -647,130 +665,198 @@ end
 
 module Unescape = struct
 
-  type esc = [ `C0 of char | `C1 of string | `Cseq of string ]
-
-  type key = [
-      `Up | `Down | `Right | `Left
-    | `Pg_up | `Pg_dn
-    | `Ins | `Del
-    | `Home | `End
-    | `Fn of int
-(*     | `C0 of char *)
-    | `Bs
-    | `Enter
-    | `Tab
+  type special = [
+    `Escape
+  | `Enter
+  | `Tab
+  | `Backspace
+  | `Up | `Down | `Left | `Right
+  | `Pg_up | `Pg_dn | `Home | `End
+  | `Insert | `Delete
+  | `Fn of int
   ]
 
-  let key_of_control_code = function
+  type mods = [ `Meta | `Ctrl ] list
 
-(*     | `C0 _ as c0 -> Some c0 *)
-    | `C0 '\b' -> Some `Bs
-    | `C0 '\n' -> Some `Enter
-    | `C0 '\t' -> Some `Tab
+  type button = [ `LMB | `MMB | `RMB | `Scroll_up | `Scroll_dn ]
 
-    | `Cseq "A" | `C1 "OA"  -> Some `Up
-    | `Cseq "B" | `C1 "OB"  -> Some `Down
-    | `Cseq "C" | `C1 "OC"  -> Some `Right
-    | `Cseq "D" | `C1 "OD"  -> Some `Left
-
-    | `Cseq "5~" -> Some `Pg_up
-    | `Cseq "6~" -> Some `Pg_dn
-
-    | `Cseq ("2~"|"4h") -> Some `Ins
-    | `Cseq ("3~"|"P")  -> Some `Del
-
-    | `Cseq ("1~"|"7~"|"H") | `C1 "OH" -> Some `Home
-    | `Cseq ("4~"|"8~"|"F") | `C1 "OF" -> Some `End
-
-(*     | `C1 "OM" -> Some `Enter *)
-
-    | `Cseq "11~" | `C1 "OP" -> Some (`Fn 1)
-    | `Cseq "12~" | `C1 "OQ" -> Some (`Fn 2)
-    | `Cseq "13~" | `C1 "OR" -> Some (`Fn 3)
-    | `Cseq "14~" | `C1 "OS" -> Some (`Fn 4)
-    | `Cseq "15~"            -> Some (`Fn 5)
-    | `Cseq "17~"            -> Some (`Fn 6)
-    | `Cseq "18~"            -> Some (`Fn 7)
-    | `Cseq "19~"            -> Some (`Fn 8)
-    | `Cseq "20~"            -> Some (`Fn 9)
-    | `Cseq "21~"            -> Some (`Fn 10)
-    | `Cseq "23~"            -> Some (`Fn 11)
-    | `Cseq "24~"            -> Some (`Fn 12)
-
-    | _ -> None
-
-
-  type ('a, 'b) xd = K of ('a -> ('a, 'b) xd) | Y of 'b * ('a, 'b) xd
-
-  let fin0     = String.of_uchars_rev
-  let fin c cs = fin0 (c::cs)
-
-  let escapes =
-    let rec s0 = K start
-    and ok x = Y (x, s0)
-    and err c cs = Y (`Malformed (fin0 cs), start c)
-    and start = function
-      | 0x1b             -> K esc
-      | 0x7f             -> ok (`Esc (`C0 '\x08'))
-      | c when c <= 0x1f -> ok (`Esc (`C0 Char.(chr c)))
-      | c                -> ok (`Uchar c)
-    and esc = function
-      | c when 0x40 <= c && c <= 0x5f -> c1 c
-      | c                             -> err c [0x1b]
-    and c1 = function
-      | 0x5b           -> K (csi true [])
-      | 0x4e|0x4f as c -> K (fun x -> ok (`Esc (`C1 (fin x [c]))))
-      | c              -> ok (`Esc (`C1 (fin c [])))
-    and csi p cs = function
-      | c when 0x20 <= c && c <= 0x2f      -> K (csi false (c::cs))
-      | c when 0x30 <= c && c <= 0x3f && p -> K (csi true  (c::cs))
-      | c when 0x40 <= c && c <= 0x7e      -> ok (`Esc (`Cseq (fin c cs)))
-      | c                                  -> err c (cs @ [0x5b;0x1b])
-    in s0
-
-  type res = [
-    | `Uchar     of uchar
-    | `Esc       of esc
-    | `Malformed of string
-    | `Await
-    | `End
+  type event = [
+  | `Key   of [ special | `Uchar of uchar ] * mods
+  | `Mouse of [ `Press of button | `Drag | `Release ] * (int * int) * mods
   ]
 
-  type t = {
-    dec : Uutf.decoder
-  ; mutable state : (uchar, res) xd
-  }
+  type esc =
+    C0    of char
+  | C1    of char
+  | SS2   of char
+  | CSI   of string * int list * string
+  | Esc_M of int * int * int
+  | Uchar of int
 
-  let next t =
-    let rec loop dec = function
-      | Y (x, s) -> t.state <- s; x
-      | K f as s -> match Uutf.decode dec with
-          | `Malformed _         -> loop dec s
-          | `Uchar c             -> loop dec (f c)
-          | (`End | `Await as r) -> t.state <- s; r
-    in loop t.dec t.state
 
-  let rec next_k t =
-    match next t with
-    | `Uchar _ | `End | `Await as r -> r
-    | `Malformed _ -> next_k t
-    | `Esc e ->
-        match key_of_control_code e with
-        | Some c -> `Key c
-        | None   -> next_k t
+  let csi =
+    let open Option in
+    let r_str = String.of_uchars_rev in
+    let rec priv acc = function
+      | x::xs when btw x 0x3c 0x3f -> priv (x::acc) xs
+      | xs                         -> param (r_str acc) None [] xs
+    and param prv p ps = function
+      | x::xs when btw x 0x30 0x39 -> param prv (Some (get 0 p * 10 + x - 0x30)) ps xs
+      | 0x3b::xs                   -> param prv None (get 0 p :: ps) xs
+      | xs                         -> code prv (List.rev (to_list p @ ps)) [] xs
+    and code prv ps acc = function
+      | x::xs when btw x 0x20 0x2f -> code prv ps (x::acc) xs
+      | x::xs when btw x 0x40 0x7e -> Some (CSI (prv, ps, r_str (x::acc)), xs)
+      | _ -> None in
+    priv []
 
-  let create () =
-    let dec = Uutf.decoder ~encoding:`UTF_8 `Manual in
-    { dec ; state = escapes }
+  let rec demux = let open Char in function
+    | 0x1b::0x5b::0x4d::a::b::c::xs -> Esc_M (a, b, c) :: demux xs
+    | 0x1b::(0x5b::xs as xs0) ->
+        let (r, xs) = csi xs |> Option.get (C0 '\x1b', xs0) in r :: demux xs
+    | (0x1b::0x4f::x::xs|0x8f::x::xs)
+      when Char.is x                      -> SS2 (chr x) :: demux xs
+    | 0x1b::x::xs when btw x 0x40 0x5f    -> C1 (chr x) :: demux xs
+    | x::xs when btw x 0x80 0x9f          -> C1 (chr (x - 0x40)) :: demux xs
+    | x::xs when btw x 0 0x1f || x = 0x7f -> C0 (chr x) :: demux xs
+    | x::xs                               -> Uchar x :: demux xs
+    | []                                  -> []
 
-  let input t s i j = Uutf.Manual.src t.dec s i j
 
-(*   let of_string s =
-    let rec loop i es = match next i with
-      | `Await | `End -> List.rev es
-      | `Uchar _ | `Esc _ | `Malformed _ as e -> loop i (e::es) in
-    let i = create () in
-  input i s 0 (String.length s); loop i [] *)
+  let mods_xtrm = function
+    | []    -> Some []
+    | [1;3] -> Some [`Meta]
+    | [1;5] -> Some [`Ctrl]
+    | [1;7] -> Some [`Meta; `Ctrl]
+    | _     -> None
+
+  let mods_rxvt = function "~" -> Some [] | "^" -> Some [`Ctrl] | _ -> None
+
+  let mods_ab ps_tl code = match (ps_tl, code) with
+    | ([] , "~")             -> Some []
+    | ([5], "~") | ([], "^") -> Some [`Ctrl]
+    | ([3], "~")             -> Some [`Meta]
+    | ([7], "~")             -> Some [`Meta; `Ctrl]
+    | _                      -> None
+
+  let bit n b = b land (1 lsl n) > 0
+
+  let mouse_p p =
+    let btn = match p land 3 with
+      | 0 when bit 6 p -> `Scroll_up
+      | 0              -> `LMB
+      | 1 when bit 6 p -> `Scroll_dn
+      | 1              -> `MMB
+      | 2 when bit 6 p -> `Scroll_left
+      | 2              -> `RMB
+      | 3 when bit 6 p -> `Scroll_right
+      | _              -> `ALL
+    and drag = bit 5 p
+    and mods =
+      (if bit 3 p then [`Meta] else []) @ (if bit 4 p then [`Ctrl] else [])
+    in (btn, drag, mods)
+
+  let key k mods = Some (`Key (k, mods))
+
+  let event_of_control_code =
+    let open Option in function
+
+    | Uchar u -> Some (`Key (`Uchar u, []))
+
+    | C0 '\x1b'        -> key `Escape []
+    | C0 ('\b'|'\x7f') -> key `Backspace []
+    | C0 '\n'          -> key `Enter []
+    | C0 '\t'          -> key `Tab []
+
+    | C0 x -> key (`Uchar (Char.code x + 0x40)) [`Ctrl]
+    | C1 x -> key (`Uchar (Char.code x)) [`Meta]
+
+    | CSI ("",p,"A") -> mods_xtrm p >>= key `Up
+    | CSI ("",p,"B") -> mods_xtrm p >>= key `Down
+    | CSI ("",p,"C") -> mods_xtrm p >>= key `Right
+    | CSI ("",p,"D") -> mods_xtrm p >>= key `Left
+    | SS2 ('A'|'a')  -> key `Up [`Ctrl]
+    | SS2 ('B'|'b')  -> key `Down [`Ctrl]
+    | SS2 ('C'|'c')  -> key `Right [`Ctrl]
+    | SS2 ('D'|'d')  -> key `Left [`Ctrl]
+
+    | CSI ("",5::p,("~"|"^" as c)) -> mods_ab p c >>= key `Pg_up
+    | CSI ("",6::p,("~"|"^" as c)) -> mods_ab p c >>= key `Pg_dn
+
+    | CSI ("",2::p,("~"|"^" as c)) -> mods_ab p c >>= key `Insert
+    | CSI ("",3::p,("~"|"^" as c)) -> mods_ab p c >>= key `Delete
+
+    | CSI ("",[4],"h") -> key `Insert []
+    | CSI ("",[],"L")  -> key `Insert [`Ctrl]
+    | CSI ("",[],"P")  -> key `Delete []
+    | CSI ("",[],"M")  -> key `Delete [`Ctrl]
+
+    | CSI ("",p,"H")                -> mods_xtrm p >>= key `Home
+    | CSI ("",[7|1],("~"|"^" as c)) -> mods_rxvt c >>= key `Home
+
+    | CSI ("",p,"F")                -> mods_xtrm p >>= key `End
+    | CSI ("",[8|4],("~"|"^" as c)) -> mods_rxvt c >>= key `End
+    | CSI ("",[],"J")               -> key `End [`Ctrl]
+
+    | SS2 ('P'|'Q'|'R'|'S' as c) -> key (`Fn (Char.code c - 0x4f)) []
+
+    | CSI ("",p,("P"|"Q"|"R"|"S" as c)) ->
+        mods_xtrm p >>= key (`Fn (Char.code c.[0] - 0x4f))
+
+    | CSI ("",k::p,("~"|"^" as c))
+      when btw k 11 15 || btw k 17 21 || btw k 23 24 ->
+        mods_ab p c >>= key (`Fn ((k - 10) - (k - 10) / 6))
+
+    | CSI ("<",[p;x;y],("M"|"m" as c)) ->
+        let (btn, drag, mods) = mouse_p p in
+        ( match (c, btn, drag) with
+          | ("M", (#button as b), false) -> Some (`Press b)
+          | ("M", #button, true)         -> Some `Drag
+          | ("m", #button, false)        -> Some `Release
+          (* | ("M", `ALL   , true)         -> Some `Move *)
+          | _                            -> None
+        ) >|= fun e -> (`Mouse (e, (x, y), mods))
+
+    | CSI ("",[p;x;y],"M") | Esc_M (p,x,y) ->
+        let (btn, drag, mods) = mouse_p (p - 32) in
+        ( match (btn, drag) with
+          | (#button as b, false) -> Some (`Press b)
+          | (#button     , true ) -> Some `Drag
+          | (`ALL        , false) -> Some `Release
+          (* | (`ALL        , true)  -> Some `Move *)
+          | _                     -> None
+        ) >|= fun e -> `Mouse (e, (x, y), mods)
+
+    | CSI _ | SS2 _ -> None
+
+  let rec events = function
+    | C0 '\x1b' :: cc :: ccs ->
+      ( match event_of_control_code cc with
+        | Some (`Key (k, mods)) -> `Key (k, `Meta :: mods) :: events ccs
+        | Some _                -> `Key (`Escape, []) :: events (cc::ccs)
+        | None                  -> `Key (`Escape, []) :: events ccs )
+    | cc::ccs -> (event_of_control_code cc |> Option.to_list) @ events ccs
+    | [] -> []
+
+  let decode xs = xs |> demux |> events
+
+
+  type t = event list ref
+
+  let create () = ref []
+
+  (* XXX `End *)
+  let next t = match !t with
+    | (#event as e)::es -> t := es ; e
+    | [] -> `Await
+
+  let list_of_utf8 str =
+    let f cs _ = function `Uchar c -> c::cs | _ -> cs in
+    str |> Uutf.String.fold_utf_8 f [] |> List.rev
+
+  let input t s i j =
+    let s = String.(if i > 0 || j < length s then sub s i j else s)
+    in t := !t @ (s |> list_of_utf8 |> decode)
 
 end
 
@@ -791,15 +877,19 @@ module Tmachine = struct
 
   let cursor cap = Cap.(function
     | None        -> cap.cursvis false
-    | Some (w, h) -> cap.cursvis true & cap.cursat h w)
+    | Some (w, h) -> cap.cursvis true & cap.cursat h w
+    )
 
   let create cap = {
       cap
     ; curs  = None
     ; dim   = (0, 0)
     ; image = I.empty
-    ; frags = Queue.singleton Cap.(get (cap.altscr true & cursor cap None))
     ; dead  = false
+    ; frags =
+      Queue.singleton Cap.(
+        get (cap.altscr true & cursor cap None & cap.mouse true)
+      )
     }
 
   let output t = Queue.(try `Output (take t.frags) with Empty -> `Await)
@@ -820,7 +910,9 @@ module Tmachine = struct
 
   let finish t =
     if t.dead then false else begin
-      emitv t [Cap.(get (t.cap.altscr false & t.cap.cursvis true))];
+      emitv t [ Cap.(
+        get (t.cap.altscr false & t.cap.cursvis true & t.cap.mouse false)
+      )];
       t.dead <- true;
       true
     end
