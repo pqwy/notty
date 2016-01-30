@@ -19,19 +19,6 @@ let maccum ~empty ~append xs =
     | a::b::xs -> append a b :: accum xs
   in step xs
 
-module Eq = struct
-
-  let option ~eq a b = match (a, b) with
-    | (None  , None  ) -> true
-    | (Some x, Some y) -> eq x y
-    | _                -> false
-
-  let rec list ~eq xs ys = match (xs, ys) with
-    | (x::xss, y::yss) -> eq x y && list ~eq xss yss
-    | ([], [])         -> true
-    | _                -> false
-end
-
 module Queue = struct
 
   include Queue
@@ -79,7 +66,6 @@ module Char = struct
 
   include Char
 
-  let equal (a : t) b = a = b
   let is_ctrl  c = Uchar.is_ctrl  (code c)
   let is_ascii c = Uchar.is_ascii (code c)
 end
@@ -120,7 +106,6 @@ module Int = struct
   let min (a : t) (b : t) = if a < b then a else b
   let compare (a : t) (b : t) = compare a b
   let sign (a : t) = compare a 0
-  let equal (a : t) (b : t) = a = b
 end
 
 module Option = struct
@@ -240,8 +225,15 @@ module A = struct
 
   module S = List.Set (Char)
 
-
   type color = int
+
+  type style = char
+
+  type t = {
+    fg : color option
+  ; bg : color option
+  ; st : style list
+  }
 
   let black        = 0
   let red          = 1
@@ -270,14 +262,6 @@ module A = struct
       invalid_arg "Notty.A.gray: level outside of range [0, 23]"
     else level + 232
 
-(*   let to_index x = x
-  let of_index x =
-    if x < 0 || x > 255 then
-      invalid_arg "Notty.A.of_index: index outside of range [0, 255]"
-    else x *)
-
-
-  type style = char
 
   let bold      = '1'
   let italic    = '3'
@@ -285,12 +269,6 @@ module A = struct
   let blink     = '5'
   let reverse   = '7'
 
-
-  type t = {
-    fg : color option
-  ; bg : color option
-  ; st : style list
-  }
 
   let empty = { fg = None; bg = None; st = []}
 
@@ -307,11 +285,6 @@ module A = struct
   let fg f = f @/ empty
   let bg b = b @// empty
   let st s = s @+ empty
-
-  let equal a1 a2 =
-    let aeq a b = Eq.option ~eq:Int.equal a b
-    and seq a b = Eq.list ~eq:Char.equal a b in
-    aeq a1.fg a2.fg && aeq a1.bg a2.bg && seq a1.st a2.st
 end
 
 module I = struct

@@ -130,14 +130,6 @@ Executable runes
   Build$:         flag(tests)
   BuildDepends:   notty.unix
 
-Executable escapes
-  Path:           demos
-  Install:        false
-  CompiledObject: best
-  MainIs:         escapes.ml
-  Build$:         flag(tests)
-  BuildDepends:   notty.unix
-
 
 Document api
   Title:              Documentation and API reference

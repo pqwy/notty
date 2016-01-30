@@ -133,8 +133,6 @@ module A : sig
 
   val st : style -> attr
   (** [st s] is [empty] with [s] as its single style. *)
-
-  val equal : attr -> attr -> bool
 end
 
 (** [I] is for image.
