@@ -137,6 +137,9 @@ val output_image : ?cap:Cap.t -> out_channel -> image -> unit
 val print_image : image -> unit
 (** [output_image stdout] *)
 
+val print_endline : image -> unit
+(** Like [print_image], followed by a newline. *)
+
 val winsize : Unix.file_descr -> (int * int) option
 (** [winsize fd] is [Some (w, h)] in character cells if [Unix.isatty fd],
     and [None] otherwise. *)

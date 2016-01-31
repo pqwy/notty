@@ -147,3 +147,5 @@ let output_image =
     ~write:Buffer.output_buffer
 
 let print_image = output_image ~cap:(cap_for_fd Unix.stdout) stdout
+
+let print_endline i = print_image i; print_string "\n"

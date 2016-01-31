@@ -7,7 +7,6 @@ let btw (x : int) a b = a <= x && x <= b
 
 let invalid_arg_s fmt = Printf.ksprintf invalid_arg fmt
 
-
 let maccum ~empty ~append xs =
   let rec step = function
     | []  -> empty
@@ -41,8 +40,8 @@ module List = struct
       | [] -> [e]
       | x::xt as xs ->
           match E.compare e x with
-          | -1 -> x :: cons e xt
-          |  1 -> e :: xs
+          | -1 -> e :: xs
+          |  1 -> x :: cons e xt
           |  _ -> xs
 
     let rec union xs ys = match (xs, ys) with
@@ -56,6 +55,19 @@ module List = struct
   end
 end
 
+module Buffer = struct
+
+  include Buffer
+
+  let add_decimal b = function
+    | x when btw x 0 999 ->
+        let d1 = x / 100 and d2 = (x mod 100) / 10 and d3 = x mod 10 in
+        if d1 > 0 then 0x30 + d1 |> Char.unsafe_chr |> add_char b;
+        if (d1 + d2) > 0 then 0x30 + d2 |> Char.unsafe_chr |> add_char b;
+        0x30 + d3 |> Char.unsafe_chr |> add_char b
+    | x -> string_of_int x |> add_string b
+end
+
 module Uchar = struct
 
   let is_ctrl  u = btw u 0x00 0x1f || btw u 0x7f 0x9f
@@ -66,6 +78,7 @@ module Char = struct
 
   include Char
 
+  let compare (a : char) b = Pervasives.compare a b
   let is_ctrl  c = Uchar.is_ctrl  (code c)
   let is_ascii c = Uchar.is_ascii (code c)
 end
@@ -285,6 +298,7 @@ module A = struct
   let fg f = f @/ empty
   let bg b = b @// empty
   let st s = s @+ empty
+
 end
 
 module I = struct
@@ -511,23 +525,13 @@ module Cap = struct
   ; mouse   : bool -> op
   }
 
-  let i = string_of_int
-
-  let (<|) = Buffer.add_string
-  and (<.) = Buffer.add_char
-
-  let csi op xs b =
-    let rec wr b = function
-      | []    -> ()
-      | [x]   -> b <| x
-      | x::xs -> b <| x; b <. ';'; wr b xs in
-    b <| "\x1b["; wr b xs; b <. op
+  let ((<|), (<.), (<!)) = Buffer.(add_string, add_char, add_decimal)
 
   let ansi = {
-      skip    = (fun n b -> csi 'C' [i n] b)
+      skip    = (fun n b -> b <| "\x1b["; b <! n; b <. 'C')
     ; newline = (fun b -> b <| "\x1bE")
     ; altscr  = (fun x b -> b <| if x then "\x1b[?1049h" else "\x1b[?1049l")
-    ; cursat  = (fun w h b -> csi 'H' [i w; i h] b)
+    ; cursat  = (fun w h b -> b <| "\x1b["; b <! w; b <. ';'; b <! h; b <. 'H')
     ; clreol  = (fun b -> b <| "\x1b[K")
     ; cursvis = (fun x b -> b <| if x then "\x1b[34h\x1b[?25h" else "\x1b[?25l")
     ; mouse   = (fun x b -> b <| if x then "\x1b[?1000;1002;1005;1015;1006h"
@@ -536,21 +540,21 @@ module Cap = struct
       fun attr b ->
         b <| "\x1b[0";
         ( match attr.A.fg with
-          | Some c when c < 8   -> b <. ';' ; b <| i (c + 30)
-          | Some c when c < 16  -> b <. ';' ; b <| i (c + 82)
-          | Some c              -> b <| ";38;5;" ; b <| i c
+          | Some c when c < 8   -> b <. ';' ; b <! (c + 30)
+          | Some c when c < 16  -> b <. ';' ; b <! (c + 82)
+          | Some c              -> b <| ";38;5;" ; b <! c
           | None -> ());
         ( match attr.A.bg with
-          | Some c when c < 8   -> b <. ';' ; b <| i (c + 40)
-          | Some c when c < 16  -> b <. ';' ; b <| i (c + 92)
-          | Some c              -> b <| ";48;5;" ; b <| i c
+          | Some c when c < 8   -> b <. ';' ; b <! (c + 40)
+          | Some c when c < 16  -> b <. ';' ; b <! (c + 92)
+          | Some c              -> b <| ";48;5;" ; b <! c
           | None -> ());
         List.iter (fun s -> b <. ';' ; b <. s) attr.A.st;
         b <. 'm'
     }
 
-  let no0 _ = ()
-  and no1 _ _ = ()
+  let no0 _     = ()
+  and no1 _ _   = ()
   and no2 _ _ _ = ()
 
   let dumb = {
@@ -642,8 +646,8 @@ module Unescape = struct
 
   let rec demux = let open Char in function
     | 0x1b::0x5b::0x4d::a::b::c::xs -> Esc_M (a, b, c) :: demux xs
-    | 0x1b::(0x5b::xs as xs0) ->
-        let (r, xs) = csi xs |> Option.get (C0 '\x1b', xs0) in r :: demux xs
+    | (0x1b::(0x5b::xs) | 0x9b::xs) ->
+        let (r, xs) = csi xs |> Option.get (C1 '\x5b', xs) in r :: demux xs
     | (0x1b::0x4f::x::xs | 0x8f::x::xs)
       when Uchar.is_ascii x               -> SS2 (chr x) :: demux xs
     | 0x1b::x::xs when btw x 0x40 0x5f    -> C1 (chr x) :: demux xs
@@ -771,22 +775,23 @@ module Unescape = struct
   let decode xs = xs |> demux |> events
 
 
-  type t = event list ref
+  type t = (event list * bool) ref
 
-  let create () = ref []
+  let create () = ref ([], false)
 
-  (* XXX `End *)
   let next t = match !t with
-    | (#event as e)::es -> t := es ; e
-    | [] -> `Await
+    | (#event as e::es, eof) -> t := (es, eof) ; e
+    | ([], false) -> `Await
+    | _           -> `End
 
-  let list_of_utf8 str =
-    let f cs _ = function `Uchar c -> c::cs | _ -> cs in
-    str |> Uutf.String.fold_utf_8 f [] |> List.rev
+  let list_of_utf8 str i j =
+    let f cs _ = function `Uchar c -> c::cs | _ -> cs
+    and str = String.(if i > 0 || j < length str then sub str i j else str)
+    in str |> Uutf.String.fold_utf_8 f [] |> List.rev
 
-  let input t s i j =
-    let s = String.(if i > 0 || j < length s then sub s i j else s)
-    in t := !t @ (s |> list_of_utf8 |> decode)
+  let input t s i j = t := match !t with
+    | (es, false) when j > 0 -> (es @ (list_of_utf8 s i j |> decode), false)
+    | (es, _)                -> (es, true)
 
 end
 

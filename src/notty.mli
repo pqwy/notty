@@ -486,7 +486,8 @@ module Unescape : sig
   (** [create ()] is a new, empty filter. *)
 
   val input : t -> string -> int -> int -> unit
-  (** [input t string i j] feeds [string] into the filter's input buffer.
+  (** [input t string i j] feeds [j] bytes of [string] into [t], starting from
+      position [i].
 
       [j = 0] signals the end of input. *)
 
@@ -495,7 +496,7 @@ module Unescape : sig
 
       {ul
       {- [`Await] means that the filter needs {{!input}more input}.}
-      {- [`End] means that the input ended.}
+      {- [`End] means that the input had ended.}
       {- [#event] is an {{!event}input event}.}} *)
 end
 

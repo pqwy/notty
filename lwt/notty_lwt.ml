@@ -5,11 +5,11 @@ open Notty_unix
 
 let whenopt f = function Some x -> f x | None -> ()
 
-let output_buffer fd buf =
-  let rec go b off = function
-    | 0 -> return_unit
-    | n -> Lwt_unix.write fd b off n >>= fun w -> go b (off + w) (n - w) in
-  go (Buffer.contents buf) 0 (Buffer.length buf)
+let rec write fd str off = function
+  | 0 -> return_unit
+  | n -> Lwt_unix.write fd str off n >>= fun w -> write fd str (off + w) (n - w)
+
+let output_buffer fd buf = Buffer.(write fd (contents buf) 0 (length buf))
 
 let (</>) a b = pick [(a >|= fun x -> `Left x); (b >|= fun x -> `Right x)]
 
@@ -120,5 +120,8 @@ let output_image =
     ~write:output_buffer
 
 let print_image = output_image ~cap:(cap_for_fd Unix.stdout) Lwt_unix.stdout
+
+let print_endline i =
+  print_image i >>= fun () -> write Lwt_unix.stdout "\n" 0 1
 
 let winsize fd = winsize (Lwt_unix.unix_file_descr fd)

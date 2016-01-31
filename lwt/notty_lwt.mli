@@ -67,5 +67,8 @@ val output_image : ?cap:Cap.t -> Lwt_unix.file_descr -> image -> unit Lwt.t
 val print_image : image -> unit Lwt.t
 (** [output_image stdout] *)
 
+val print_endline : image -> unit Lwt.t
+(** Like [print_image], followed by a newline. *)
+
 val winsize : Lwt_unix.file_descr -> (int * int) option
 (** See {!Notty_unix.winsize}. *)

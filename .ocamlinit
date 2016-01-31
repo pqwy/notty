@@ -9,3 +9,6 @@
 #require "lwt,lwt.unix"
 #directory "_build/lwt"
 #load "notty_lwt.cma"
+
+open Notty
+

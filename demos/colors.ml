@@ -21,11 +21,15 @@ let colors = A.[
 ]
 
 let styles = A.[
-  "bold"     , bold
-; "italic"   , italic
-; "underline", underline
-; "blink"    , blink
-; "reverse"  , reverse
+  "empty"      , empty
+; "bold"       , st bold
+; "italic"     , st italic
+; "underline"  , st underline
+; "blink"      , st blink
+; "reverse"    , st reverse
+; "bold/italic", bold @+ st italic
+; "rev/underln", underline @+ st reverse
+; "bold/rev"   , reverse @+ st bold
 ]
 
 let image =
@@ -49,7 +53,7 @@ let image =
       char A.(bg (gray ~level)) ' ' 1 1
     ) |> hcat
   and attr =
-    styles |> map (fun (n, s) -> hpad 0 1 (string A.(s @+ empty) n)) |> hcat
+    styles |> map (fun (n, s) -> hpad 0 1 (string A.(red @/ s) n)) |> hcat
   in
   intersperse (void 0 1) [core16; rgb; gray; attr]
   |> vcat |> pad ~left:1 ~top:1
