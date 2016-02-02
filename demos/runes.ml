@@ -11,16 +11,6 @@ let vpad_sp attr t b i =
 
 let grid xxs = xxs |> List.map I.hcat |> I.vcat
 
-let frame attr i =
-  let (w, h) = I.(width i, height i) in
-  let chr x = I.uchar attr (`Uchar x) 1 1
-  and hbar  = I.uchar attr (`Uchar 0x2500) w 1
-  and vbar  = I.uchar attr (`Uchar 0x2502) 1 h in
-  let (a, b, c, d) = (chr 0x256d, chr 0x256e, chr 0x256f, chr 0x2570) in
-  grid [ [a; hbar; b]
-       ; [vbar; i; vbar]
-       ; [d; hbar; c] ]
-
 let centered attr xs =
   let lns = List.map I.(string attr) xs in
   let w   = List.fold_left (fun a i -> max a I.(width i)) 0 lns in
@@ -80,7 +70,7 @@ let () =
   let img =
     I.(centered attr text
       |> vpad_sp attr 1 1 |> hpad_sp attr 2 2
-      |> frame attr
+      |> Images.outline attr
       |> I.hpad 2 2 |> I.vpad 2 2) in
-  print img;
+  Notty_unix.print_image_nl img;
   ()

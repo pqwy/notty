@@ -7,6 +7,8 @@ let btw (x : int) a b = a <= x && x <= b
 
 let invalid_arg_s fmt = Printf.ksprintf invalid_arg fmt
 
+let spr = Printf.sprintf
+
 let maccum ~empty ~append xs =
   let rec step = function
     | []  -> empty
@@ -117,8 +119,6 @@ module Int = struct
 
   let max (a : t) (b : t) = if a > b then a else b
   let min (a : t) (b : t) = if a < b then a else b
-  let compare (a : t) (b : t) = compare a b
-  let sign (a : t) = compare a 0
 end
 
 module Option = struct
@@ -162,6 +162,8 @@ module Text = struct
 
   let empty = Ascii ""
 
+  let is_empty = function (Ascii "" | Utf8 ("", _, _)) -> true | _ -> false
+
   let graphemes ?encoding str =
     let dec = Uutf.decoder ?encoding (`String str)
     and seg = Uuseg.create `Grapheme_cluster in
@@ -200,7 +202,9 @@ module Text = struct
           let s = String.init n @@ fun k ->
             if l1 && k = 0 || l2 && k = n - 1 then dead else s.[k + i]
           and ix = Array.init (w + 1) @@ fun k ->
-            if k = 0 then 0 else if k = w then n else max (-1) (ix.(k + x) - 1)
+            if k = 0 then 0 else
+            if k = w then n else
+              Int.max (-1) (ix.(k + x) - 1)
           in Utf8 (s, ix, w)
 
   let (code, chr, is_ctrl, is_ascii) = Char.(code, chr, is_ctrl, is_ascii)
@@ -219,17 +223,21 @@ module Text = struct
     | Error (`Malformed err) -> err_malformed err str
     | Error (`Control u)     -> err_ctrl_uchar u str
 
-  let of_string str =
-    if String.for_all is_ascii str then of_ascii str else of_unicode str
+  let of_string = function
+    | "" -> empty
+    | str when String.for_all is_ascii str -> of_ascii str
+    | str -> of_unicode str
 
   let of_uchars = of_string &. Utf8.of_uchars
 
   let replicatec w c =
-    let str = String.make w c in
-    if is_ctrl c then err_ctrl_uchar (code c) str else Ascii str
+    if is_ctrl c then
+      err_ctrl_uchar (code c) (spr "%d * %c" w c)
+    else if w < 1 then empty else Ascii (String.make w c)
 
   let replicateu w u =
     if Uchar.is_ascii u then replicatec w (chr u)
+    else if w < 1 then empty
     else of_unicode @@ Utf8.with_encoder ~hint:w @@ fun enc ->
       for _ = 1 to w do Uutf.encode enc (`Uchar u) |> ignore done
 end
@@ -275,13 +283,11 @@ module A = struct
       invalid_arg "Notty.A.gray: level outside of range [0, 23]"
     else level + 232
 
-
   let bold      = '1'
   let italic    = '3'
   let underline = '4'
   let blink     = '5'
   let reverse   = '7'
-
 
   let empty = { fg = None; bg = None; st = []}
 
@@ -361,31 +367,41 @@ module I = struct
         and h = Int.max (height t1) (height t2) in
         Zcompose ((t1, t2), (w, h))
 
-  let void w h =
-    if w < 0 || h < 0 || (w = 0 && h = 0) then Empty else Void (w, h)
 
-  let lincrop crop void (++) init fini t =
-    match Int.(sign init, sign fini) with
-    | (1, 1) -> crop init fini t
-    | (1, _) -> crop init 0 t ++ void (-fini)
-    | (_, 1) -> void (-init) ++ crop 0 fini t
-    | _      -> void (-init) ++ t ++ void (-fini)
+  let void w h =
+    if w < 1 && h < 1 then Empty else Void Int.(max 0 w, max 0 h)
+
+
+  let lincropinv crop void (++) init fini t =
+    match (init >= 0, fini >= 0) with
+    | (true, true) -> crop init fini t
+    | (true, _   ) -> crop init 0 t ++ void (-fini)
+    | (_   , true) -> void (-init) ++ crop 0 fini t
+    | _            -> void (-init) ++ t ++ void (-fini)
+    (* match Int.(sign init, sign fini) with *)
+    (* | (1, 1) -> crop init fini t *)
+    (* | (1, _) -> crop init 0 t ++ void (-fini) *)
+    (* | (_, 1) -> void (-init) ++ crop 0 fini t *)
+    (* | _      -> void (-init) ++ t ++ void (-fini) *)
 
   let hcrop =
     let ctor left right t =
       let w = width t - left - right in
-      if w > 0 then Hcrop ((t, left, right), (w, height t)) else Empty
-    in lincrop ctor (fun w -> void w 0) (<|>)
+      if w > 0 then Hcrop ((t, left, right), (w, height t))
+      else void w (height t)
+    in lincropinv ctor (fun w -> void w 0) (<|>)
 
   let vcrop =
     let ctor top bottom t =
       let h = height t - top - bottom in
-      if h > 0 then Vcrop ((t, top, bottom), (width t, h)) else Empty
-    in lincrop ctor (void 0) (<->)
+      if h > 0 then Vcrop ((t, top, bottom), (width t, h))
+      else void (width t) h
+    in lincropinv ctor (void 0) (<->)
 
   let crop ?(left=0) ?(right=0) ?(top=0) ?(bottom=0) t =
     let t = if left <> 0 || right <> 0 then hcrop left right t else t in
     if top <> 0 || bottom <> 0 then vcrop top bottom t else t
+
 
   let hpad left right t = hcrop (-left) (-right) t
 
@@ -394,35 +410,41 @@ module I = struct
   let pad ?(left=0) ?(right=0) ?(top=0) ?(bottom=0) t =
     crop ~left:(-left) ~right:(-right) ~top:(-top) ~bottom:(-bottom) t
 
+
   let hcat = maccum ~empty ~append:(<|>)
 
   let vcat = maccum ~empty ~append:(<->)
 
-(*   let zcat = maccum ~empty ~append:(<^>) *)
   let zcat xs = List.fold_right (<^>) xs empty
+(*   let zcat = maccum ~empty ~append:(<^>) *)
 
-  let tile w h i =
-    List.(replicate h (replicate w i |> hcat) |> vcat)
 
-  let text attr t = Segment (attr, t)
+  let text attr t =
+    if Text.is_empty t then Empty else Segment (attr, t)
 
   let string attr s = text attr (Text.of_string s)
 
+  let stringp attr fmt = Printf.ksprintf (string attr) fmt
+
   let uchars attr a = text attr (Text.of_uchars a)
 
-  let char attr c w h =
-    tile 1 h (text attr (Text.replicatec w c))
+  let chars ctor attr c w h =
+    if w < 1 || h < 1 then void w h else
+      text attr (ctor w c) |> List.replicate h |> vcat
 
-  let uchar attr (`Uchar u) w h =
-    tile 1 h (text attr (Text.replicateu w u))
+  let char  = chars Text.replicatec
+  let uchar = chars Text.replicateu
 
-  let hframe ?(align=`Middle) w t =
+
+  let tile w h i = List.(replicate h (replicate w i |> hcat) |> vcat)
+
+  let hlimit ?(align=`Middle) w t =
     let off = width t - w in match align with
       | `Left   -> hcrop 0 off t
       | `Right  -> hcrop off 0 t
       | `Middle -> let w1 = off / 2 in hcrop w1 (off - w1) t
 
-  let vframe ?(align=`Middle) h t =
+  let vlimit ?(align=`Middle) h t =
     let off = height t - h in match align with
       | `Top    -> vcrop 0 off t
       | `Bottom -> vcrop off 0 t
@@ -793,6 +815,8 @@ module Unescape = struct
     | (es, false) when j > 0 -> (es @ (list_of_utf8 s i j |> decode), false)
     | (es, _)                -> (es, true)
 
+  let pending t = match !t with ([], false) -> false | _ -> true
+
 end
 
 module Tmachine = struct
@@ -808,7 +832,10 @@ module Tmachine = struct
   ; mutable dead  : bool
   }
 
-  let emitv t xs = Queue.addv t.frags xs
+  let emitv t xs =
+    if t.dead then
+      invalid_arg "Notty: use of released terminal"
+    else Queue.addv t.frags xs
 
   let cursor cap = Cap.(function
     | None        -> cap.cursvis false
@@ -833,27 +860,26 @@ module Tmachine = struct
       Cap.(get (cursor t.cap None & t.cap.Cap.cursat 1 1))
     ; Render.to_string t.cap t.dim t.image
     ; Cap.get (cursor t.cap t.curs)
-  ]
+    ]
 
   let set_size t dim = t.dim <- dim
 
   let resize t dim = t.dim <- dim; refresh t
 
-  let cursor t curs = t.curs <- curs; emitv t [Cap.get (cursor t.cap curs)]
-
   let image t image = t.image <- image; refresh t
 
-  let finish t =
+  let cursor t curs = t.curs <- curs; emitv t [Cap.get (cursor t.cap curs)]
+
+  let release t =
     if t.dead then false else begin
-      emitv t [ Cap.(
+      emitv t [Cap.(
         get (t.cap.altscr false & t.cap.cursvis true & t.cap.mouse false)
       )];
-      t.dead <- true;
-      true
+      t.dead <- true; true
     end
 
   let size t = t.dim
-
+  let dead t = t.dead
 end
 
 type attr  = A.t

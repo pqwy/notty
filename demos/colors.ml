@@ -58,4 +58,4 @@ let image =
   intersperse (void 0 1) [core16; rgb; gray; attr]
   |> vcat |> pad ~left:1 ~top:1
 
-let () = print image
+let () = Notty_unix.print_image_nl image

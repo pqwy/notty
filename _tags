@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: a79d8d791c549f1683bfbd03f922a60e)
+# DO NOT EDIT (digest: 73bbd283e90cf73803e21d44fe9a0338)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -150,6 +150,22 @@ true: annot, bin_annot
 <demos/runes.{native,byte}>: package(uutf)
 <demos/runes.{native,byte}>: use_notty
 <demos/runes.{native,byte}>: use_notty_unix
+# Executable crops
+<demos/crops.{native,byte}>: package(rresult)
+<demos/crops.{native,byte}>: package(unix)
+<demos/crops.{native,byte}>: package(uucp)
+<demos/crops.{native,byte}>: package(uuseg)
+<demos/crops.{native,byte}>: package(uutf)
+<demos/crops.{native,byte}>: use_notty
+<demos/crops.{native,byte}>: use_notty_unix
+# Executable mouse
+<demos/mouse.{native,byte}>: package(rresult)
+<demos/mouse.{native,byte}>: package(unix)
+<demos/mouse.{native,byte}>: package(uucp)
+<demos/mouse.{native,byte}>: package(uuseg)
+<demos/mouse.{native,byte}>: package(uutf)
+<demos/mouse.{native,byte}>: use_notty
+<demos/mouse.{native,byte}>: use_notty_unix
 <demos/*.ml{,i,y}>: package(rresult)
 <demos/*.ml{,i,y}>: package(unix)
 <demos/*.ml{,i,y}>: package(uucp)

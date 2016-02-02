@@ -7,68 +7,78 @@
     analogously. Consult its {{!Notty_unix}documentation} for more info. *)
 open Notty
 
-(** Full-screen terminal IO with concurrency. *)
-module Terminal : sig
+(** {1:fullscreen Fullscreen input and output}. *)
 
-  (** {1 Construction and destruction} *)
+(** Terminal IO with concurrency.
+
+    For more info, see {!Notty_unix.Terminal}. *)
+module Terminal : sig
 
   type t
 
+  (** {1 Construction and destruction} *)
+
   val create : ?dispose:bool ->
-               ?autosize:bool ->
                ?input:Lwt_unix.file_descr ->
                ?output:Lwt_unix.file_descr ->
                unit -> t
-  (** [create ~dispose ~autosize ~input ~output ()] is a new {{!t}terminal}.
+  (** [create ~dispose ~input ~output ()] is a new {{!t}terminal}.
 
-      For side-effects of this functions and the meaning of its arguments, see
-      the {{!Notty_unix.Terminal.create}blocking version}. *)
+      {b Note} [~dispose] arranges for the terminal to be disposed of at the end
+      of [Lwt] main loop, not at process exit. 
+      
+      See {!Notty_unix.Terminal.create}. *)
 
   val release : t -> unit Lwt.t
-  (** [release t] cleans up [t]. See the
-      {{!Notty_unix.Terminal.release}blocking version}. *)
 
   (** {1 Commands} *)
 
-  val image  : t -> image -> unit Lwt.t
-  val redraw : t -> unit Lwt.t
-  val cursor : t -> (int * int) option -> unit Lwt.t
+  val image   : t -> image -> unit Lwt.t
+  val refresh : t -> unit Lwt.t
+  val cursor  : t -> (int * int) option -> unit Lwt.t
 
   (** {1 Input} *)
 
-  val input : t -> Unescape.event Lwt_stream.t
-  (** [input t] is the stream of received input {!Notty.Unescape.event}s.
-      Repeated invocations return the same stream in the sense of [==]. *)
+  val events : t -> [ Unescape.event | `Resize of (int * int) ] Lwt_stream.t
+  (** [events t] is the stream of incoming events.
+
+      Invoking {!release} will terminate this stream.
+
+      Events are:
+      {ul
+      {- [#Unescape.event] with {!Notty.Unescape.event} from the input fd; or}
+      {- [`Resize (int * int)] whenever the terminal size changes.}}
+
+      {b Note} This stream is unique; for the same [t], [events t] always
+      returns the same stream. *)
 
   (** {1 Properties} *)
 
   val size : t -> (int * int)
 
-  (** {1 Window size change notifications} *)
+  (** {1 Window size change notifications}
 
-  (** {{!create}Creating} a {{!t}terminal} will install a [SIGWINCH] handler.
-      These operations allow the user to monitor deliveries of that signal.
+      {{!create}Creating} a terminal will install a [SIGWINCH] handler.
+      The handler should not be replaced directly. This API allows the user to
+      monitor deliveries of the signal.
 
       See {!Notty_unix.Terminal.Winch}. *)
 
-  val next_winch : unit -> unit Lwt.t
-  (** [next_winch ()] is a thread completing after the next [SIGWINCH]. *)
-
-  val next_resize : t -> (int * int) Lwt.t
-  (** [next_resize t] is a thread completing after the next [SIGWINCH],
-      yielding [t]'s output tty size at that moment. *)
+  val winch : unit -> unit Lwt.t
+  (** [winch ()] is a thread completing after the next [SIGWINCH]. A single
+      signal delivery will cause the completion of all waiting [winch] threads. *)
 end
 
-val output_image : ?cap:Cap.t -> Lwt_unix.file_descr -> image -> unit Lwt.t
-(** Outputs the {{!image}image} on the file descriptor.
-
-    See {!Notty_unix.output_image}. *)
-
-val print_image : image -> unit Lwt.t
-(** [output_image stdout] *)
-
-val print_endline : image -> unit Lwt.t
-(** Like [print_image], followed by a newline. *)
+(** {1:inline Inline output} *)
 
 val winsize : Lwt_unix.file_descr -> (int * int) option
-(** See {!Notty_unix.winsize}. *)
+
+val output_image_f : ?cap:Cap.t -> Lwt_unix.file_descr -> (int * int -> image) -> unit Lwt.t
+
+val output_image : ?cap:Cap.t -> Lwt_unix.file_descr -> image -> unit Lwt.t
+
+val print_image_f : (int * int -> image) -> unit Lwt.t
+
+val print_image : image -> unit Lwt.t
+
+val print_image_nl : image -> unit Lwt.t

@@ -28,7 +28,7 @@ Library notty
   Path:          src/
   Modules:       Notty
   BuildDepends:  uucp, uuseg, uutf, rresult
-  ByteOpt:       -w A-4-33-40-41-42-43-34-44
+  ByteOpt:       -w A-4-33-40-41-42-43-34-44-48
 
 Library notty_unix
   Findlibparent: notty
@@ -38,7 +38,7 @@ Library notty_unix
   CSources:      native/winsize.c
   CCOpt:         --std=c99 -Wall -Wextra -Werror -O3
   BuildDepends:  notty, unix
-  ByteOpt:       -w A-4-33-40-41-42-43-34-44
+  ByteOpt:       -w A-4-33-40-41-42-43-34-44-48
   Build$:        flag(unix)
 
 Library notty_lwt
@@ -47,7 +47,7 @@ Library notty_lwt
   Path:          lwt/
   Modules:       Notty_lwt
   BuildDepends:  notty, notty.unix, lwt, lwt.unix
-  ByteOpt:       -w A-4-33-40-41-42-43-34-44
+  ByteOpt:       -w A-4-33-40-41-42-43-34-44-48
   Build$:        flag(unix) && flag(lwt)
 
 Executable speed
@@ -130,6 +130,21 @@ Executable runes
   Build$:         flag(tests)
   BuildDepends:   notty.unix
 
+Executable crops
+  Path:           demos
+  Install:        false
+  CompiledObject: best
+  MainIs:         crops.ml
+  Build$:         flag(tests)
+  BuildDepends:   notty.unix
+
+Executable mouse
+  Path:           demos
+  Install:        false
+  CompiledObject: best
+  MainIs:         mouse.ml
+  Build$:         flag(tests)
+  BuildDepends:   notty.unix
 
 Document api
   Title:              Documentation and API reference

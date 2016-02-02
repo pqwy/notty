@@ -1,4 +1,5 @@
 open Notty
+open Notty_unix
 open Common
 
 let hpadwith attr c a b i =
@@ -39,11 +40,11 @@ let () =
 
   patterns |> List.map (fun s ->
     cuts (string A.(lightmagenta @/ bg darkgray) s)
-  ) |> I.vcat |> print;
+  ) |> I.vcat |> print_image_nl ;
 
   colors |> List.mapi (fun i c ->
     pad ~left:i ~top:i (
       string A.(blink @+ black @/ bg c) "茶" <|>
       pad ~left:2 ~top:1
         (string A.(blink @+ fg c) "PARTY!"))
-  ) |> zcat |> pad ~left:2 ~top:2 ~bottom:2 |> print
+  ) |> zcat |> pad ~left:2 ~top:2 ~bottom:2 |> print_image_nl

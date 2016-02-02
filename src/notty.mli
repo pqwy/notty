@@ -36,20 +36,22 @@ module A : sig
 
   (** {1 Colors}
 
+      [Notty] uses 256 {e xterm-style} colors.
+
+      The first 16 are supported on most terminals. Their names are
+      standardized, but the actual colors are not, and are user-definable on
+      many terminal emulators.
+
+      The next 216 form the 6*6*6 {e color cube}.
+
+      The final 24 are the {e grayscale ramp}.
+
       {b Note} Presently, no attempt is made to remap colors depending on the
       terminal. This means that the colors not recognized by a particular
       terminal will simply be ignored in the output. *)
 
   type color
-  (** One of the 256 terminal colors.
-
-      The first 16 are supported on most terminals. Their names are
-      standardized, but the actual colors are not. In addition, these colors
-      are user definable on many terminal emulators.
-
-      The next 216 form the 6*6*6 color cube.
-
-      The final 24 are the grayscale ramp.  *)
+  (** One of the 256 terminal colors. *)
 
   (** {2 Core 16 colors} *)
 
@@ -95,13 +97,13 @@ module A : sig
   val blink     : style
   val reverse   : style
 
-  (** {1 Attribute composition} *)
+  (** {1 Attribute construction and composition} *)
 
   (** {{!attr}Attribute} describes visual appearance of fragments of text.
 
       Attributes combine a foreground and a background {{!color}color} with a
       set of {{!style}styles}. Either color can be {e missing} from an
-      attribute, in which case the terminal's {e default} foreground (resp.
+      attribute, in which case the terminal's default foreground (resp.
       background) is used.
 
       They are used to construct primitive {{!I}images}. *)
@@ -114,7 +116,7 @@ module A : sig
   (** [a1 & a2] is the attribute that has [a2]'s foreground (resp. background)
       if not {e missing}, or [a1]'s otherwise, and the union of both style sets.
 
-      {{!attr}[attr]}, {{!empty}[empty]} and {{!(&)}[&]} form a monoid. *)
+      {{!attr}[attr]} forms a monoid under {{!empty}[empty]} and {{!(&)}[&]}. *)
 
   val (@/) : color -> attr -> attr
   (** [c @/ a] is [a] with [c] for its foreground. *)
@@ -160,7 +162,7 @@ module I : sig
       These are taken to be characters in the ranges [0x00-0x1f] ({b C0}) and
       [0x80-0x9f] ({b C1}), and [0x7f] (BACKSPACE). This is the
       {{: http://unicode.org/glossary/#general_category}Unicode general
-      category} {e Cc}.
+      category} {b Cc}.
 
       As control characters directly influence the cursor positioning, they
       cannot be used to create images.
@@ -223,8 +225,8 @@ module I : sig
 
       @raise Invalid_argument if [c] is a {{!ctrls}control character}. *)
 
-  val uchar : attr -> [ `Uchar of uchar ] -> int -> int -> image
-  (** [uchar attr (`Uchar u) w h] is a [w * h] grid with the unicode character
+  val uchar : attr -> uchar -> int -> int -> image
+  (** [uchar attr u w h] is a [w * h] grid with the unicode character
       [u] in every cell.
 
       @raise Invalid_argument if [u] is a {{!ctrls}control character}. *)
@@ -237,10 +239,8 @@ module I : sig
       a cell filled with the background color. This means that [void] interacts
       specially with {{!(<^>)}overlays}.
 
-      It makes no sense to have negative [w] or [h] so [void] degenerates to
-      [empty] in either case. Furthermore, [void 0 0 = empty]. It {e does} make
-      sense to have a [void] which is [0] in one, and positive in the other
-      dimension. *)
+      A negative size is treated as [0]. [void 0 0] is [empty]. Void with only
+      one dimension [0] acts as a spacing element in the other dimension. *)
 
   (** {1 Image composition}
 
@@ -304,7 +304,8 @@ v} *)
       {- [hcrop 0 1 [abc] = [ab]]}
       {- [hcrop 1 1 [abc] = [b]]}
       {- [hcrop (-1) 1 [abc] = void 1 1 <|> hcrop 0 1 [abc] = [.ab]]}
-      {- [hcrop 2 2 [abc] = empty]}} *)
+      {- [hcrop 2 2 [abc] = empty]}
+      {- [hcrop 2 2 [a] = void]}} *)
 
   val vcrop : int -> int -> image -> image
   (** [vcrop top bottom i] is analogous to {{!hcrop}[hcrop]}, but operating
@@ -316,6 +317,10 @@ v} *)
       Missing parameters default to [0]. *)
 
   (** {1 Derived combinators} *)
+
+  val stringp : attr -> ('a, unit, bytes, image) format4 -> 'a
+  (** [stringp attr fmt p1 ...] is the image containing the string
+      [sprintf fmt p1 ...]. *)
 
   val hpad : int -> int -> image -> image
   (** {{!hcrop}[hcrop]} with margins negated. *)
@@ -339,13 +344,13 @@ v} *)
   (** [tile m n i] is a grid of [m] horizontal and [n] vertical repetitions
       of [i]. *)
 
-  val hframe : ?align:[ `Left | `Middle | `Right ] -> int -> image -> image
-  (** [hframe ~align w i] is an image of width strictly [w] obtained by either
+  val hlimit : ?align:[ `Left | `Middle | `Right ] -> int -> image -> image
+  (** [hlimit ~align w i] is an image of width strictly [w] obtained by either
       horizontally padding or cropping [i] and positioning it according to
       [align]. *)
 
-  val vframe : ?align:[ `Top | `Middle | `Bottom ] -> int -> image -> image
-  (** [vframe ~align h i] is an image of height strictly [h] obtained by either
+  val vlimit : ?align:[ `Top | `Middle | `Bottom ] -> int -> image -> image
+  (** [vlimit ~align h i] is an image of height strictly [h] obtained by either
       vertically padding or cropping [i] and positioning it according to
       [align]. *)
 end
@@ -464,9 +469,9 @@ module Unescape : sig
       combinations. *)
 
   val decode : uchar list -> event list
-  (** [decode us] gives the events represented by [us].
+  (** [decode ucs] gives the events represented by [ucs].
 
-      [us] are assumed to have been generated in a burst, and the end of the
+      [ucs] are assumed to have been generated in a burst, and the end of the
       list is taken to mean a pause.
       Therefore, [decode us1 @ decode us2 <> decode (us1 @ us2)] if [us1] ends
       with a partial escape sequence, including a lone [\x1b].
@@ -498,6 +503,11 @@ module Unescape : sig
       {- [`Await] means that the filter needs {{!input}more input}.}
       {- [`End] means that the input had ended.}
       {- [#event] is an {{!event}input event}.}} *)
+
+  val pending : t -> bool
+  (** [pending t] is [true] if a call to [next], without any intervening input,
+      would {e not} return [`Await]. *)
+
 end
 
 (**/**)
@@ -518,7 +528,7 @@ module Tmachine : sig
   type t
 
   val create  : Cap.t -> t
-  val finish  : t -> bool
+  val release : t -> bool
   val output  : t -> [ `Output of string | `Await ]
 
   val refresh  : t -> unit
@@ -529,6 +539,7 @@ module Tmachine : sig
   val set_size : t -> (int * int) -> unit
 
   val size : t -> (int * int)
+  val dead : t -> bool
 end
 (**/**)
 
@@ -543,39 +554,38 @@ We assume the module has been opened:
 
 As the core module has no IO, we borrow a helper from {!Notty_unix}:
 
-{[let print_i i =
-  Notty_unix.print_image i;
-  print_char '\n'
-]}
+{[let print_image_nl = Notty_unix.print_image_nl]}
 
 {2 Hello}
 
 Output ["rad"] with default foreground and background:
 
-{[let () = print_i (I.string A.empty "rad") ]}
+{[print_image_nl (I.string A.empty "rad") ]}
 
 {2 Hello, with colors}
 
 Output ["rad"] in rad letters:
 
-{[let () = print_i (I.string A.(fg red) "rad") ]}
+{[print_image_nl (I.string A.(fg lightred) "rad") ]}
 
 {2 Padding and spacing}
 
 Output ["rad"] and ["stuff"] in different colors and with a space between:
 
-{[let () =
-  let i = I.(
-    string A.(fg red) "rad " <|> string A.(white @/ bg red) "stuff"
-  ) in print_i i]}
+{[
+let i = I.(
+  string A.(fg red) "rad " <|> string A.(white @/ bg red) "stuff"
+) in print_image_nl i
+]}
 
 Output ["rad stuff"] with the second word hanging on a line below:
 
-{[let () =
-  let attr = A.(white @/ bg red) in
-  let i = I.(
-    string attr "rad" <|> pad ~top:1 ~left:1 (string attr "stuff")
-  ) in print_i i]}
+{[
+let attr = A.(white @/ bg red) in
+let i = I.(
+  string attr "rad" <|> pad ~top:1 ~left:1 (string attr "stuff")
+) in print_image_nl i
+]}
 
 {2 More geometry}
 
@@ -593,25 +603,11 @@ i.e. the source is UTF-8 encoded.
 
 Print a triangle:
 
-{[let () = print_i (sierp 7)]}
+{[print_image_nl (sierp 7)]}
 
 Print a triangle overlaid over its shifted copy:
 
-{[let () =
-  let s = sierp 7 in
-  print_i I.(s <^> hpad 1 0 s)
-]}
-
-Print a triangle that fits into your terminal:
-
-{[let winsize_ch chan =
-  Notty_unix.winsize (Unix.descr_of_out_channel chan)
-let () =
-  let steps = match winsize_ch stdout with
-    | None -> 0
-    | Some (w, _) -> int_of_float (log (float w) /. log 2.) in
-  print_i (sierp steps)
-]}
+{[let s = sierp 7 in print_image_nl I.(s <^> hpad 1 0 s)]}
 
 Blinkenlights:
 
@@ -619,39 +615,58 @@ Blinkenlights:
 let rad n color =
   let attr = A.(fg color) in
   I.((void n 0 <|> string A.(blink @+ attr) "rad")
-      <-> (void (n + 6) 0 <|> string attr "stuff"))
+      <-> (void (n + 6) 0 <|> string attr "stuff")) in
 let image =
   A.[red; green; yellow; blue; magenta; cyan]
   |> List.mapi I.(fun i c -> pad ~top:i ~left:(2*i) (rad i c))
-  |> I.zcat
-let () = print_i image
+  |> I.zcat in
+print_image_nl image
 ]}
 
 {b Note} Usage of {{!A.blink}[blink]} might be regulated by law in some
 jurisdictions.
+
+{2 Taking terminal size into account}
+
+Space a line end-to-end horizontally:
+
+{[
+Notty_unix.print_image_f I.(fun (w, _) ->
+  hcat [ string A.(fg red) "very"
+       ; void (w - 8) 1
+       ; string A.(fg green) "wide" ])
+]}
+
+Print a triangle that fits into the terminal:
+
+{[
+Notty_unix.print_image_f @@ fun (w, _) ->
+  let steps = int_of_float ((log (float w)) /. log 2.) in
+  sierp steps |> I.vpad 0 1
+]}
+
 
 {2 Simple interaction}
 
 {[
 open Notty_unix
 
-let () =
-  let img (double, n) =
-    let s = sierp n in
-    if double then I.(s <^> hpad 1 0 s) else s in
-  let rec update t state =
-    Terminal.image t (img state); wait t state
-  and wait t (double, n as state) =
-    match Terminal.input t with
-    | `Key (`Enter,_)      -> ()
-    | `Key (`Left,_)       -> update t (double, max 1 (n - 1))
-    | `Key (`Right,_)      -> update t (double, min 8 (n + 1))
-    | `Key (`Uchar 0x20,_) -> update t (not double, n)
-    | _                    -> wait t state
-  in
-  let t = Terminal.create () in
-  update t (false, 1);
-  Terminal.release t
+let img (double, n) =
+  let s = sierp n in
+  if double then I.(s <^> hpad 1 0 s) else s in
+let rec update t state =
+  Terminal.image t (img state); wait t state
+and wait t (double, n as state) =
+  match Terminal.input t with
+  | `Key (`Enter,_)      -> ()
+  | `Key (`Left,_)       -> update t (double, max 1 (n - 1))
+  | `Key (`Right,_)      -> update t (double, min 8 (n + 1))
+  | `Key (`Uchar 0x20,_) -> update t (not double, n)
+  | _                    -> wait t state
+in
+let t = Terminal.create () in
+update t (false, 1);
+Terminal.release t
 ]}
 
 *)

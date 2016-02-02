@@ -1,5 +1,7 @@
 open Notty
 
+let pow n e = int_of_float (float n ** float e)
+
 module List = struct
 
   include List
@@ -60,14 +62,12 @@ module Images = struct
 
   let i5 =
     let open I in
-    tile 5 1 @@ List.(
+    tile 5 1 List.(
       range 0 15 |> map (fun i -> pad ~top:i ~left:(i*2) i2) |> zcat
     )
 
 
   let square color = I.string A.(fg color) "◾"
-
-  let pow n e = int_of_float (float n ** float e)
 
   let rec cantor = let open I in function
     | 0 -> square A.lightblue
@@ -88,24 +88,29 @@ module Images = struct
     else hpad 1 0 (string A.(fg c) "◾")
   )
 
+  let grid xxs = xxs |> List.map I.hcat |> I.vcat
+
+  let outline attr i =
+    let (w, h) = I.(width i, height i) in
+    let chr x = I.uchar attr x 1 1
+    and hbar  = I.uchar attr 0x2500 w 1
+    and vbar  = I.uchar attr 0x2502 1 h in
+    let (a, b, c, d) = (chr 0x256d, chr 0x256e, chr 0x256f, chr 0x2570) in
+    grid [ [a; hbar; b]; [vbar; i; vbar]; [d; hbar; c] ]
 end
 
-let ch c = `Uchar (Char.code c)
+module Terminal = Notty_unix.Terminal
 
-open Notty_unix
-
-let print i =
-  print_image i; print_string "\n"; flush stdout
-
-let simpleterm ~image ~step ~s =
+let simpleterm ~imgf ~f ~s =
   let term = Terminal.create () in
+  let imgf (w, h) s =
+    I.(string A.(fg darkgray) "[ESC quits.]" <-> imgf (w, h - 1) s) in
   let rec go s =
+    Terminal.image term (imgf (Terminal.size term) s);
     match Terminal.input term with
-    | `End -> ()
-    | #Unescape.event as e ->
-        match step s e with
-        | Some s -> Terminal.image term (image s); go s
-        | None   -> ()
+    | `End | `Key (`Escape, []) -> ()
+    | `Resize _                 -> go s
+    | #Unescape.event as e      ->
+        match f s e with Some s -> go s | _ -> ()
   in
-  Terminal.image term (image s);
   go s

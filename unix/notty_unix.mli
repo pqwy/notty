@@ -2,25 +2,33 @@
 
     This is an IO module for {!Notty}. Consult its {{!Notty}documentation} for
     the basics.
+
+    {b Note} All {!Notty.image} output requires {{!Notty.Cap.t}terminal
+    capabilities}. These are usually auto-detected, by checking that the output
+    is a tty, that the environment variable [$TERM] is set, and that it is not
+    set to either [""] or ["dumb"]. If these conditions hold,
+    {{!Notty.Cap.ansi}ANSI} escapes are used. Otherwise, {{!Notty.Cap.dumb}no}
+    escapes are used.
+
     *)
 open Notty
 
-(** Full-screen terminal IO. *)
+(** {1:fullscreen Fullscreen input and output}. *)
+
+(** Terminal IO abstraction for fullscreen, interactive applications.
+
+    This module provides both input and output. It assumes exlusive ownership of
+    the IO streams between {{!create}initialization} and {{!release}shutdown}.
+    *)
 module Terminal : sig
 
   type t
-  (** An interactive terminal, combining input and output. *)
+  (** Representation of the terminal, giving structured access to IO. *)
 
   (** {1 Construction and destruction} *)
 
-  val create : ?dispose:bool ->
-               ?autosize:bool ->
-               ?input:Unix.file_descr ->
-               ?output:Unix.file_descr ->
-               unit -> t
-  (** [create ~dispose ~autosize ~input ~output ()] is a fresh {{!t}terminal},
-      giving structured access to [input] and [output] suitable for full-screen
-      terminal programs.
+  val create : ?dispose:bool -> ?input:Unix.file_descr -> ?output:Unix.file_descr -> unit -> t
+  (** [create ~dispose ~input ~output ()] is a fresh {{!t}terminal}.
 
       [create] has the following side effects:
       {ul
@@ -28,36 +36,31 @@ module Terminal : sig
          canonical mode}.}
       {- [output] is set to {e alternate screen mode} and the cursor is hidden
          using the appropriate escape sequences.}
-      {- [SIGWINCH] signal, normally ignored, is handled. This means that
-         IO in your program will now be interrupted by [EINTR] on every window
-         resize.}}
+      {- [SIGWINCH] signal, normally ignored, is handled. Resizing the window
+         will interrupt blocking calls to functions in [Unix] with the exception
+         {!Unix.Unix_error} [EINTR] from then on.}}
 
-      [dispose] arranges for automatic {{!release}cleanup} of the terminal
+      [~dispose] arranges for automatic {{!release}cleanup} of the terminal
       before the process terminates. The downside is that a reference to this
       terminal is retained until the program exits. Defaults to [true].
 
-      [autosize] activates automatic {{!redraw}redrawing} of output whenever
-      the window is resized. Defaults to [true].
+      [~input] is the input file descriptor. Defaults to [stdin].
 
-      [input] is the input file descriptor. Defaults to [stdin].
-
-      [output] is the output file descriptor. Defaults to [stdout].
-
-      {{!Cap}Capabilities} are detected as in {!output_image}.
-
-      {b Note} It is probably a poor idea to create multiple terminals sharing
-      the same [input] or [output]. *)
+      [~output] is the output file descriptor. Defaults to [stdout]. *)
 
   val release : t -> unit
   (** Dispose of this terminal. Original behavior of input is reinstated, the
-      output is cleared, cursor is restored and alternate mode is terminated.  *)
+      output is cleared, cursor is restored and alternate mode is terminated.
 
-  (** {1 Commands} *)
+      It is an error to use the {{!cmds}commands} on a released terminal.
+      [release] itself is idempotent. *)
+
+  (** {1:cmds Commands} *)
 
   val image : t -> image -> unit
   (** Sets a new {{!Notty.image}[image]} and redraws the terminal. *)
 
-  val redraw : t -> unit
+  val refresh : t -> unit
   (** Redraws the terminal. Useful if the output might have become garbled. *)
 
   val cursor : t -> (int * int) option -> unit
@@ -68,11 +71,23 @@ module Terminal : sig
 
   (** {1 Input} *)
 
-  val input : t -> [ Unescape.event | `End ]
-  (** Wait for new input {!Notty.Unescape.event} to arrive.
+  val input : t -> [ Unescape.event | `Resize of (int * int) | `End ]
+  (** Wait for new input.
 
-      If [t] has {{!create}[autosize]}, [input] will silently restart and mask
-      any [SIGWINCH] delivered while the call is in progress. *)
+      [input t] can be:
+      {ul
+      {- [#Unescape.event] with {!Notty.Unescape.event} from the input fd;}
+      {- [`End] if the input fd is closed, or the terminal was released; or}
+      {- [`Resize (cols * rows)] giving the current size of the output tty, if a
+         [SIGWINCH] was delivered before or during this call to [input].}}
+
+      {b Note} [input] is buffered. Calls to [input] can either block or
+      immediately return. Use {!input_pending} to detect whether the next call
+      would not block. *)
+
+  val input_pending : t -> bool
+  (** [input_pending t] is [true] if the next call to [input] would not block
+      and the terminal has not yet been released *)
 
   (** {1 Properties} *)
 
@@ -86,15 +101,12 @@ module Terminal : sig
       Unix delivers notifications about tty size changes through the [SIGWINCH]
       signal. A handler for this signal is installed as soon as a new terminal
       is {{!create}created}. Replacing the global [SIGWINCH] handler using
-      the [Sys] module will cause this module to malfunction, as size change
+      the [Sys] module will cause this module to malfunction, as the size change
       notifications will no longer be delivered.
 
-      You might still wish to intercept this signal, however. If you are using
-      more complex event handling, you might want to disable
-      {{!create}[autosize]} and manually schedule {{!redraw}terminal updates}.
-
-      This module allows listening to [SIGWINCH] without conflicting with the
-      rest of the machinery. *)
+      You might still want to ignore resizes reported by {!input} and directly
+      listen to [SIGWINCH]. This module allows installing such listeners
+      without conflicting with the rest of the machinery. *)
   module Winch : sig
 
     type remove
@@ -109,49 +121,69 @@ module Terminal : sig
 
     val remove : remove -> unit
     (** [remove r] removes the handler associated with [r]. Does nothing if the
-        handler was already removed. *)
+        handler has already been removed. *)
   end
 end
 
-val output_image : ?cap:Cap.t -> out_channel -> image -> unit
-(** [output_image ~cap channel i] writes the image [i] to [channel].
+(** {1:inline Inline output}
 
-    Height of the output is the height of [i], while the width is width of the
-    tty [channel] is backed by, or width of [i] if this is not the case.
-
-    Note that no leading or trailing characters are produced.
-    This means that:
-    {ul
-    {- an image 1-cell high can be a part of a line of text, preceded and/or
-       followed by any other output;}
-    {- if the cursor is on on the first column, image of any height can be
-       printed; and}
-    {- simply outputting an image higher than 1 when the cursor has advanced
-       past colum 1 will result in broken graphics. }}
-
-    Auto-detection for [cap] merely checks that both the environment variable
-    [$TERM] is set, and that the file descriptor backing [channel]
-    [Unix.isatty]. If both are true, {{!Cap.ansi}ANSI} escapes are used.
-    Otherwise, {{!Cap.dumb}no} escapes are used. *)
-
-val print_image : image -> unit
-(** [output_image stdout] *)
-
-val print_endline : image -> unit
-(** Like [print_image], followed by a newline. *)
+    These operations do not change the terminal state and do not assume
+    exclusive access to the output. They can be combined with other means of
+    producing output. *)
 
 val winsize : Unix.file_descr -> (int * int) option
-(** [winsize fd] is [Some (w, h)] in character cells if [Unix.isatty fd],
-    and [None] otherwise. *)
+(** [winsize fd] is [Some (columns, rows)], the current dimensions of [fd]'s
+    backing tty, or [None], when [fd] is not backed by a tty. *)
+
+val output_image_f : ?cap:Cap.t -> out_channel -> (int * int -> image) -> unit
+(** [output_image ~cap channel f] writes the image returned by [f] to [channel].
+
+    [f] is applied to the current dimensions of [channel]'s backing tty. When
+    [channel] is not backed by a tty, this is [(80, 24)].
+
+    The resulting image is displayed in its full height. If the output is a tty,
+    image width is clipped to the output width, otherwise, full width is used.
+
+    [cap] is the optional terminal capability set.
+
+    {b Note} No leading or trailing characters are produced, so:
+    {ul
+    {- an image 1-cell high can be a part of a line of output, preceded and/or
+       followed by other output;}
+    {- if the cursor is on on the first column, image of any height can be
+       correctly printed; and}
+    {- outputting an image higher than 1 when the cursor has advanced
+       past the first colum will result in mis-aligned output.}}
+
+    {b Note} Default value for [f] when the output is not a tty is mere
+    convenience. Use {!Unix.isatty} or {!winsize} to detect whether the output
+    has a defined size. *)
+
+val output_image : ?cap:Cap.t -> out_channel -> image -> unit
+(** [output_image ~cap channel i] writes the image [i] to [channel]. *)
+
+val print_image_f : (int * int -> image) -> unit
+(** [print_image_f f] is [output_image_f stdout f]. *)
+
+val print_image : image -> unit
+(** [print_image i] is [output_image stdout i]. *)
+
+val print_image_nl : image -> unit
+(** [print_image_nl i] is [print_image i], followed by a newline. *)
+
 
 (**/**)
 
-(** {2 Private interfaces}
-    These are subject to change. *)
-val cap_for_fd        : Unix.file_descr -> Cap.t
-val setup_tcattr      : Unix.file_descr -> [ `Revert of (unit -> unit) ]
-val set_winch_handler : (unit -> unit) -> [ `Revert of (unit -> unit) ]
-val output_image_gen  : to_fd:('fd -> Unix.file_descr) ->
-                        write:('fd -> Buffer.t -> 'r) ->
-                        ?cap:Cap.t -> 'fd -> image -> 'r
+(** {1 Private interfaces}
+
+    These are subject to change and shouldn't be used. *)
+module Private : sig
+
+  val cap_for_fd         : Unix.file_descr -> Cap.t
+  val setup_tcattr       : Unix.file_descr -> [ `Revert of (unit -> unit) ]
+  val set_winch_handler  : (unit -> unit) -> [ `Revert of (unit -> unit) ]
+  val output_image_f_gen : to_fd:('fd -> Unix.file_descr) ->
+                           write:('fd -> Buffer.t -> 'r) ->
+                           ?cap:Cap.t -> 'fd -> (int * int -> image) -> 'r
+end
 (**/**)
