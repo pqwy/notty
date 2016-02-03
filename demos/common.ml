@@ -112,5 +112,4 @@ let simpleterm ~imgf ~f ~s =
     | `Resize _                 -> go s
     | #Unescape.event as e      ->
         match f s e with Some s -> go s | _ -> ()
-  in
-  go s
+  in go s

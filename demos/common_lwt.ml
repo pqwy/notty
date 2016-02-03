@@ -21,4 +21,3 @@ let simpleterm_lwt ~imgf ~f ~s =
   ( T.image term (imgf (T.size term) s)
     >>= fun () -> Lwt_stream.fold_s step inputs s )
   |> Lwt_main.run |> ignore
-

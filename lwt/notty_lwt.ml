@@ -42,7 +42,7 @@ module Lwt_stream = struct
 
   include Lwt_stream
 
-  (* Bugfixed. *)
+  (* https://github.com/ocsigen/lwt/issues/213 *)
   let fixed_choose streams =
     let source s = (s, get s >|= fun x -> (s, x)) in
     let streams = ref (List.map source streams) in
@@ -98,20 +98,19 @@ module Terminal = struct
     | `Output s -> Lwt_io.write t.ochan s >>= fun () -> write t
     | `Await    -> Lwt_io.flush t.ochan
 
-  let release t =
-    if Tmachine.release t.trm then
-      ( t.stop (); write t )
-    else Lwt.return_unit
-
   let refresh t      = Tmachine.refresh t.trm; write t
   let image t image  = Tmachine.image t.trm image; write t
   let cursor t curs  = Tmachine.cursor t.trm curs; write t
   let set_size t dim = Tmachine.set_size t.trm dim
 
+  let release t =
+    if Tmachine.release t.trm then
+      ( t.stop (); write t )
+    else Lwt.return_unit
+
   let resizef fd stop on_resize =
     let rcond = Lwt_condition.(
-      Lazy.force winches |> unburst ~t:0.1 |> map (fun () -> winsize fd)
-    ) in
+      Lazy.force winches |> unburst ~t:0.1 |> map (fun () -> winsize fd)) in
     let rec monitor () =
       (Lwt_condition.wait rcond <?> stop) >>= function
         | Some dim -> on_resize dim; monitor ()

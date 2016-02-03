@@ -36,9 +36,9 @@ module Terminal : sig
          canonical mode}.}
       {- [output] is set to {e alternate screen mode} and the cursor is hidden
          using the appropriate escape sequences.}
-      {- [SIGWINCH] signal, normally ignored, is handled. Resizing the window
-         will interrupt blocking calls to functions in [Unix] with the exception
-         {!Unix.Unix_error} [EINTR] from then on.}}
+      {- [SIGWINCH] signal, normally ignored, is handled. From then on, resizing
+         the window will interrupt blocking syscalls with the {!Unix.Unix_error}
+         [EINTR] exception.}}
 
       [~dispose] arranges for automatic {{!release}cleanup} of the terminal
       before the process terminates. The downside is that a reference to this
@@ -82,7 +82,7 @@ module Terminal : sig
          [SIGWINCH] was delivered before or during this call to [input].}}
 
       {b Note} [input] is buffered. Calls to [input] can either block or
-      immediately return. Use {!input_pending} to detect whether the next call
+      immediately return. Use {!input_pending} to detect when the next call
       would not block. *)
 
   val input_pending : t -> bool
@@ -157,7 +157,7 @@ val output_image_f : ?cap:Cap.t -> out_channel -> (int * int -> image) -> unit
 
     {b Note} Default value for [f] when the output is not a tty is mere
     convenience. Use {!Unix.isatty} or {!winsize} to detect whether the output
-    has a defined size. *)
+    has a well-defined size. *)
 
 val output_image : ?cap:Cap.t -> out_channel -> image -> unit
 (** [output_image ~cap channel i] writes the image [i] to [channel]. *)

@@ -396,11 +396,10 @@ module Render : sig
       {{!to_string}to_string}. *)
 end
 
-(** Directly deal with escape sequences in the input.
-
-    Escape sequence demultiplexer and decoder. Useful for building custom
-    terminal input abstractions. *)
+(** Parse and decode escape sequences in character streams. *)
 module Unescape : sig
+
+  (** {1 Input events} *)
 
   type special = [
     `Escape
@@ -408,7 +407,7 @@ module Unescape : sig
   | `Tab
   | `Backspace
   | `Up | `Down | `Left | `Right
-  | `Pg_up | `Pg_dn | `Home | `End
+  | `Page_up | `Page_dn | `Home | `End
   | `Insert | `Delete
   | `Fn of int
   ]
@@ -431,8 +430,8 @@ module Unescape : sig
 
          [k] is either a {{!special}special key}, or [`Uchar u] where [u] is
          {!uchar}. This value is guaranteed not to be a
-         {{!I.ctrls}control character}, and is safe to directly use in
-         constructing {!image}s.
+         {{!I.ctrls}control character}, and is safe to use in constructing
+         {!image}s.
 
          [mods] are the extra {{!mods}modifier keys}.
 
@@ -462,21 +461,16 @@ module Unescape : sig
           characters with modifier keys.}}
 
       This means that many values that inhabit the [event] type are impossible
-      in practice, while some denote multiple different user actions.
+      in practice, while some reflect multiple different user actions.
 
       {b Note} Terminals vary widely in their capability, or willingness, to
       signal modifier keys. Perform own experiments before relying on elaborate
       combinations. *)
 
-  val decode : uchar list -> event list
-  (** [decode ucs] gives the events represented by [ucs].
+  (** {1 Decoding filter}
 
-      [ucs] are assumed to have been generated in a burst, and the end of the
-      list is taken to mean a pause.
-      Therefore, [decode us1 @ decode us2 <> decode (us1 @ us2)] if [us1] ends
-      with a partial escape sequence, including a lone [\x1b].
-
-      Unsupported escape sequences are silently discarded. *)
+      Simple IO-less terminal input processor. It can be used for building
+      custom terminal input abstractions. *)
 
   type t
   (** Input decoding filter.
@@ -508,6 +502,40 @@ module Unescape : sig
   (** [pending t] is [true] if a call to [next], without any intervening input,
       would {e not} return [`Await]. *)
 
+  (** {1 Low-level parsing}
+
+      {b Warning} The parsing interface is subject to change.
+
+      Implementation of small parts of
+      {{: http://www.ecma-international.org/publications/standards/Ecma-035.htm}ECMA-35}
+      and
+      {{: http://www.ecma-international.org/publications/standards/Ecma-048.htm}ECMA-48},
+      as needed by terminal emulators in common use. *)
+
+  val decode : uchar list -> event list
+  (** [decode ucs] are the events encoded by [ucs].
+
+      [ucs] are assumed to have been generated in a burst, and the end of the
+      list is taken to mean a pause.
+      Therefore, [decode us1 @ decode us2 <> decode (us1 @ us2)] if [us1] ends
+      with a partial escape sequence, including a lone [\x1b].
+
+      Unsupported escape sequences are silently discarded. *)
+
+  (*(** Elements of a structured byte stream. *)*)
+  (*type esc =*)
+  (*  C0    of char*)
+  (*| C1    of char*)
+  (*| SS2   of char*)
+  (*| CSI   of string * int list * string*)
+  (*| Esc_M of int * int * int*)
+  (*| Uchar of int*)
+
+  (*val demux : uchar list -> esc list*)
+  (*(** [demux ucs] separates special sequences from single characters. *)*)
+
+  (*val events : esc list -> event list*)
+  (*(** [events esc] decodes escape sequences into events. *)*)
 end
 
 (**/**)
@@ -532,7 +560,6 @@ module Tmachine : sig
   val output  : t -> [ `Output of string | `Await ]
 
   val refresh  : t -> unit
-  val resize   : t -> (int * int) -> unit
   val cursor   : t -> (int * int) option -> unit
   val image    : t -> image -> unit
 

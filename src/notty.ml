@@ -627,7 +627,7 @@ module Unescape = struct
   | `Tab
   | `Backspace
   | `Up | `Down | `Left | `Right
-  | `Pg_up | `Pg_dn | `Home | `End
+  | `Page_up | `Page_dn | `Home | `End
   | `Insert | `Delete
   | `Fn of int
   ]
@@ -736,8 +736,8 @@ module Unescape = struct
     | SS2 ('C'|'c')  -> key `Right [`Ctrl]
     | SS2 ('D'|'d')  -> key `Left [`Ctrl]
 
-    | CSI ("",5::p,("~"|"^" as c)) -> mods_ab p c >>= key `Pg_up
-    | CSI ("",6::p,("~"|"^" as c)) -> mods_ab p c >>= key `Pg_dn
+    | CSI ("",5::p,("~"|"^" as c)) -> mods_ab p c >>= key `Page_up
+    | CSI ("",6::p,("~"|"^" as c)) -> mods_ab p c >>= key `Page_dn
 
     | CSI ("",2::p,("~"|"^" as c)) -> mods_ab p c >>= key `Insert
     | CSI ("",3::p,("~"|"^" as c)) -> mods_ab p c >>= key `Delete
@@ -771,7 +771,7 @@ module Unescape = struct
           | ("m", #button, false)        -> Some `Release
           (* | ("M", `ALL   , true)         -> Some `Move *)
           | _                            -> None
-        ) >|= fun e -> (`Mouse (e, (x, y), mods))
+        ) >|= fun e -> `Mouse (e, (x, y), mods)
 
     | CSI ("",[p;x;y],"M") | Esc_M (p,x,y) ->
         let (btn, drag, mods) = mouse_p (p - 32) in
@@ -863,8 +863,6 @@ module Tmachine = struct
     ]
 
   let set_size t dim = t.dim <- dim
-
-  let resize t dim = t.dim <- dim; refresh t
 
   let image t image = t.image <- image; refresh t
 

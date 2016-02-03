@@ -19,6 +19,14 @@ change.**
 ## Why?
 
 **Q:**
+**_Notty?_**
+
+**A:**
+Terminals are tedious to program for. *Notty* tries to abstract the tedium away,
+leaving you with a more pleasant programming surface that's quite unlike a TTY.
+Hence, **No-TTY**.
+
+**Q:**
 Why make it when we alredy have both **Foo** and **Meh2000**?
 
 **A:**
@@ -28,11 +36,3 @@ Because:
   * It is pretty compact. Both bells and whistles alike can be implemented
     separately.
   * Its core is easy to glue onto various IO frameworks.
-
-**Q:**
-"*Notty*?"
-
-**A:**
-Terminals are tedious to program for. *Notty* tries to abstract the tedium away,
-leaving you with a more pleasant programming surface that's quite unlike a TTY.
-Hence, **No-TTY**.
