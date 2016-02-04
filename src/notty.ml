@@ -202,9 +202,7 @@ module Text = struct
           let s = String.init n @@ fun k ->
             if l1 && k = 0 || l2 && k = n - 1 then dead else s.[k + i]
           and ix = Array.init (w + 1) @@ fun k ->
-            if k = 0 then 0 else
-            if k = w then n else
-              Int.max (-1) (ix.(k + x) - 1)
+            if k = 0 then 0 else if k = w then n else Int.max (-1) (ix.(k + x)-1)
           in Utf8 (s, ix, w)
 
   let (code, chr, is_ctrl, is_ascii) = Char.(code, chr, is_ctrl, is_ascii)
@@ -367,10 +365,8 @@ module I = struct
         and h = Int.max (height t1) (height t2) in
         Zcompose ((t1, t2), (w, h))
 
-
   let void w h =
     if w < 1 && h < 1 then Empty else Void Int.(max 0 w, max 0 h)
-
 
   let lincropinv crop void (++) init fini t =
     match (init >= 0, fini >= 0) with
@@ -378,11 +374,6 @@ module I = struct
     | (true, _   ) -> crop init 0 t ++ void (-fini)
     | (_   , true) -> void (-init) ++ crop 0 fini t
     | _            -> void (-init) ++ t ++ void (-fini)
-    (* match Int.(sign init, sign fini) with *)
-    (* | (1, 1) -> crop init fini t *)
-    (* | (1, _) -> crop init 0 t ++ void (-fini) *)
-    (* | (_, 1) -> void (-init) ++ crop 0 fini t *)
-    (* | _      -> void (-init) ++ t ++ void (-fini) *)
 
   let hcrop =
     let ctor left right t =
@@ -402,7 +393,6 @@ module I = struct
     let t = if left <> 0 || right <> 0 then hcrop left right t else t in
     if top <> 0 || bottom <> 0 then vcrop top bottom t else t
 
-
   let hpad left right t = hcrop (-left) (-right) t
 
   let vpad top bottom t = vcrop (-top) (-bottom) t
@@ -410,14 +400,12 @@ module I = struct
   let pad ?(left=0) ?(right=0) ?(top=0) ?(bottom=0) t =
     crop ~left:(-left) ~right:(-right) ~top:(-top) ~bottom:(-bottom) t
 
-
   let hcat = maccum ~empty ~append:(<|>)
 
   let vcat = maccum ~empty ~append:(<->)
 
   let zcat xs = List.fold_right (<^>) xs empty
 (*   let zcat = maccum ~empty ~append:(<^>) *)
-
 
   let text attr t =
     if Text.is_empty t then Empty else Segment (attr, t)
@@ -434,7 +422,6 @@ module I = struct
 
   let char  = chars Text.replicatec
   let uchar = chars Text.replicateu
-
 
   let tile w h i = List.(replicate h (replicate w i |> hcat) |> vcat)
 
@@ -464,17 +451,7 @@ module Operation = struct
     | (Skip 0, _) -> ops
     | (Skip _, []) -> []
     | (Skip m, Skip n :: ops) -> Skip (m + n) :: ops
-(*     | (Text (_, t), _) when Text.width t = 0 -> ops *)
     | _ -> op :: ops
-(*     | (Attr a1, (Text _ as t)::(Attr a2)::xs)
-        when Attr.equal a1 a2 -> op::t::xs |+ XXX ? +|
-    | (Attr _ , []          ) -> []
-|+     | (Attr a1, Attr a2::ops) -> Attr Attr.(a1 ++ a2) :: ops +|
-    | (Skip _ , []          ) -> []
-    | (Skip m , Skip n ::ops) -> Skip (m + n) :: ops
-    | _                       -> op :: ops *)
-
-(*   let (@:) op ops = op :: ops *)
 
   let rec scan x w row i k =
     let open I in match i with
@@ -632,7 +609,7 @@ module Unescape = struct
   | `Fn of int
   ]
 
-  type mods = [ `Meta | `Ctrl ] list
+  type mods = [ `Meta | `Ctrl | `Shift ] list
 
   type button = [ `LMB | `MMB | `RMB | `Scroll_up | `Scroll_dn ]
 
@@ -645,24 +622,22 @@ module Unescape = struct
     C0    of char
   | C1    of char
   | SS2   of char
-  | CSI   of string * int list * string
+  | CSI   of string * int list * char
   | Esc_M of int * int * int
   | Uchar of int
 
-
   let csi =
     let open Option in
-    let r_str = String.of_uchars_rev in
     let rec priv acc = function
       | x::xs when btw x 0x3c 0x3f -> priv (x::acc) xs
-      | xs                         -> param (r_str acc) None [] xs
+      | xs                         -> param (String.of_uchars_rev acc) None [] xs
     and param prv p ps = function
       | x::xs when btw x 0x30 0x39 -> param prv (Some (get 0 p * 10 + x - 0x30)) ps xs
       | 0x3b::xs                   -> param prv None (get 0 p :: ps) xs
-      | xs                         -> code prv (List.rev (to_list p @ ps)) [] xs
-    and code prv ps acc = function
-      | x::xs when btw x 0x20 0x2f -> code prv ps (x::acc) xs
-      | x::xs when btw x 0x40 0x7e -> Some (CSI (prv, ps, r_str (x::acc)), xs)
+      | xs                         -> code prv (List.rev (to_list p @ ps)) xs
+    and code prv ps = function
+      | x::xs when btw x 0x20 0x2f || btw x 0x40 0x7e ->
+          Some (CSI (prv, ps, (Char.chr x)), xs)
       | _ -> None in
     priv []
 
@@ -678,22 +653,33 @@ module Unescape = struct
     | x::xs                               -> Uchar x :: demux xs
     | []                                  -> []
 
+  let xtrm_mod_flags = function
+    | 2 -> Some [`Shift]
+    | 3 -> Some [`Meta]
+    | 4 -> Some [`Shift; `Meta]
+    | 5 -> Some [`Ctrl]
+    | 6 -> Some [`Shift; `Ctrl]
+    | 7 -> Some [`Meta; `Ctrl]
+    | 8 -> Some [`Shift; `Meta; `Ctrl]
+    | _ -> None
 
   let mods_xtrm = function
+    | [1;p] -> xtrm_mod_flags p
     | []    -> Some []
-    | [1;3] -> Some [`Meta]
-    | [1;5] -> Some [`Ctrl]
-    | [1;7] -> Some [`Meta; `Ctrl]
     | _     -> None
 
-  let mods_rxvt = function "~" -> Some [] | "^" -> Some [`Ctrl] | _ -> None
+  let mods_rxvt = function
+    | '~' -> Some []
+    | '$' -> Some [`Shift]
+    | '^' -> Some [`Ctrl]
+    | '@' -> Some [`Ctrl; `Shift]
+    | _ -> None
 
-  let mods_ab ps_tl code = match (ps_tl, code) with
-    | ([] , "~")             -> Some []
-    | ([5], "~") | ([], "^") -> Some [`Ctrl]
-    | ([3], "~")             -> Some [`Meta]
-    | ([7], "~")             -> Some [`Meta; `Ctrl]
-    | _                      -> None
+  let mods_common ps code = match (ps, code) with
+    | ([], '~')  -> Some []
+    | ([], c)    -> mods_rxvt c
+    | ([p], '~') -> xtrm_mod_flags p
+    | _          -> None
 
   let bit n b = b land (1 lsl n) > 0
 
@@ -727,53 +713,59 @@ module Unescape = struct
     | C0 x -> key (`Uchar (Char.code x + 0x40)) [`Ctrl]
     | C1 x -> key (`Uchar (Char.code x)) [`Meta]
 
-    | CSI ("",p,"A") -> mods_xtrm p >>= key `Up
-    | CSI ("",p,"B") -> mods_xtrm p >>= key `Down
-    | CSI ("",p,"C") -> mods_xtrm p >>= key `Right
-    | CSI ("",p,"D") -> mods_xtrm p >>= key `Left
-    | SS2 ('A'|'a')  -> key `Up [`Ctrl]
-    | SS2 ('B'|'b')  -> key `Down [`Ctrl]
-    | SS2 ('C'|'c')  -> key `Right [`Ctrl]
-    | SS2 ('D'|'d')  -> key `Left [`Ctrl]
+    | CSI ("",[],'Z') -> key `Tab [`Shift]
 
-    | CSI ("",5::p,("~"|"^" as c)) -> mods_ab p c >>= key `Page_up
-    | CSI ("",6::p,("~"|"^" as c)) -> mods_ab p c >>= key `Page_dn
+    | CSI ("",p,'A') -> mods_xtrm p >>= key `Up
+    | CSI ("",p,'B') -> mods_xtrm p >>= key `Down
+    | CSI ("",p,'C') -> mods_xtrm p >>= key `Right
+    | CSI ("",p,'D') -> mods_xtrm p >>= key `Left
 
-    | CSI ("",2::p,("~"|"^" as c)) -> mods_ab p c >>= key `Insert
-    | CSI ("",3::p,("~"|"^" as c)) -> mods_ab p c >>= key `Delete
+    | CSI ("",[],'a') -> key `Up [`Shift]
+    | CSI ("",[],'b') -> key `Down [`Shift]
+    | CSI ("",[],'c') -> key `Right [`Shift]
+    | CSI ("",[],'d') -> key `Left [`Shift]
+    | SS2 ('A'|'a')   -> key `Up [`Ctrl]
+    | SS2 ('B'|'b')   -> key `Down [`Ctrl]
+    | SS2 ('C'|'c')   -> key `Right [`Ctrl]
+    | SS2 ('D'|'d')   -> key `Left [`Ctrl]
 
-    | CSI ("",[4],"h") -> key `Insert []
-    | CSI ("",[],"L")  -> key `Insert [`Ctrl]
-    | CSI ("",[],"P")  -> key `Delete []
-    | CSI ("",[],"M")  -> key `Delete [`Ctrl]
+    | CSI ("",5::p,c) -> mods_common p c >>= key `Page_up
+    | CSI ("",6::p,c) -> mods_common p c >>= key `Page_dn
 
-    | CSI ("",p,"H")                -> mods_xtrm p >>= key `Home
-    | CSI ("",[7|1],("~"|"^" as c)) -> mods_rxvt c >>= key `Home
+    | CSI ("",2::p,c) -> mods_common p c >>= key `Insert
+    | CSI ("",3::p,c) -> mods_common p c >>= key `Delete
 
-    | CSI ("",p,"F")                -> mods_xtrm p >>= key `End
-    | CSI ("",[8|4],("~"|"^" as c)) -> mods_rxvt c >>= key `End
-    | CSI ("",[],"J")               -> key `End [`Ctrl]
+    | CSI ("",[4],'h') -> key `Insert []
+    | CSI ("",[],'L')  -> key `Insert [`Ctrl]
+    | CSI ("",[],'P')  -> key `Delete []
+    | CSI ("",[],'M')  -> key `Delete [`Ctrl]
 
-    | SS2 ('P'|'Q'|'R'|'S' as c) -> key (`Fn (Char.code c - 0x4f)) []
+    | CSI ("",p,'H')   -> mods_xtrm p >>= key `Home
+    | CSI ("",[7|1],c) -> mods_rxvt c >>= key `Home
 
-    | CSI ("",p,("P"|"Q"|"R"|"S" as c)) ->
-        mods_xtrm p >>= key (`Fn (Char.code c.[0] - 0x4f))
+    | CSI ("",p,'F')   -> mods_xtrm p >>= key `End
+    | CSI ("",[8|4],c) -> mods_rxvt c >>= key `End
+    | CSI ("",[],'J')  -> key `End [`Ctrl]
 
-    | CSI ("",k::p,("~"|"^" as c))
-      when btw k 11 15 || btw k 17 21 || btw k 23 24 ->
-        mods_ab p c >>= key (`Fn ((k - 10) - (k - 10) / 6))
+    | SS2 ('P'..'S' as c) -> key (`Fn (Char.code c - 0x4f)) []
 
-    | CSI ("<",[p;x;y],("M"|"m" as c)) ->
+    | CSI ("",p,('P'..'S' as c)) ->
+        mods_xtrm p >>= key (`Fn (Char.code c - 0x4f))
+
+    | CSI ("",k::p,c) when btw k 11 15 || btw k 17 21 || btw k 23 26 ->
+        mods_common p c >>= key (`Fn ((k - 10) - (k - 10) / 6))
+
+    | CSI ("<",[p;x;y],('M'|'m' as c)) ->
         let (btn, drag, mods) = mouse_p p in
         ( match (c, btn, drag) with
-          | ("M", (#button as b), false) -> Some (`Press b)
-          | ("M", #button, true)         -> Some `Drag
-          | ("m", #button, false)        -> Some `Release
-          (* | ("M", `ALL   , true)         -> Some `Move *)
+          | ('M', (#button as b), false) -> Some (`Press b)
+          | ('M', #button, true)         -> Some `Drag
+          | ('m', #button, false)        -> Some `Release
+          (* | ('M', `ALL   , true)         -> Some `Move *)
           | _                            -> None
         ) >|= fun e -> `Mouse (e, (x, y), mods)
 
-    | CSI ("",[p;x;y],"M") | Esc_M (p,x,y) ->
+    | CSI ("",[p;x;y],'M') | Esc_M (p,x,y) ->
         let (btn, drag, mods) = mouse_p (p - 32) in
         ( match (btn, drag) with
           | (#button as b, false) -> Some (`Press b)
@@ -790,12 +782,11 @@ module Unescape = struct
       ( match event_of_control_code cc with
         | Some (`Key (k, mods)) -> `Key (k, `Meta :: mods) :: events ccs
         | Some _                -> `Key (`Escape, []) :: events (cc::ccs)
-        | None                  -> `Key (`Escape, []) :: events ccs )
+        | None                  -> events ccs )
     | cc::ccs -> (event_of_control_code cc |> Option.to_list) @ events ccs
     | [] -> []
 
   let decode xs = xs |> demux |> events
-
 
   type t = (event list * bool) ref
 
@@ -842,7 +833,7 @@ module Tmachine = struct
     | Some (w, h) -> cap.cursvis true & cap.cursat h w
     )
 
-  let create cap = {
+  let create ?(mouse=true) cap = {
       cap
     ; curs  = None
     ; dim   = (0, 0)
@@ -850,9 +841,17 @@ module Tmachine = struct
     ; dead  = false
     ; frags =
       Queue.singleton Cap.(
-        get (cap.altscr true & cursor cap None & cap.mouse true)
+        get (cap.altscr true & cursor cap None & cap.mouse mouse)
       )
     }
+
+  let release t =
+    if t.dead then false else begin
+      emitv t [Cap.(
+        get (t.cap.altscr false & t.cap.cursvis true & t.cap.mouse false)
+      )];
+      t.dead <- true; true
+    end
 
   let output t = Queue.(try `Output (take t.frags) with Empty -> `Await)
 
@@ -863,18 +862,8 @@ module Tmachine = struct
     ]
 
   let set_size t dim = t.dim <- dim
-
   let image t image = t.image <- image; refresh t
-
   let cursor t curs = t.curs <- curs; emitv t [Cap.get (cursor t.cap curs)]
-
-  let release t =
-    if t.dead then false else begin
-      emitv t [Cap.(
-        get (t.cap.altscr false & t.cap.cursvis true & t.cap.mouse false)
-      )];
-      t.dead <- true; true
-    end
 
   let size t = t.dim
   let dead t = t.dead

@@ -119,11 +119,11 @@ module Terminal = struct
     Lwt_stream.from (fun () -> Lwt_condition.wait rcond <?> stop)
       |> Lwt_stream.map (fun dim -> `Resize dim)
 
-  let create ?(dispose=true) ?(input=Lwt_unix.stdin) ?(output=Lwt_unix.stdout) () =
+  let create ?(dispose=true) ?mouse ?(input=Lwt_unix.stdin) ?(output=Lwt_unix.stdout) () =
     let fd = Lwt_unix.unix_file_descr output in
     let (stop, stopw) = Lwt.wait () in
     let rec t = lazy {
-        trm    = Tmachine.create (cap_for_fd fd)
+        trm    = Tmachine.create ?mouse (cap_for_fd fd)
       ; ochan  = Lwt_io.(of_fd ~mode:output) output
       ; stop   = (fun () -> Lwt.wakeup stopw None)
       ; events = [

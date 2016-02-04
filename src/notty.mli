@@ -416,7 +416,7 @@ module Unescape : sig
   type button = [ `LMB | `MMB | `RMB | `Scroll_up | `Scroll_dn ]
   (** Mouse buttons. *)
 
-  type mods = [ `Meta | `Ctrl ] list
+  type mods = [ `Meta | `Ctrl | `Shift ] list
   (** Modifier state. *)
 
   type event = [
@@ -460,12 +460,18 @@ module Unescape : sig
       {- in a UTF-8 encoded stream, there is no representation for non-ASCII
           characters with modifier keys.}}
 
-      This means that many values that inhabit the [event] type are impossible
-      in practice, while some reflect multiple different user actions.
+      This means that many values that inhabit the [event] type are impossible,
+      while some reflect multiple different user actions. Limitations include:
 
-      {b Note} Terminals vary widely in their capability, or willingness, to
-      signal modifier keys. Perform own experiments before relying on elaborate
-      combinations. *)
+      {ul
+      {- [`Shift] is reported only with special keys, and not all of them.}
+      {- [`Meta] and [`Control] are reported with mouse events, key events with
+         special keys, and key events with values in the ranges [0x40-0x5f] and
+         [0x60-0x7e]. When [`Control] is pressed, the higher range is mapped
+         into the lower range.}
+      {- Terminals will variously underreport modifier key state.}}
+
+      Perform own experiments before relying on elaborate key combinations. *)
 
   (** {1 Decoding filter}
 
@@ -555,7 +561,7 @@ module Tmachine : sig
 
   type t
 
-  val create  : Cap.t -> t
+  val create  : ?mouse:bool -> Cap.t -> t
   val release : t -> bool
   val output  : t -> [ `Output of string | `Await ]
 

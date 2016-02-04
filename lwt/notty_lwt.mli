@@ -19,13 +19,14 @@ module Terminal : sig
   (** {1 Construction and destruction} *)
 
   val create : ?dispose:bool ->
+               ?mouse:bool ->
                ?input:Lwt_unix.file_descr ->
                ?output:Lwt_unix.file_descr ->
                unit -> t
-  (** [create ~dispose ~input ~output ()] is a new {{!t}terminal}.
+  (** [create ~dispose ~mouse ~input ~output ()] creates a new {{!t}terminal}.
 
       {b Note} [~dispose] arranges for the terminal to be disposed of at the end
-      of [Lwt] main loop, not at process exit. 
+      of [Lwt] main loop, and not at process exit.
       
       See {!Notty_unix.Terminal.create}. *)
 

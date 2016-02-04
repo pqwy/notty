@@ -20,8 +20,9 @@ let string_of_special = function
 
 let string_of_mods ms =
   match
-    let f s = function `Meta -> s ^ "M" | `Ctrl -> s ^ "C" in
-    List.fold_left f "" ms
+    List.fold_left (fun s -> function
+      `Meta -> s ^ "M" | `Ctrl -> s ^ "C" | `Shift -> s ^ "S"
+    ) "" ms
   with "" -> "" | s -> "(" ^ s ^ ")"
 
 let string_of_mouse_e = function

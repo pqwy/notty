@@ -131,10 +131,10 @@ module Terminal = struct
   let cursor t curs  = Tmachine.cursor t.trm curs; write t
   let size t         = Tmachine.size t.trm
 
-  let create ?(dispose=true) ?(input=Unix.stdin) ?(output=Unix.stdout) () =
+  let create ?(dispose=true) ?mouse ?(input=Unix.stdin) ?(output=Unix.stdout) () =
     let rec t = {
         output  = Unix.out_channel_of_descr output
-      ; trm     = Tmachine.create (cap_for_fd input)
+      ; trm     = Tmachine.create ?mouse (cap_for_fd input)
       ; input   = Input.create input
       ; winched = false
       ; unwinch = lazy (

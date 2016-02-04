@@ -27,15 +27,19 @@ module Terminal : sig
 
   (** {1 Construction and destruction} *)
 
-  val create : ?dispose:bool -> ?input:Unix.file_descr -> ?output:Unix.file_descr -> unit -> t
-  (** [create ~dispose ~input ~output ()] is a fresh {{!t}terminal}.
+  val create : ?dispose:bool ->
+               ?mouse:bool ->
+               ?input:Unix.file_descr ->
+               ?output:Unix.file_descr ->
+               unit -> t
+  (** [create ~dispose ~mouse ~input ~output ()] creates a fresh {{!t}terminal}.
 
       [create] has the following side effects:
       {ul
       {- [Unix.tcsetattr] is applied to [input] to disable {e echo} and {e
          canonical mode}.}
-      {- [output] is set to {e alternate screen mode} and the cursor is hidden
-         using the appropriate escape sequences.}
+      {- [output] is set to {e alternate screen mode}, the cursor is hidden, and
+         mouse reporting is enabled, using the appropriate control sequences.}
       {- [SIGWINCH] signal, normally ignored, is handled. From then on, resizing
          the window will interrupt blocking syscalls with the {!Unix.Unix_error}
          [EINTR] exception.}}
@@ -44,13 +48,16 @@ module Terminal : sig
       before the process terminates. The downside is that a reference to this
       terminal is retained until the program exits. Defaults to [true].
 
+      [~mouse] activates mouse reporting. Defaults to [true].
+
       [~input] is the input file descriptor. Defaults to [stdin].
 
       [~output] is the output file descriptor. Defaults to [stdout]. *)
 
   val release : t -> unit
-  (** Dispose of this terminal. Original behavior of input is reinstated, the
-      output is cleared, cursor is restored and alternate mode is terminated.
+  (** Dispose of this terminal. Original behavior of input is reinstated,
+      cursor is restored, mouse reporting disabled, and alternate mode is
+      terminated.
 
       It is an error to use the {{!cmds}commands} on a released terminal.
       [release] itself is idempotent. *)
