@@ -7,7 +7,7 @@ let whenopt f = function Some x -> f x | _ -> ()
 
 let winsize fd =
   match c_winsize fd with
-  | -1 -> None
+  | 0 -> None
   | wh -> Some (wh lsr 16, wh land 0xff)
 
 module Private = struct

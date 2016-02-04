@@ -7,7 +7,7 @@ CAMLprim value caml_notty_winsize (value vfd) {
   struct winsize w;
   if (ioctl (fd, TIOCGWINSZ, &w) >= 0)
     return Val_int ((w.ws_col << 16) + w.ws_row);
-  else return Val_int (-1);
+  else return Val_int (0);
 }
 
 #define __unit() value unit __attribute__((unused))
