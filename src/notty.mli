@@ -386,6 +386,10 @@ module Cap : sig
   val dumb : t
   (** Pure text output. Text attributes are stripped and positioning is done
       with the character [U+0020], SPACE. *)
+
+  (**/**)
+  val clear : t -> Buffer.t -> unit
+  (**/**)
 end
 
 (** Convert images to [string].

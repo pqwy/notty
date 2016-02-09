@@ -618,6 +618,7 @@ module Cap = struct
   ; clreol  : op
   ; cursvis : bool -> op
   ; cursat  : int -> int -> op
+  ; cr      : op
   ; altscr  : bool -> op
   ; mouse   : bool -> op
   }
@@ -629,6 +630,7 @@ module Cap = struct
     ; newline = (fun b -> b <| "\x1bE")
     ; altscr  = (fun x b -> b <| if x then "\x1b[?1049h" else "\x1b[?1049l")
     ; cursat  = (fun w h b -> b <| "\x1b["; b <! w; b <. ';'; b <! h; b <. 'H')
+    ; cr      = (fun b -> b <| "\x1b[1G")
     ; clreol  = (fun b -> b <| "\x1b[K")
     ; cursvis = (fun x b -> b <| if x then "\x1b[34h\x1b[?25h" else "\x1b[?25l")
     ; mouse   = (fun x b -> b <| if x then "\x1b[?1000;1002;1005;1015;1006h"
@@ -659,12 +661,14 @@ module Cap = struct
     ; newline = (fun b -> b <| "\n")
     ; altscr  = no1
     ; cursat  = no2
+    ; cr      = no0
     ; clreol  = no0
     ; cursvis = no1
     ; sgr     = no1
     ; mouse   = no1
     }
 
+  let clear cap = cap.cr & cap.clreol
 end
 
 module Render = struct

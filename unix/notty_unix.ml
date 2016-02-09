@@ -36,7 +36,7 @@ module Private = struct
     let old_hdl = Sys.(signal signum (Signal_handle (fun _ -> f ()))) in
     `Revert (once @@ fun () -> Sys.set_signal signum old_hdl)
 
-  let output_image_gen ~to_fd ~write ?cap chan f =
+  let output_image_gen ~to_fd ~write ?cap ?(clear=false) chan f =
     let fd = to_fd chan in
     let cap = match cap with
       | Some cap -> cap
@@ -47,7 +47,7 @@ module Private = struct
       | Some (w, _) -> I.(w, height i)
       | None        -> I.(width i, height i) in
     let buf = Buffer.create I.(width i * height i * 2) in
-    Render.to_buffer buf cap dim i;
+    if clear then Cap.clear cap buf; Render.to_buffer buf cap dim i;
     write chan buf
 
 end
@@ -162,14 +162,14 @@ module Term = struct
 
 end
 
-let output_image_size ?cap ?(chan=stdout) i =
+let output_image_size ?cap ?clear ?(chan=stdout) i =
   output_image_gen
     ~to_fd:Unix.descr_of_out_channel
     ~write:Buffer.output_buffer
-    ?cap chan i
+    ?cap ?clear chan i
 
-let output_image ?cap ?chan i =
-  output_image_size ?cap ?chan (fun _ -> i)
+let output_image ?cap ?clear ?chan i =
+  output_image_size ?cap ?clear ?chan (fun _ -> i)
 
-let output_image_endline ?cap ?(chan=stdout) i =
-  output_image ?cap ~chan i; output_char chan '\n'
+let output_image_endline ?cap ?clear ?(chan=stdout) i =
+  output_image ?cap ?clear ~chan i; output_char chan '\n'

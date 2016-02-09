@@ -74,8 +74,12 @@ end
 
 val winsize : Lwt_unix.file_descr -> (int * int) option
 
-val output_image_size : ?cap:Cap.t -> ?fd:Lwt_unix.file_descr -> (int * int -> image) -> unit Lwt.t
+val output_image_size :
+  ?cap:Cap.t -> ?clear:bool -> ?fd:Lwt_unix.file_descr ->
+    (int * int -> image) -> unit Lwt.t
 
-val output_image : ?cap:Cap.t -> ?fd:Lwt_unix.file_descr -> image -> unit Lwt.t
+val output_image :
+  ?cap:Cap.t -> ?clear:bool -> ?fd:Lwt_unix.file_descr -> image -> unit Lwt.t
 
-val output_image_endline : ?cap:Cap.t -> ?fd:Lwt_unix.file_descr -> image -> unit Lwt.t
+val output_image_endline :
+  ?cap:Cap.t -> ?clear:bool -> ?fd:Lwt_unix.file_descr -> image -> unit Lwt.t

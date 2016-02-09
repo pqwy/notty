@@ -128,35 +128,34 @@ val winsize : Unix.file_descr -> (int * int) option
 (** [winsize fd] is [Some (columns, rows)], the current dimensions of [fd]'s
     backing tty, or [None], when [fd] is not backed by a tty. *)
 
-val output_image : ?cap:Cap.t -> ?chan:out_channel -> image -> unit
-(** [output_image ~cap ~chan i] writes the image [i] to [chan].
+val output_image :
+  ?cap:Cap.t -> ?clear:bool -> ?chan:out_channel -> image -> unit
+(** [output_image ~cap ~clear ~chan i] writes the image [i] to [chan].
 
     The image is displayed in its full height. If the output is a tty, image
     width is clipped to the output width, otherwise, full width is used.
 
-    [~chan] defaults to [stdout].
-
     [~cap] is the {{!caps}optional} terminal capability set.
 
-    {b Note} No leading or trailing characters are produced, so:
-    {ul
-    {- an image 1-cell high can be a part of a line of output, preceded and/or
-       followed by other output;}
-    {- if the cursor is on on the first column, image of any height can be
-       correctly printed; and}
-    {- outputting an image higher than 1 when the cursor has advanced
-       past the first column will result in misaligned output.}} *)
+    [~clear] repositions the cursor to the beginning of the line and clears is.
+    Otherwise, the output continues from the current position. Defaults to
+    [false].
 
-val output_image_size : ?cap:Cap.t -> ?chan:out_channel -> (int * int -> image) -> unit
-(** [output_image_size ~cap ~chan f] is [output_image ~cap ~chan (f size)]
-    where [size] are [chan]'s current {{!winsize}output dimensions}.
+    [~chan] defaults to [stdout]. *)
+
+val output_image_size :
+  ?cap:Cap.t -> ?clear:bool -> ?chan:out_channel -> (int * int -> image) -> unit
+(** [output_image_size ~cap ~clear ~chan f] is
+    [output_image ~cap ~chan (f size)] where [size] are [chan]'s current
+    {{!winsize}output dimensions}.
 
     If [chan] is not backed by a tty, as a matter of convenience, [f] is
     applied to [(80, 24)]. Use {!Unix.isatty} or {{!winsize}[winsize]} to detect
     whether the output has a well-defined size. *)
 
-val output_image_endline : ?cap:Cap.t -> ?chan:out_channel -> image -> unit
-(** [print_image_endline ~cap ~chan i] is [output_image ~cap ~chan i]
+val output_image_endline :
+  ?cap:Cap.t -> ?clear:bool -> ?chan:out_channel -> image -> unit
+(** [print_image_endline ~cap ~clear ~chan i] is [output_image ~cap ~chan i]
     followed by a newline. *)
 
 (**/**)
@@ -169,9 +168,9 @@ module Private : sig
   val cap_for_fd        : Unix.file_descr -> Cap.t
   val setup_tcattr      : Unix.file_descr -> [ `Revert of (unit -> unit) ]
   val set_winch_handler : (unit -> unit) -> [ `Revert of (unit -> unit) ]
-  val output_image_gen  : to_fd:('fd -> Unix.file_descr) ->
-                          write:('fd -> Buffer.t -> 'r) ->
-                          ?cap:Cap.t -> 'fd -> (int * int -> image) -> 'r
+  val output_image_gen  :
+    to_fd:('fd -> Unix.file_descr) -> write:('fd -> Buffer.t -> 'r) ->
+      ?cap:Cap.t -> ?clear:bool -> 'fd -> (int * int -> image) -> 'r
 end
 (**/**)
 

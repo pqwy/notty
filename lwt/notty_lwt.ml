@@ -149,14 +149,14 @@ end
 
 let winsize fd = winsize (Lwt_unix.unix_file_descr fd)
 
-let output_image_size ?cap ?(fd=Lwt_unix.stdout) i =
+let output_image_size ?cap ?clear ?(fd=Lwt_unix.stdout) i =
   output_image_gen
     ~to_fd:Lwt_unix.unix_file_descr
     ~write:output_buffer
-    ?cap fd i
+    ?cap ?clear fd i
 
-let output_image ?cap ?fd i =
-  output_image_size ?cap ?fd (fun _ -> i)
+let output_image ?cap ?clear ?fd i =
+  output_image_size ?cap ?clear ?fd (fun _ -> i)
 
-let output_image_endline ?cap ?(fd=Lwt_unix.stdout) i =
-  output_image ?cap ~fd i >>= fun () -> write_string fd "\n"
+let output_image_endline ?cap ?clear ?(fd=Lwt_unix.stdout) i =
+  output_image ?cap ?clear ~fd i >>= fun () -> write_string fd "\n"
