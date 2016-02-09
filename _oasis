@@ -1,0 +1,160 @@
+OASISFormat:   0.4
+Name:          notty
+Version:       0.0.1
+Synopsis:      Declaring terminals
+Authors:       David Kaloper <david@numm.org>
+Maintainers:   David Kaloper <david@numm.org>
+License:       BSD-2-clause
+Homepage:      https://github.com/pqwy/notty
+Plugins:       META (0.4), DevFiles (0.4)
+BuildTools:    ocamlbuild
+OCamlVersion:  >= 4.02.0
+AlphaFeatures: ocamlbuild_more_args
+Description:   A declarative terminal graphics library
+
+Flag unix
+  Description: Build Unix support
+  Default:     true
+
+Flag lwt
+  Description: Build Lwt support
+  Default:     true
+
+Flag examples
+  Description: Build the example programs
+  Default:     false
+
+Flag benchmarks
+  Description: Build benchmarks
+  Default:     false
+
+Library notty
+  Path:          src/
+  Modules:       Notty
+  BuildDepends:  uucp, uuseg, uutf, result
+  ByteOpt:       -w A-4-33-40-41-42-43-34-44-48
+
+Library notty_unix
+  Findlibparent: notty
+  Findlibname:   unix
+  Path:          unix/
+  Modules:       Notty_unix
+  CSources:      native/winsize.c
+  CCOpt:         --std=c99 -Wall -Wextra -Werror -O3
+  BuildDepends:  notty, unix
+  ByteOpt:       -w A-4-33-40-41-42-43-34-44-48
+  Build$:        flag(unix)
+
+Library notty_lwt
+  Findlibparent: notty
+  Findlibname:   lwt
+  Path:          lwt/
+  Modules:       Notty_lwt
+  BuildDepends:  notty, notty.unix, lwt, lwt.unix
+  ByteOpt:       -w A-4-33-40-41-42-43-34-44-48
+  Build$:        flag(unix) && flag(lwt)
+
+Executable speed
+  Path:           benchmarks
+  Install:        false
+  CompiledObject: best
+  MainIs:         speed.ml
+  Build$:         flag(benchmarks)
+  BuildDepends:   notty.unix, unmark
+
+Executable testpatterns
+  Path:           examples
+  Install:        false
+  CompiledObject: best
+  MainIs:         testpatterns.ml
+  Build$:         flag(examples)
+  BuildDepends:   notty.unix
+
+Executable letters
+  Path:           examples
+  Install:        false
+  CompiledObject: best
+  MainIs:         letters.ml
+  Build$:         flag(examples)
+  BuildDepends:   notty.unix
+
+Executable keys
+  Path:           examples
+  Install:        false
+  CompiledObject: best
+  MainIs:         keys.ml
+  Build$:         flag(examples)
+  BuildDepends:   notty.unix
+
+Executable colors
+  Path:           examples
+  Install:        false
+  CompiledObject: best
+  MainIs:         colors.ml
+  Build$:         flag(examples)
+  BuildDepends:   notty.unix
+
+Executable sierpinski
+  Path:           examples
+  Install:        false
+  CompiledObject: best
+  MainIs:         sierpinski.ml
+  Build$:         flag(examples)
+  BuildDepends:   notty.unix
+
+Executable sierpinski_lwt
+  Path:           examples
+  Install:        false
+  CompiledObject: best
+  MainIs:         sierpinski_lwt.ml
+  Build$:         flag(examples) && flag(lwt)
+  BuildDepends:   notty, notty.lwt
+
+Executable cuts
+  Path:           examples
+  Install:        false
+  CompiledObject: best
+  MainIs:         cuts.ml
+  Build$:         flag(examples)
+  BuildDepends:   notty.unix
+
+Executable thisbig
+  Path:           examples
+  Install:        false
+  CompiledObject: best
+  MainIs:         thisbig.ml
+  Build$:         flag(examples)
+  BuildDepends:   notty.unix
+
+Executable runes
+  Path:           examples
+  Install:        false
+  CompiledObject: best
+  MainIs:         runes.ml
+  Build$:         flag(examples)
+  BuildDepends:   notty.unix
+
+Executable crops
+  Path:           examples
+  Install:        false
+  CompiledObject: best
+  MainIs:         crops.ml
+  Build$:         flag(examples)
+  BuildDepends:   notty.unix
+
+Executable mouse
+  Path:           examples
+  Install:        false
+  CompiledObject: best
+  MainIs:         mouse.ml
+  Build$:         flag(examples)
+  BuildDepends:   notty.unix
+
+Document api
+  Title:              Documentation and API reference
+  Type:               ocamlbuild (0.3)
+  BuildTools+:        ocamldoc
+  XOCamlbuildPath:    doc
+  XOCamlbuildModules: src/Notty, unix/Notty_unix, lwt/Notty_lwt
+  Install:            false
+  XOCamlbuildExtraArgs: "-docflags '-colorize-code -charset utf-8 -hide Notty -hide Pervasives'"

@@ -1,0 +1,33 @@
+# OASIS_START
+# DO NOT EDIT (digest: 82dbfc04c3e79508ab8cf8a0317b38cd)
+version = "0.0.1"
+description = "Declaring terminals"
+requires = "uucp uuseg uutf result"
+archive(byte) = "notty.cma"
+archive(byte, plugin) = "notty.cma"
+archive(native) = "notty.cmxa"
+archive(native, plugin) = "notty.cmxs"
+exists_if = "notty.cma"
+package "unix" (
+ version = "0.0.1"
+ description = "Declaring terminals"
+ requires = "notty unix"
+ archive(byte) = "notty_unix.cma"
+ archive(byte, plugin) = "notty_unix.cma"
+ archive(native) = "notty_unix.cmxa"
+ archive(native, plugin) = "notty_unix.cmxs"
+ exists_if = "notty_unix.cma"
+)
+
+package "lwt" (
+ version = "0.0.1"
+ description = "Declaring terminals"
+ requires = "notty notty.unix lwt lwt.unix"
+ archive(byte) = "notty_lwt.cma"
+ archive(byte, plugin) = "notty_lwt.cma"
+ archive(native) = "notty_lwt.cmxa"
+ archive(native, plugin) = "notty_lwt.cmxs"
+ exists_if = "notty_lwt.cma"
+)
+# OASIS_STOP
+
