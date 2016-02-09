@@ -1,6 +1,6 @@
 OASISFormat:   0.4
 Name:          notty
-Version:       0.0.1
+Version:       0.1.1
 Synopsis:      Declaring terminals
 Authors:       David Kaloper <david@numm.org>
 Maintainers:   David Kaloper <david@numm.org>
