@@ -100,12 +100,12 @@ module Term = struct
       and `Revert cleanup = setup_tcattr fd in
       { fd; flt; ibuf; cleanup }
 
-    let rec input t =
+    let rec event t =
       match Unescape.next t.flt with
       | #Unescape.event | `End as r -> r
       | `Await ->
           let n = Unix.read t.fd t.ibuf 0 bsize in
-          Unescape.input t.flt t.ibuf 0 n; input t
+          Unescape.input t.flt t.ibuf 0 n; event t
   end
 
   type t = {
@@ -150,11 +150,11 @@ module Term = struct
     write t;
     t
 
-  let rec input = function
+  let rec event = function
     | t when Tmachine.dead t.trm -> `End
     | t when t.winched -> t.winched <- false; `Resize (size t)
-    | t -> try Input.input t.input with
-            Unix.Unix_error (Unix.EINTR, _, _) -> t.winched <- true; input t
+    | t -> try Input.event t.input with
+            Unix.Unix_error (Unix.EINTR, _, _) -> t.winched <- true; event t
 
   let pending t =
     not (Tmachine.dead t.trm) &&

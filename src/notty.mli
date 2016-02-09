@@ -794,7 +794,7 @@ let img (double, n) =
 let rec update t state =
   Term.image t (img state); loop t state
 and loop t (double, n as state) =
-  match Term.input t with
+  match Term.event t with
   | `Key (`Enter,_)        -> ()
   | `Key (`Arrow `Left,_)  -> update t (double, max 1 (n - 1))
   | `Key (`Arrow `Right,_) -> update t (double, min 8 (n + 1))
@@ -808,7 +808,7 @@ Term.release t
 ]}
 
     The program uses a fullscreen {{!Notty_unix.Term}terminal} and loops reading
-    the {{!Notty_unix.Term.input}input}. LEFT and RIGHT control the iteration
+    the {{!Notty_unix.Term.event}input}. LEFT and RIGHT control the iteration
     count, and SPACE toggles double-drawing. Resizing the window causes a
     redraw. When the loop exits on ENTER, the terminal is
     {{!Notty_unix.Term.release}cleaned up}.

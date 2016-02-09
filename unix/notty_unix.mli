@@ -41,7 +41,7 @@ module Term : sig
       [~output] is the output file descriptor. Defaults to [stdout]. *)
 
   val release : t -> unit
-  (** Dispose of this terminal. Original behavior of input is reinstated,
+  (** Dispose of this terminal. Original behavior of input fd is reinstated,
       cursor is restored, mouse reporting disabled, and alternate mode is
       terminated.
 
@@ -64,22 +64,22 @@ module Term : sig
       [None] hides it. [Some (x, y)] places it at column [x] and row [y], with
       the origin at [(1, 1)], mapping to the upper-left corner. *)
 
-  (** {1 Input} *)
+  (** {1 Events} *)
 
-  val input : t -> [ Unescape.event | `Resize of (int * int) | `End ]
-  (** Wait for new input. [input t] can be:
+  val event : t -> [ Unescape.event | `Resize of (int * int) | `End ]
+  (** Wait for a new event. [event t] can be:
       {ul
       {- [#Unescape.event], an {{!Notty.Unescape.event}[event]} from the input fd;}
       {- [`End] if the input fd is closed, or the terminal was released; or}
       {- [`Resize (cols * rows)] giving the current size of the output tty, if a
-         [SIGWINCH] was delivered before or during this call to [input].}}
+         [SIGWINCH] was delivered before or during this call to [event].}}
 
-      {b Note} [input] is buffered. Calls can either block or immediately
+      {b Note} [event] is buffered. Calls can either block or immediately
       return. Use {{!pending}[pending]} to detect when the next call would not
       block. *)
 
   val pending : t -> bool
-  (** [pending t] is [true] if the next call to {{!input}[input]} would not
+  (** [pending t] is [true] if the next call to {{!event}[event]} would not
       block and the terminal has not yet been released. *)
 
   (** {1 Properties} *)
@@ -97,7 +97,7 @@ module Term : sig
       the [Sys] module will cause this module to malfunction, as the size change
       notifications will no longer be delivered.
 
-      You might still want to ignore resizes reported by {{!input}[input]} and
+      You might still want to ignore resizes reported by {{!event}[event]} and
       directly listen to [SIGWINCH]. This module allows installing such
       listeners without conflicting with the rest of the machinery. *)
   module Winch : sig

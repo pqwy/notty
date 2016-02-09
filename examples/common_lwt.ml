@@ -20,7 +20,6 @@ let simpleterm_lwt ~imgf ~f ~s =
         | Some s -> T.image term (imgf (T.size term) s) >|= fun () -> s
         | None   -> T.release term >|= fun () -> s
   in
-  let inputs = T.events term in
   ( T.image term (imgf (T.size term) s)
-    >>= fun () -> Lwt_stream.fold_s step inputs s )
+    >>= fun () -> Lwt_stream.fold_s step (T.events term) s )
   |> Lwt_main.run |> ignore

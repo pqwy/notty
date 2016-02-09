@@ -110,7 +110,7 @@ let simpleterm ~imgf ~f ~s =
     I.(string A.(fg lightblack) "[ESC quits.]" <-> imgf (w, h - 1) s) in
   let rec go s =
     Term.image term (imgf (Term.size term) s);
-    match Term.input term with
+    match Term.event term with
     | `End | `Key (`Escape, []) | `Key (`Uchar 67, [`Ctrl]) -> ()
     | `Resize _ -> go s
     | #Unescape.event as e ->

@@ -37,7 +37,7 @@ module Term : sig
   val refresh : t -> unit Lwt.t
   val cursor  : t -> (int * int) option -> unit Lwt.t
 
-  (** {1 Input} *)
+  (** {1 Events} *)
 
   val events : t -> [ Unescape.event | `Resize of (int * int) ] Lwt_stream.t
   (** [events t] is the stream of incoming events.
