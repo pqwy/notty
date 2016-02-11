@@ -1,6 +1,6 @@
 # OASIS_START
-# DO NOT EDIT (digest: 82dbfc04c3e79508ab8cf8a0317b38cd)
-version = "0.0.1"
+# DO NOT EDIT (digest: a9a7e8e5ebbf423de6750772a1d03222)
+version = "0.1.1"
 description = "Declaring terminals"
 requires = "uucp uuseg uutf result"
 archive(byte) = "notty.cma"
@@ -9,7 +9,7 @@ archive(native) = "notty.cmxa"
 archive(native, plugin) = "notty.cmxs"
 exists_if = "notty.cma"
 package "unix" (
- version = "0.0.1"
+ version = "0.1.1"
  description = "Declaring terminals"
  requires = "notty unix"
  archive(byte) = "notty_unix.cma"
@@ -20,7 +20,7 @@ package "unix" (
 )
 
 package "lwt" (
- version = "0.0.1"
+ version = "0.1.1"
  description = "Declaring terminals"
  requires = "notty notty.unix lwt lwt.unix"
  archive(byte) = "notty_lwt.cma"

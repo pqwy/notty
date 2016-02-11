@@ -26,6 +26,26 @@ programs that also double as tests.
 [interface]: https://github.com/pqwy/notty/blob/master/src/notty.mli
 [vty]: https://hackage.haskell.org/package/vty
 
+
+![demo](https://raw.githubusercontent.com/pqwy/notty/blob/images/demo.gif)
+
+```OCaml
+(* Game of Life with ZX Spectrum kitsch. *)
+
+let dot = I.uchar A.(fg lightred) 0x25cf 1 1
+
+let background step (n, m) =
+  let k = int_of_float @@ (sin (float (step + m + n) /. 10.)) *. 24. in
+  if k > 0 then I.char A.(fg (gray k)) '.' 1 1 else I.void 1 1
+
+let render (w, h) step life =
+  0 -- (h - 2) |> List.map (fun m ->
+    0 -- (w - 1) |> List.map (fun n ->
+      let pt = (n, m) in if CSet.mem pt life then dot else background step pt
+    ) |> I.hcat
+  ) |> I.vcat
+```
+
 ## Why?
 
 **Q:**

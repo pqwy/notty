@@ -150,6 +150,22 @@ Executable mouse
   Build$:         flag(examples)
   BuildDepends:   notty.unix
 
+Executable life
+  Path:           examples
+  Install:        false
+  CompiledObject: best
+  MainIs:         life.ml
+  Build$:         flag(examples) && flag(lwt)
+  BuildDepends:   notty, notty.lwt
+
+Executable linear
+  Path:           examples
+  Install:        false
+  CompiledObject: best
+  MainIs:         linear.ml
+  Build$:         flag(examples) && flag(lwt)
+  BuildDepends:   notty, notty.lwt
+
 Document api
   Title:              Documentation and API reference
   Type:               ocamlbuild (0.3)

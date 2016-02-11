@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: d26fb53fb0cb252d32ba6a6a1f3159e3)
+# DO NOT EDIT (digest: 1efb2f6184ef36f8b0d332c6fedab8e0)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -123,9 +123,6 @@ true: annot, bin_annot
 <examples/sierpinski_lwt.{native,byte}>: use_notty
 <examples/sierpinski_lwt.{native,byte}>: use_notty_lwt
 <examples/sierpinski_lwt.{native,byte}>: use_notty_unix
-<examples/*.ml{,i,y}>: package(lwt)
-<examples/*.ml{,i,y}>: package(lwt.unix)
-<examples/*.ml{,i,y}>: use_notty_lwt
 # Executable cuts
 <examples/cuts.{native,byte}>: package(result)
 <examples/cuts.{native,byte}>: package(unix)
@@ -166,12 +163,37 @@ true: annot, bin_annot
 <examples/mouse.{native,byte}>: package(uutf)
 <examples/mouse.{native,byte}>: use_notty
 <examples/mouse.{native,byte}>: use_notty_unix
+# Executable life
+<examples/life.{native,byte}>: package(lwt)
+<examples/life.{native,byte}>: package(lwt.unix)
+<examples/life.{native,byte}>: package(result)
+<examples/life.{native,byte}>: package(unix)
+<examples/life.{native,byte}>: package(uucp)
+<examples/life.{native,byte}>: package(uuseg)
+<examples/life.{native,byte}>: package(uutf)
+<examples/life.{native,byte}>: use_notty
+<examples/life.{native,byte}>: use_notty_lwt
+<examples/life.{native,byte}>: use_notty_unix
+# Executable linear
+<examples/linear.{native,byte}>: package(lwt)
+<examples/linear.{native,byte}>: package(lwt.unix)
+<examples/linear.{native,byte}>: package(result)
+<examples/linear.{native,byte}>: package(unix)
+<examples/linear.{native,byte}>: package(uucp)
+<examples/linear.{native,byte}>: package(uuseg)
+<examples/linear.{native,byte}>: package(uutf)
+<examples/linear.{native,byte}>: use_notty
+<examples/linear.{native,byte}>: use_notty_lwt
+<examples/linear.{native,byte}>: use_notty_unix
+<examples/*.ml{,i,y}>: package(lwt)
+<examples/*.ml{,i,y}>: package(lwt.unix)
 <examples/*.ml{,i,y}>: package(result)
 <examples/*.ml{,i,y}>: package(unix)
 <examples/*.ml{,i,y}>: package(uucp)
 <examples/*.ml{,i,y}>: package(uuseg)
 <examples/*.ml{,i,y}>: package(uutf)
 <examples/*.ml{,i,y}>: use_notty
+<examples/*.ml{,i,y}>: use_notty_lwt
 <examples/*.ml{,i,y}>: use_notty_unix
 # OASIS_STOP
 
