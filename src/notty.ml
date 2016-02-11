@@ -156,20 +156,16 @@ module Text = struct
   let (>>|) a fb = match a with Ok x -> Ok (fb x) | Error e -> Error e
 
   type t =
-    | Ascii of string
-    | Utf8  of string * int array * int
-
-  let to_string = function
-    | Utf8 (s, _, _) -> s
-    | Ascii s        -> s
+    | Ascii of string * int * int
+    | Utf8  of string * int array * int * int
 
   let width = function
-    | Utf8 (_, _, w) -> w
-    | Ascii s        -> String.length s
+    | Utf8 (_, _, _, w) -> w
+    | Ascii (_, _, w)   -> w
 
-  let empty = Ascii ""
+  let empty = Ascii ("", 0, 0)
 
-  let is_empty = function (Ascii "" | Utf8 ("", _, _)) -> true | _ -> false
+  let is_empty t = width t = 0
 
   let graphemes ?encoding str =
     let dec = Uutf.decoder ?encoding (`String str)
@@ -193,24 +189,23 @@ module Text = struct
 
   let dead = ' '
 
+  let to_buffer buf = function
+    | Ascii (s, off, w)    -> Buffer.add_substring buf s off w
+    | Utf8 (s, ix, off, w) ->
+        let x1 = match ix.(off) with
+          | -1 -> Buffer.add_char buf dead; ix.(off + 1) | x -> x in
+        let x2 = ix.(off + w) in
+        let n  = match x2 with -1 -> ix.(off + w - 1) - x1 | x -> x - x1 in
+        Buffer.add_substring buf s x1 n;
+        match x2 with -1 -> Buffer.add_char buf dead | _ -> ()
+
   let sub t x w =
-    let open Int in
     let w1 = width t in
     if w = 0 || x >= w1 then empty else
-      let w = min w (w1 - x) in
+      let w = Int.min w (w1 - x) in
       match t with
-      | Ascii s -> Ascii (String.sub s x w)
-      | Utf8 (s, ix, _) ->
-          let (l1, i) = match ix.(x) with
-            | -1 -> (true, ix.(x + 1) - 1) | i -> (false, i)
-          and (l2, j) = match ix.(x + w) with
-            | -1 -> (true, ix.(x + w - 1) + 1) | j -> (false, j) in
-          let n = j - i in
-          let s = String.init n @@ fun k ->
-            if l1 && k = 0 || l2 && k = n - 1 then dead else s.[k + i]
-          and ix = Array.init (w + 1) @@ fun k ->
-            if k = 0 then 0 else if k = w then n else Int.max (-1) (ix.(k + x)-1)
-          in Utf8 (s, ix, w)
+      | Ascii (s, off, _) -> Ascii (s, off + x, w)
+      | Utf8 (s, ix, off, _) -> Utf8 (s, ix, off + x, w)
 
   open Char
 
@@ -220,11 +215,11 @@ module Text = struct
   let of_ascii str =
     match String.find is_ctrl str with
     | Some i -> err_ctrl_uchar (code str.[i]) str
-    | None   -> Ascii str
+    | None   -> Ascii (str, 0, String.length str)
 
   let of_unicode str =
     match graphemes ~encoding:`UTF_8 str with
-    | Ok ix                  -> Utf8 (str, ix, Array.length ix - 1)
+    | Ok ix                  -> Utf8 (str, ix, 0, Array.length ix - 1)
     | Error (`Malformed err) -> err_malformed err str
     | Error (`Control u)     -> err_ctrl_uchar u str
 
@@ -238,7 +233,7 @@ module Text = struct
   let replicatec w c =
     if is_ctrl c then
       err_ctrl_uchar (code c) (spr "%d * %c" w c)
-    else if w < 1 then empty else Ascii (String.make w c)
+    else if w < 1 then empty else Ascii (String.make w c, 0, w)
 
   let replicateu w u =
     if Uchar.is_ascii u then replicatec w (chr u)
@@ -677,7 +672,7 @@ module Render = struct
     let open Cap in
     let render_op = Operation.(function
       | Skip n      -> cap.skip n buf
-      | Text (a, x) -> cap.sgr a buf; Buffer.add_string buf Text.(to_string x)
+      | Text (a, x) -> cap.sgr a buf; Text.to_buffer buf x
     ) in
     let render_line line =
       cap.clreol buf;
