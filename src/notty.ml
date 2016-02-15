@@ -4,6 +4,7 @@ type uchar = int
 let (&.) f g x = f (g x)
 
 let btw (x : int) a b = a <= x && x <= b
+let bit n b = b land (1 lsl n) > 0
 
 let invalid_arg_s fmt = Printf.ksprintf invalid_arg fmt
 
@@ -34,31 +35,13 @@ module List = struct
 
   let rec replicate n a = if n < 1 then [] else a :: replicate (n - 1) a
   let rec range a b = if a > b then [] else a :: range (a + 1) b
-
-  module Set (E : sig type t val compare : t -> t -> int end) = struct
-
-    let rec cons e = function
-      | [] -> [e]
-      | x::xt as xs ->
-          let c = E.compare e x in
-          if c < 0 then e :: xs else if c > 0 then x :: cons e xt else xs
-
-    let rec union xs ys = match (xs, ys) with
-      | (_, []) -> xs
-      | ([], _) -> ys
-      | (x::xt, y::yt) ->
-          match E.compare x y with
-          | 0            -> x :: union xt yt
-          | c when c < 0 -> x :: union xt ys
-          | _            -> y :: union xs yt
-  end
 end
 
 module Buffer = struct
 
   include Buffer
 
-  let on size f = Buffer.(let buf = create size in f buf; contents buf)
+  let on size f = let buf = create size in f buf; contents buf
 
   let add_decimal b = function
     | x when btw x 0 999 ->
@@ -76,7 +59,6 @@ end
 
 module Char = struct
   include Char
-  let compare (a : char) b = Pervasives.compare a b
   let is_ctrl  c = Uchar.is_ctrl  (code c)
   let is_ascii c = Uchar.is_ascii (code c)
 end
@@ -86,12 +68,6 @@ module String = struct
   include String
 
   let sub0cp s i len = if i > 0 || len < length s then sub s i len else s
-
-  let cut_at_char str x =
-    let n = length str in
-    match index str x with
-    | exception Not_found -> (str, "")
-    | j -> (sub str 0 j, sub str (j + 1) (n - j - 1))
 
   let fold_left f s str =
     let acc = ref s in
@@ -130,7 +106,6 @@ module Option = struct
 
   let map f = function Some x -> Some (f x) | _ -> None
   let get def = function Some x -> x | _ -> def
-  let getf def f = function Some x -> f x | _ -> def
   let to_list = function Some x -> [x] | _ -> []
   let (>|=) a f = map f a
   let (>>=) a f = match a with Some x -> f x | _ -> None
@@ -153,15 +128,11 @@ module Text = struct
 
   open Result
 
-  let (>>|) a fb = match a with Ok x -> Ok (fb x) | Error e -> Error e
-
   type t =
     | Ascii of string * int * int
     | Utf8  of string * int array * int * int
 
-  let width = function
-    | Utf8 (_, _, _, w) -> w
-    | Ascii (_, _, w)   -> w
+  let width = function Utf8 (_, _, _, w) -> w | Ascii (_, _, w)   -> w
 
   let empty = Ascii ("", 0, 0)
 
@@ -183,9 +154,9 @@ module Text = struct
           in go is 0 0 `Await
       | `Uchar u when Uchar.is_ctrl u -> Error (`Control u)
       | `Uchar u -> go is (w + Uucp.Break.tty_width_hint u) i `Await
-      | `End -> Ok is
+      | `End -> Ok (is |> List.rev |> Array.of_list) (* XXX *)
     in
-    go [0] 0 0 `Await >>| (Array.of_list &. List.rev)
+    go [0] 0 0 `Await
 
   let dead = ' '
 
@@ -193,11 +164,11 @@ module Text = struct
     | Ascii (s, off, w)    -> Buffer.add_substring buf s off w
     | Utf8 (s, ix, off, w) ->
         let x1 = match ix.(off) with
-          | -1 -> Buffer.add_char buf dead; ix.(off + 1) | x -> x in
-        let x2 = ix.(off + w) in
-        let n  = match x2 with -1 -> ix.(off + w - 1) - x1 | x -> x - x1 in
-        Buffer.add_substring buf s x1 n;
-        match x2 with -1 -> Buffer.add_char buf dead | _ -> ()
+          | -1 -> Buffer.add_char buf dead; ix.(off + 1) | x -> x
+        and x2 = ix.(off + w) in
+        Buffer.add_substring buf s x1 @@
+          (if x2 = -1 then ix.(off + w - 1) else x2) - x1;
+        if x2 = -1 then Buffer.add_char buf dead
 
   let sub t x w =
     let w1 = width t in
@@ -209,8 +180,8 @@ module Text = struct
 
   open Char
 
-  let err_ctrl_uchar = invalid_arg_s "Notty: control char: 0x%02x (from: %s)"
-  let err_malformed  = invalid_arg_s "Notty: malformed UTF-8: %s (from: %s)"
+  let err_ctrl_uchar = invalid_arg_s "Notty: control char: 0x%02x (in: %s)"
+  let err_malformed  = invalid_arg_s "Notty: malformed UTF-8: %s (in: %s)"
 
   let of_ascii str =
     match String.find is_ctrl str with
@@ -244,17 +215,9 @@ end
 
 module A = struct
 
-  module S = List.Set (Char)
-
   type color = int
-
-  type style = char
-
-  type t = {
-    fg : color option
-  ; bg : color option
-  ; st : style list
-  }
+  type style = int
+  type t = { fg : color option; bg : color option; st : style }
 
   let black        = 0
   and red          = 1
@@ -283,63 +246,36 @@ module A = struct
       invalid_arg "Notty.A.gray: level outside of range [0, 23]"
     else level + 232
 
-  let bold      = '1'
-  and italic    = '3'
-  and underline = '4'
-  and blink     = '5'
-  and reverse   = '7'
+  let bold      = 1
+  and italic    = 2
+  and underline = 4
+  and blink     = 8
+  and reverse   = 16
 
-  let empty = { fg = None; bg = None; st = []}
+  let empty = { fg = None; bg = None; st = 0 }
 
   let (++) a1 a2 = {
     fg = (match a2.fg with None -> a1.fg | x -> x)
   ; bg = (match a2.bg with None -> a1.bg | x -> x)
-  ; st = S.union a1.st a2.st
+  ; st = a1.st lor a2.st
   }
 
   let fg f = { empty with fg = Some f }
   let bg b = { empty with bg = Some b }
-  let st s = { empty with st = [s] }
+  let st s = { empty with st = s }
 
-  let to_string a =
-    let color = function
-      | 0  -> "black" | 1  -> "red"     | 2  -> "green" | 3  -> "yellow"
-      | 4  -> "blue"  | 5  -> "magenta" | 6  -> "cyan"  | 7  -> "white"
-      | 8  -> "BLACK" | 9  -> "RED"     | 10 -> "GREEN" | 11 -> "YELLOW"
-      | 12 -> "BLUE"  | 13 -> "MAGENTA" | 14 -> "CYAN"  | 15 -> "WHITE"
-      | c when c < 232 -> "rgb:" ^ string_of_int (c - 16)
-      | c              -> "gs:"  ^ string_of_int (c - 232)
-    and style = function
-      | '1' -> 'b' | '3' -> 'i' | '4' -> 'u' | '5' -> 'k' | '7' -> 'r'
-      | _ -> assert false
-    in
-    Buffer.(on 16 @@ fun b ->
-      add_string b (Option.getf "" color a.fg); add_char b '/';
-      add_string b (Option.getf "" color a.bg); add_char b '/';
-      List.iter (fun s -> add_char b (style s)) a.st)
+  let to_tag { fg; bg; st } =
+    let f = ref 0 and chr = Char.unsafe_chr in
+    let g k = function Some x -> f := !f + k; chr x | _ -> '\x00' in
+    String.init 3 @@ function
+      | 0 -> g 1 fg | 1 -> g 2 bg | _ -> (st lsl 2) lor !f |> chr
 
-  let of_string s =
-    let color =
-      let cmap = function
-        | "black" -> 0  | "red"     -> 1  | "green" -> 2  | "yellow" -> 3
-        | "blue"  -> 4  | "magenta" -> 5  | "cyan"  -> 6  | "white"  -> 7
-        | "BLACK" -> 8  | "RED"     -> 9  | "GREEN" -> 10 | "YELLOW" -> 11
-        | "BLUE"  -> 12 | "MAGENTA" -> 13 | "CYAN"  -> 14 | "WHITE"  -> 15
-        | s -> match String.cut_at_char s ':' with
-            ("rgb", s) -> int_of_string s + 16
-          | ("gs",  s) -> int_of_string s + 232
-          | _          -> invalid_arg "" in
-      function "" -> None | s -> Some (cmap s)
-    and style =
-      let smap = function
-        | 'b' -> '1' | 'i' -> '3' | 'u' -> '4' | 'k' -> '5' | 'r' -> '7'
-        | _ -> invalid_arg "" in
-      String.fold_left (fun xs c -> S.cons (smap c) xs) [] in
-    let (a1, s) = String.cut_at_char s '/' in
-    let (a2, s) = String.cut_at_char s '/' in
-    try Some { fg = color a1; bg = color a2; st = style s }
-    with Invalid_argument _ -> None
-
+  let of_tag s =
+    if String.length s <> 3 then None else
+      let f = Char.code s.[2] in Some {
+        fg = if bit 0 f then Some Char.(code s.[0]) else None
+      ; bg = if bit 1 f then Some Char.(code s.[1]) else None
+      ; st = f lsr 2 }
 end
 
 module I = struct
@@ -489,7 +425,7 @@ module I = struct
     let formatter_of_image_buffer b =
       let attr () = match b.attrs with a::_ -> a | _ -> A.empty in
       let mark_open_tag tag =
-        b.attrs <- Option.get (attr ()) (A.of_string tag) :: b.attrs; ""
+        b.attrs <- Option.get (attr ()) (A.of_tag tag) :: b.attrs; ""
       and mark_close_tag _ =
         b.attrs <- (match b.attrs with _::t -> t | _ -> []); "" in
       let out_string s i l =
@@ -511,7 +447,7 @@ module I = struct
     let image_buffer = create_ibuf ()
     let image_formatter = formatter_of_image_buffer image_buffer
 
-    let pp_open_attribute_tag fmt attr = pp_open_tag fmt (A.to_string attr)
+    let pp_open_attribute_tag fmt attr = pp_open_tag fmt (A.to_tag attr)
 
     let kstrf ?(attr=A.empty) ?(w=1000000) k format =
       let m = ref 0 in
@@ -620,6 +556,8 @@ module Cap = struct
 
   let ((<|), (<.), (<!)) = Buffer.(add_string, add_char, add_decimal)
 
+  let sts = [ ";1"; ";3"; ";4"; ";5"; ";7" ]
+
   let ansi = {
       skip    = (fun n b -> b <| "\x1b["; b <! n; b <. 'C')
     ; newline = (fun b -> b <| "\x1bE")
@@ -643,7 +581,10 @@ module Cap = struct
           | Some c when c < 16  -> b <. ';' ; b <! (c + 92)
           | Some c              -> b <| ";48;5;" ; b <! c
           | None -> ());
-        List.iter (fun s -> b <. ';' ; b <. s) attr.A.st;
+        let rec stflags f xs = match (f, xs) with
+          | (0, _)|(_, []) -> ()
+          | (_, x::xs)     -> if f land 1 > 0 then b <| x; stflags (f lsr 1) xs
+        in stflags attr.A.st sts;
         b <. 'm'
     }
 
@@ -778,8 +719,6 @@ module Unescape = struct
     | ([p], '~') -> xtrm_mod_flags p
     | _          -> None
 
-  let bit n b = b land (1 lsl n) > 0
-
   let mouse_p p =
     let btn = match p land 3 with
       | 0 when bit 6 p -> `Scroll `Up
@@ -863,8 +802,9 @@ module Unescape = struct
           | _                            -> None
         ) >|= fun e -> `Mouse (e, (x, y), mods)
 
-    | CSI ("",[p;x;y],'M') | Esc_M (p,x,y) ->
-        let (btn, drag, mods) = mouse_p (p - 32) in
+    | CSI ("",[p;x;y],'M') | Esc_M (p,x,y) as evt ->
+        let (x, y) = match evt with Esc_M _ -> x - 32, y - 32 | _ -> x, y
+        and (btn, drag, mods) = mouse_p (p - 32) in
         ( match (btn, drag) with
           | (#button as b, false) -> Some (`Press b)
           | (#button     , true ) -> Some `Drag

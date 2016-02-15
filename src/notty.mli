@@ -140,7 +140,6 @@ module I : sig
   val height : image -> int
   val width  : image -> int
 
-
   (** {1:imgprims Primitives} *)
 
   val empty : image
@@ -314,35 +313,6 @@ v}
   (** [attr a f] is a pretty-printer like [f], except its output is styled
       with [a]. This applies only outside of any styling [f] itself might
       embed. *)
-
-  (* {2:attrtags Attribute tags}
-
-      {b WARNING} Do not use this feature in published code. It is experimental
-      and could be removed.
-
-      Image formatters interpret [Format]'s {e semantics tags} and use them
-      for setting attributes. This allows embedding of attributes directly
-      into format strings.
-
-      For more info on tag usage, consult the {{:
-      http://caml.inria.fr/pub/docs/manual-ocaml/libref/Format.html}[Format]}
-      documentation.
-
-      Attributes are represented in the form [fg/bg/st].
-
-      [fg] (resp. [bg]) is the ANSI name of the foreground (resp. background)
-      color. Lowercase names mean the {{!A.corecolors}dim}, uppercase names
-      mean the {{!A.corecolors}light} variants, and representation of colors
-      beyond the core 16 is private.
-
-      [st] is any combination of letters [b] (bold), [i] (italic), [u]
-      (underline), [k] (blink) and [r] (reverse).
-
-      Any of the three components may be missing, and trailing [/] characters
-      can be omitted.
-
-      Invalid tags are ignored.
-      *)
 end
 
 (** Operators, repeated. *)
