@@ -50,6 +50,8 @@ module Buffer = struct
         if (d1 + d2) > 0 then 0x30 + d2 |> Char.unsafe_chr |> add_char b;
         0x30 + d3 |> Char.unsafe_chr |> add_char b
     | x -> string_of_int x |> add_string b
+
+  let add_chars b c n = for _ = 1 to n do add_char b c done
 end
 
 module Uchar = struct
@@ -559,7 +561,7 @@ module Cap = struct
   let sts = [ ";1"; ";3"; ";4"; ";5"; ";7" ]
 
   let ansi = {
-      skip    = (fun n b -> b <| "\x1b["; b <! n; b <. 'C')
+      skip    = (fun n b -> b <| "\x1b[0m"; Buffer.add_chars b ' ' n)
     ; newline = (fun b -> b <| "\x1bE")
     ; altscr  = (fun x b -> b <| if x then "\x1b[?1049h" else "\x1b[?1049l")
     ; cursat  = (fun w h b -> b <| "\x1b["; b <! w; b <. ';'; b <! h; b <. 'H')
@@ -593,7 +595,7 @@ module Cap = struct
   and no2 _ _ _ = ()
 
   let dumb = {
-      skip    = (fun n b -> for _ = 1 to n do b <. ' ' done)
+      skip    = (fun n b -> Buffer.add_chars b ' ' n)
     ; newline = (fun b -> b <| "\n")
     ; altscr  = no1
     ; cursat  = no2
@@ -616,10 +618,7 @@ module Render = struct
       | Text (a, x) -> cap.sgr a buf; Text.to_buffer buf x
     ) in
     let render_line line =
-      cap.clreol buf;
-      line |> List.iter render_op;
-      cap.sgr A.empty buf
-    in
+      List.iter render_op line; cap.sgr A.empty buf; cap.clreol buf in
     let rec lines = function
       | []      -> ()
       | [ln]    -> render_line ln
