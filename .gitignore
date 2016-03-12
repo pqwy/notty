@@ -1,5 +1,16 @@
 rondom
 
+_tags
+myocamlbuild.ml
+setup.ml
+*/META
+*/*.mllib
+*/*.mldylib
+*/*.clib
+
+_tags.local
+myocamlbuild.ml.local
+
 _build
 setup.data
 setup.log
