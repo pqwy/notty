@@ -6,7 +6,7 @@ Authors:       David Kaloper <david@numm.org>
 Maintainers:   David Kaloper <david@numm.org>
 License:       BSD-2-clause
 Homepage:      https://github.com/pqwy/notty
-Plugins:       META (0.4), DevFiles (0.4)
+Plugins:       META (0.4)
 BuildTools:    ocamlbuild
 OCamlVersion:  >= 4.02.0
 AlphaFeatures: ocamlbuild_more_args
