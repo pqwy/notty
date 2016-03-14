@@ -20,6 +20,10 @@ Flag lwt
   Description: Build Lwt support
   Default:     true
 
+Flag mirage
+  Description: Build Mirage support
+  Default:     false
+
 Flag examples
   Description: Build the example programs
   Default:     false
@@ -53,6 +57,15 @@ Library notty_lwt
   BuildDepends:  notty, notty.unix, lwt, lwt.unix
   ByteOpt:       -w A-4-33-40-41-42-43-34-44-48
   Build$:        flag(unix) && flag(lwt)
+
+Library notty_mirage
+  Findlibparent: notty
+  Findlibname:   mirage
+  Path:          mirage/
+  Modules:       Notty_mirage
+  BuildDepends:  notty, mirage-types, lwt, cstruct
+  ByteOpt:       -w A-4-33-40-41-42-43-34-44-48
+  Build$:        flag(mirage)
 
 Executable speed
   Path:           benchmarks

@@ -9,7 +9,8 @@ license:      "BSD2"
 build: [
   [ "./configure" "--prefix" prefix
     "--enable-unix"
-    "--%{lwt:enable}%-lwt" ]
+    "--%{lwt:enable}%-lwt"
+    "--%{lwt+mirage-types+cstruct:enable}%-mirage" ]
   [ make ]
 ]
 install: [ make "install" ]
@@ -26,6 +27,8 @@ depends: [
 
 depopts: [
   "lwt"
+  "mirage-types"
+  "cstruct"
 ]
 
 available: [ ocaml-version >= "4.02.0" ]
