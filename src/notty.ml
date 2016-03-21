@@ -607,6 +607,7 @@ module Cap = struct
     }
 
   let clear cap = cap.cr & cap.clreol
+  let erase cap = cap.sgr A.empty & cap.clreol
 end
 
 module Render = struct
@@ -617,8 +618,10 @@ module Render = struct
       | Skip n      -> cap.skip n buf
       | Text (a, x) -> cap.sgr a buf; Text.to_buffer buf x
     ) in
-    let render_line line =
-      List.iter render_op line; cap.sgr A.empty buf; cap.clreol buf in
+    let rec render_line = function
+      | []      -> erase cap buf
+      | [op]    -> erase cap buf; render_op op
+      | op::ops -> render_op op; render_line ops in
     let rec lines = function
       | []      -> ()
       | [ln]    -> render_line ln
