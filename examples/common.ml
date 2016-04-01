@@ -103,8 +103,6 @@ end
 module Term = Notty_unix.Term
 
 let simpleterm ~imgf ~f ~s =
-  let tc = Unix.(tcgetattr stdin) in
-  Unix.(tcsetattr stdin TCSANOW { tc with c_isig = false });
   let term = Term.create () in
   let imgf (w, h) s =
     I.(string A.(fg lightblack) "[ESC quits.]" <-> imgf (w, h - 1) s) in

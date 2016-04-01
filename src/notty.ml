@@ -34,7 +34,7 @@ module List = struct
   include List
 
   let rec replicate n a = if n < 1 then [] else a :: replicate (n - 1) a
-  let rec range a b = if a > b then [] else a :: range (a + 1) b
+  let rec (--) a b = if a > b then [] else a :: succ a -- b
 end
 
 module Buffer = struct
@@ -85,15 +85,15 @@ module String = struct
       | _            -> None in
     go f str 0
 
-  let of_uchars_rev = let open Bytes in function
+  let of_uchars_rev = function
     | []  -> ""
-    | [u] -> make 1 (Char.chr u) |> unsafe_to_string
+    | [u] -> String.make 1 (Char.chr u)
     | ucs ->
         let n = List.length ucs in
         let rec go bs i = function
-          | []    -> unsafe_to_string bs
-          | x::xs -> unsafe_set bs i (Char.chr x); go bs (pred i) xs in
-        go (create n) (n - 1) ucs
+          | []    -> Bytes.unsafe_to_string bs
+          | x::xs -> Bytes.unsafe_set bs i (Char.chr x); go bs (pred i) xs in
+        go (Bytes.create n) (n - 1) ucs
 end
 
 module Int = struct
@@ -532,7 +532,7 @@ module Operation = struct
         if row < h1 then scan x w (top + row) i k else Skip w @: k
 
   let of_image (w, h) i =
-    List.(range 0 (h - 1) |> map (fun row -> scan 0 w row i []))
+    List.(0 -- pred h |> map (fun row -> scan 0 w row i []))
 
 end
 
@@ -826,7 +826,7 @@ module Unescape = struct
     | cc::ccs -> (event_of_control_code cc |> Option.to_list) @ events ccs
     | [] -> []
 
-  let decode xs = xs |> demux |> events
+  let decode = events &. demux
 
   type t = (event list * bool) ref
 

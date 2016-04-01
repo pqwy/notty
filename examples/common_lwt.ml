@@ -5,10 +5,6 @@ include Common
 
 module T = Notty_lwt.Term
 
-let () =
-  let tc = Unix.(tcgetattr stdin) in
-  Unix.(tcsetattr stdin TCSANOW { tc with c_isig = false })
-
 let simpleterm_lwt ~imgf ~f ~s =
   let term = T.create () in
   let imgf (w, h) s =

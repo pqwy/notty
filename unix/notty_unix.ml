@@ -23,11 +23,14 @@ module Private = struct
     | (""|"dumb")         -> fun _ -> dumb
     | _                   -> fun fd -> if Unix.isatty fd then ansi else dumb
 
-  let setup_tcattr fd =
+  let setup_tcattr ~nosig fd =
     let open Unix in
+    let tweak tc =
+      let tc = { tc with c_icanon = false ; c_echo = false } in
+      if nosig then { tc with c_isig = false ; c_ixon = false } else tc in
     try
       let tc = tcgetattr fd in
-      tcsetattr fd TCSANOW { tc with c_icanon = false ; c_echo = false };
+      tweak tc |> tcsetattr fd TCSANOW;
       `Revert (once @@ fun () -> tcsetattr fd TCSANOW tc)
     with Unix_error (ENOTTY, _, _) -> `Revert (fun () -> ())
 
@@ -94,10 +97,10 @@ module Term = struct
 
     let bsize = 1024
 
-    let create fd =
+    let create ~nosig fd =
       let flt  = Unescape.create ()
       and ibuf = Bytes.create bsize
-      and `Revert cleanup = setup_tcattr fd in
+      and `Revert cleanup = setup_tcattr ~nosig fd in
       { fd; flt; ibuf; cleanup }
 
     let rec event t =
@@ -134,11 +137,12 @@ module Term = struct
   let cursor t curs  = Tmachine.cursor t.trm curs; write t
   let size t         = Tmachine.size t.trm
 
-  let create ?(dispose=true) ?(mouse=true) ?(input=Unix.stdin) ?(output=Unix.stdout) () =
+  let create ?(dispose=true) ?(nosig=true) ?(mouse=true)
+             ?(input=Unix.stdin) ?(output=Unix.stdout) () =
     let rec t = {
         output  = Unix.out_channel_of_descr output
       ; trm     = Tmachine.create ~mouse (cap_for_fd input)
-      ; input   = Input.create input
+      ; input   = Input.create ~nosig input
       ; winched = false
       ; unwinch = lazy (
           Winch.add output (fun dim -> t.winched <- true; set_size t dim)

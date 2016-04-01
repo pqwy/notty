@@ -17,12 +17,13 @@ module Term : sig
   (** {1 Construction and destruction} *)
 
   val create : ?dispose:bool ->
+               ?nosig:bool ->
                ?mouse:bool ->
                ?input:Unix.file_descr ->
                ?output:Unix.file_descr ->
                unit -> t
-  (** [create ~dispose ~mouse ~input ~output ()] creates a fresh {{!t}terminal}.
-      It has the following side effects:
+  (** [create ~dispose ~nosig ~mouse ~input ~output ()] creates a fresh
+      {{!t}terminal}. It has the following side effects:
       {ul
       {- [Unix.tcsetattr] is applied to [input] to disable {e echo} and {e
          canonical mode}.}
@@ -33,6 +34,10 @@ module Term : sig
       [~dispose] arranges for automatic {{!release}cleanup} of the terminal
       before the process terminates. The downside is that a reference to this
       terminal is retained until the program exits. Defaults to [true].
+
+      [~nosig] additionally turns off signal delivery and flow control
+      ({e isig} and {e ixon}) on input. Inhibits automatic handling of
+      {e CTRL-\{C,Z,\,S,Q\}}. Defaults to [true].
 
       [~mouse] activates mouse reporting. Defaults to [true].
 
@@ -166,7 +171,7 @@ val output_image_endline :
 module Private : sig
 
   val cap_for_fd        : Unix.file_descr -> Cap.t
-  val setup_tcattr      : Unix.file_descr -> [ `Revert of (unit -> unit) ]
+  val setup_tcattr      : nosig:bool -> Unix.file_descr -> [ `Revert of (unit -> unit) ]
   val set_winch_handler : (unit -> unit) -> [ `Revert of (unit -> unit) ]
   val output_image_gen  :
     to_fd:('fd -> Unix.file_descr) -> write:('fd -> Buffer.t -> 'r) ->

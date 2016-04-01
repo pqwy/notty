@@ -72,8 +72,8 @@ module Term = struct
 
   let bsize = 1024
 
-  let input_stream fd stop =
-    let `Revert f = setup_tcattr (Lwt_unix.unix_file_descr fd) in
+  let input_stream ~nosig fd stop =
+    let `Revert f = setup_tcattr ~nosig (Lwt_unix.unix_file_descr fd) in
     let stream =
       let flt  = Unescape.create ()
       and ibuf = Bytes.create bsize in
@@ -124,7 +124,8 @@ module Term = struct
         |> Lwt_stream.map (fun dim -> `Resize dim)
     else Lwt_stream.of_list []
 
-  let create ?(dispose=true) ?(mouse=true) ?(input=Lwt_unix.stdin) ?(output=Lwt_unix.stdout) () =
+  let create ?(dispose=true) ?(nosig=true) ?(mouse=true)
+             ?(input=Lwt_unix.stdin) ?(output=Lwt_unix.stdout) () =
     let fd = Lwt_unix.unix_file_descr output in
     let (stop, stopw) = Lwt.wait () in
     let rec t = lazy {
@@ -133,7 +134,7 @@ module Term = struct
       ; stop   = (fun () -> Lwt.wakeup stopw None)
       ; events = [
           resizef fd stop (fun x -> set_size Lazy.(force t) x)
-        ; input_stream input stop
+        ; input_stream ~nosig input stop
         ] |> Lwt_stream.fixed_choose
       } in
     let t = Lazy.force t in
