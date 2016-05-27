@@ -802,7 +802,7 @@ module Unescape = struct
           | ('m', #button, false)        -> Some `Release
           (* | ('M', `ALL   , true)         -> Some `Move *)
           | _                            -> None
-        ) >|= fun e -> `Mouse (e, (x, y), mods)
+        ) >|= fun e -> `Mouse (e, (x - 1, y - 1), mods)
 
     | CSI ("",[p;x;y],'M') | Esc_M (p,x,y) as evt ->
         let (x, y) = match evt with Esc_M _ -> x - 32, y - 32 | _ -> x, y
@@ -813,7 +813,7 @@ module Unescape = struct
           | (`ALL        , false) -> Some `Release
           (* | (`ALL        , true)  -> Some `Move *)
           | _                     -> None
-        ) >|= fun e -> `Mouse (e, (x, y), mods)
+        ) >|= fun e -> `Mouse (e, (x - 1, y - 1), mods)
 
     | CSI _ | SS2 _ -> None
 
@@ -870,7 +870,7 @@ module Tmachine = struct
 
   let cursor cap = Cap.(function
     | None        -> cap.cursvis false
-    | Some (w, h) -> cap.cursvis true & cap.cursat h w
+    | Some (w, h) -> cap.cursvis true & cap.cursat (max h 0 + 1) (max w 0 + 1)
     )
 
   let create ~mouse cap = {

@@ -40,7 +40,7 @@ module String = struct
 
   let repeat n str =
     let b = Buffer.create 16 in
-    for i = 1 to n do Buffer.add_string b str done;
+    for _ = 1 to n do Buffer.add_string b str done;
     Buffer.contents b
 end
 

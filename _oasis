@@ -166,6 +166,14 @@ Executable linear
   Build$:         flag(examples) && flag(lwt)
   BuildDepends:   notty, notty.lwt
 
+Executable cursor
+  Path:           examples
+  Install:        false
+  CompiledObject: best
+  MainIs:         cursor.ml
+  Build$:         flag(examples)
+  BuildDepends:   notty, notty.unix
+
 Document api
   Title:              Documentation and API reference
   Type:               ocamlbuild (0.3)

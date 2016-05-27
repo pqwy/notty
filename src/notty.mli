@@ -425,7 +425,7 @@ module Unescape : sig
          or motion of the mouse with buttons depressed.
 
          [(x, y)] are column and row position of the mouse. The origin is
-         [(1,1)], the upper-left corner.
+         [(0,0)], the upper-left corner.
 
          {b Note} Every [`Press(`Left|`Middle|`Right)] generates a corresponding
          [`Release], but there is no portable way to detect which button was

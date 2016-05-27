@@ -67,7 +67,7 @@ module Term : sig
   (** [cursor t pos] sets and redraws the cursor.
 
       [None] hides it. [Some (x, y)] places it at column [x] and row [y], with
-      the origin at [(1, 1)], mapping to the upper-left corner. *)
+      the origin at [(0, 0)], mapping to the upper-left corner. *)
 
   (** {1 Events} *)
 
