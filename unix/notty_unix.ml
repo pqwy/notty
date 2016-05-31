@@ -159,8 +159,7 @@ module Term = struct
   let rec event = function
     | t when Tmachine.dead t.trm -> `End
     | t when t.winched -> t.winched <- false; `Resize (size t)
-    | t -> try Input.event t.input with
-            Unix.Unix_error (Unix.EINTR, _, _) -> t.winched <- true; event t
+    | t -> Unix.(try Input.event t.input with Unix_error (EINTR, _, _) -> event t)
 
   let pending t =
     not (Tmachine.dead t.trm) &&
