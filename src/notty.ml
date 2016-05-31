@@ -134,6 +134,11 @@ module Text = struct
     | Ascii of string * int * int
     | Utf8  of string * int array * int * int
 
+  let equal t1 t2 = match (t1, t2) with
+    | (Utf8 (s1, _, i1, n1), Utf8 (s2, _, i2, n2))
+    | (Ascii (s1, i1, n1), Ascii (s2, i2, n2)) -> i1 = i2 && n1 = n2 && s1 = s2
+    | _ -> false
+
   let width = function Utf8 (_, _, _, w) -> w | Ascii (_, _, w)   -> w
 
   let empty = Ascii ("", 0, 0)
@@ -220,6 +225,11 @@ module A = struct
   type color = int
   type style = int
   type t = { fg : color option; bg : color option; st : style }
+
+  let equal t1 t2 =
+    let f o1 o2 = match (o1, o2) with
+      | (Some x, Some y) -> (x : int) = y | (None, None) -> true | _ -> false
+    in f t1.fg t2.fg && f t1.bg t2.bg && t1.st = t2.st
 
   let black        = 0
   and red          = 1
@@ -313,6 +323,21 @@ module I = struct
     | Hcrop    (_, (_, h)) -> h
     | Vcrop    (_, (_, h)) -> h
     | Void         (_, h)  -> h
+
+  let equal t1 t2 =
+    let rec eq t1 t2 = match (t1, t2) with
+      | (Empty, Empty) -> true
+      | (Segment (a1, t1), Segment (a2, t2)) ->
+          A.equal a1 a2 && Text.equal t1 t2
+      | (Hcompose ((a, b), _), Hcompose ((c, d), _))
+      | (Vcompose ((a, b), _), Vcompose ((c, d), _))
+      | (Zcompose ((a, b), _), Zcompose ((c, d), _)) -> eq a c && eq b d
+      | (Hcrop ((a, i1, n1), _), Hcrop ((b, i2, n2), _))
+      | (Vcrop ((a, i1, n1), _), Vcrop ((b, i2, n2), _)) ->
+          i1 = i2 && n1 = n2 && eq a b
+      | (Void (a, b), Void (c, d)) -> a = c && b = d
+      | _ -> false in
+    width t1 = width t2 && height t1 = height t2 && eq t1 t2
 
   let empty = Empty
 

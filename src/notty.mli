@@ -101,6 +101,8 @@ module A : sig
 
   type t = attr
 
+  val equal : t -> t -> bool
+
   val empty : attr
   (** [empty] is the attribute with the default foreground and background color
       and empty style set. *)
@@ -139,6 +141,12 @@ module I : sig
 
   val height : image -> int
   val width  : image -> int
+
+  val equal : t -> t -> bool
+  (** [equal t1 t2] is [true] iff [t1] and [t2] are constructed by the same term.
+
+      {b Note} This is a weaker form of equality. Images that are not [equal]
+      could still render the same. *)
 
   (** {1:imgprims Primitives} *)
 
