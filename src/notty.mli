@@ -383,7 +383,7 @@ module Unescape : sig
 
   (** {1 Input events} *)
 
-  type key = [
+  type special = [
     `Escape
   | `Enter
   | `Tab
@@ -403,10 +403,13 @@ module Unescape : sig
   type mods = [ `Meta | `Ctrl | `Shift ] list
   (** Modifier state. *)
 
-  type event = [
-  | `Key   of [ key | `Uchar of uchar ] * mods
-  | `Mouse of [ `Press of button | `Drag | `Release ] * (int * int) * mods
-  ]
+  type key = [ special | `Uchar of uchar ] * mods
+  (** Keypress event. *)
+
+  type mouse = [ `Press of button | `Drag | `Release ] * (int * int) * mods
+  (** Mouse event. *)
+
+  type event = [ `Key of key | `Mouse of mouse ]
   (** Things that terminals say to applications.
 
       {ul

@@ -636,7 +636,7 @@ end
 
 module Unescape = struct
 
-  type key = [
+  type special = [
     `Escape
   | `Enter
   | `Tab
@@ -644,19 +644,20 @@ module Unescape = struct
   | `Insert
   | `Delete
   | `Home | `End
-  | `Arrow of [ `Up | `Down | `Left | `Right]
+  | `Arrow of [ `Up | `Down | `Left | `Right ]
   | `Page of [ `Up | `Down ]
   | `Function of int
   ]
 
-  type mods = [ `Meta | `Ctrl | `Shift ] list
-
   type button = [ `Left | `Middle | `Right | `Scroll of [ `Up | `Down ] ]
 
-  type event = [
-  | `Key   of [ key | `Uchar of uchar ] * mods
-  | `Mouse of [ `Press of button | `Drag | `Release ] * (int * int) * mods
-  ]
+  type mods = [ `Meta | `Ctrl | `Shift ] list
+
+  type key = [ special | `Uchar of uchar ] * mods
+
+  type mouse = [ `Press of button | `Drag | `Release ] * (int * int) * mods
+
+  type event = [ `Key of key | `Mouse of mouse ]
 
   type esc =
     C0    of char

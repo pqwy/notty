@@ -58,7 +58,7 @@ let () =
       and ks = List.map (function
         | `Key (`Uchar u, mods) ->
             I.(uchar blue u 1 1 <|> strf ~attr " u%04x %a" u pp_mods mods)
-        | `Key (#Unescape.key as k, mods) ->
+        | `Key (#Unescape.special as k, mods) ->
             I.strf ~attr "%a %a" pp_special k pp_mods mods
         | `Mouse (e, (x, y), mods) ->
             I.strf ~attr "MOUSE %a (%d, %d) %a" pp_mouse e x y pp_mods mods
