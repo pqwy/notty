@@ -57,7 +57,9 @@ module Term : sig
 
   (** {1 Properties} *)
 
-  val size : t -> (int * int)
+  val size : t -> int * int
+
+  val fds : t -> Lwt_unix.file_descr * Lwt_unix.file_descr
 
   (** {1 Window size change notifications}
 

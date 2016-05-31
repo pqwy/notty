@@ -115,6 +115,7 @@ module Term = struct
     output   : out_channel
   ; trm      : Tmachine.t
   ; input    : Input.t
+  ; fds      : Unix.file_descr * Unix.file_descr
   ; unwinch  : Winch.remove Lazy.t
   ; mutable winched : bool
   }
@@ -143,6 +144,7 @@ module Term = struct
         output  = Unix.out_channel_of_descr output
       ; trm     = Tmachine.create ~mouse (cap_for_fd input)
       ; input   = Input.create ~nosig input
+      ; fds     = (input, output)
       ; winched = false
       ; unwinch = lazy (
           Winch.add output (fun dim -> t.winched <- true; set_size t dim)
@@ -164,6 +166,7 @@ module Term = struct
     not (Tmachine.dead t.trm) &&
     (t.winched || Unescape.pending t.input.Input.flt)
 
+  let fds t = t.fds
 end
 
 let output_image_size ?cap ?clear ?(chan=stdout) i =

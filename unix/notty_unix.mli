@@ -89,8 +89,11 @@ module Term : sig
 
   (** {1 Properties} *)
 
-  val size : t -> (int * int)
+  val size : t -> int * int
   (** [size t] is the current size of the terminal's output tty. *)
+
+  val fds : t -> Unix.file_descr * Unix.file_descr
+  (** [fds t] are [t]'s input and output file descriptors. *)
 
   (** {1 Window size change notifications} *)
 

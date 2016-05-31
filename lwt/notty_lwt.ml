@@ -92,6 +92,7 @@ module Term = struct
   type t = {
     ochan  : Lwt_io.output_channel
   ; trm    : Tmachine.t
+  ; fds    : Lwt_unix.file_descr * Lwt_unix.file_descr
   ; events : [ Unescape.event | `Resize of (int * int) ] Lwt_stream.t
   ; stop   : (unit -> unit)
   }
@@ -105,6 +106,7 @@ module Term = struct
   let image t image  = Tmachine.image t.trm image; write t
   let cursor t curs  = Tmachine.cursor t.trm curs; write t
   let set_size t dim = Tmachine.set_size t.trm dim
+  let size t         = Tmachine.size t.trm
 
   let release t =
     if Tmachine.release t.trm then
@@ -131,6 +133,7 @@ module Term = struct
     let rec t = lazy {
         trm    = Tmachine.create ~mouse (cap_for_fd fd)
       ; ochan  = Lwt_io.(of_fd ~mode:output) output
+      ; fds    = (input, output)
       ; stop   = (fun () -> Lwt.wakeup stopw None)
       ; events = [
           resizef fd stop (fun x -> set_size Lazy.(force t) x)
@@ -145,7 +148,7 @@ module Term = struct
     t
 
   let events t = t.events
-  let size t = Tmachine.size t.trm
+  let fds    t = t.fds
 end
 
 let winsize fd = winsize (Lwt_unix.unix_file_descr fd)
