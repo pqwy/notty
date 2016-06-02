@@ -28,4 +28,8 @@ depopts: [
   "lwt"
 ]
 
+conflicts: [
+  "lwt" {< "2.5.2"}
+]
+
 available: [ ocaml-version >= "4.02.0" ]

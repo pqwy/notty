@@ -41,25 +41,6 @@ module Lwt_condition = struct
     Lwt.async start; d
 end
 
-module Lwt_stream = struct
-
-  include Lwt_stream
-
-  (* https://github.com/ocsigen/lwt/issues/213 *)
-  let fixed_choose streams =
-    let source s = (s, get s >|= fun x -> (s, x)) in
-    let streams = ref (List.map source streams) in
-    let rec next () = match !streams with
-      | [] -> Lwt.return_none
-      | l  ->
-          Lwt.choose (List.map snd l) >>= fun (s, x) ->
-          let l = List.remove_assq s l in
-          match x with
-          | Some _ -> streams := source s :: l; Lwt.return x
-          | None   -> streams := l; next ()
-    in from next
-end
-
 module Term = struct
 
   let winches = lazy (
@@ -138,7 +119,7 @@ module Term = struct
       ; events = [
           resizef fd stop (fun x -> set_size Lazy.(force t) x)
         ; input_stream ~nosig input stop
-        ] |> Lwt_stream.fixed_choose
+        ] |> Lwt_stream.choose
       } in
     let t = Lazy.force t in
     winsize fd |> whenopt (set_size t);
