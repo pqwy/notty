@@ -1,4 +1,0 @@
-#!/bin/sh
-
-make setup.ml
-ocaml setup.ml -configure "$@"

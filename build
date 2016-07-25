@@ -1,0 +1,2 @@
+#!/bin/sh
+topkg build -- --with-unix true --with-lwt true --benchmarks true --examples true

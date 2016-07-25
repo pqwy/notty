@@ -1,6 +1,3 @@
-# OASIS_START
-# DO NOT EDIT (digest: 66fa5253d294a647b389f093b781fc9e)
 src/Notty
 unix/Notty_unix
 lwt/Notty_lwt
-# OASIS_STOP
