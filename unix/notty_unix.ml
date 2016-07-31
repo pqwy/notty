@@ -1,7 +1,7 @@
 open Notty
 
-external c_winsize : Unix.file_descr -> int = "caml_notty_winsize" "noalloc"
-external winch_number : unit -> int = "caml_notty_winch_number" "noalloc"
+external c_winsize : Unix.file_descr -> int = "caml_notty_winsize" [@@noalloc]
+external winch_number : unit -> int = "caml_notty_winch_number" [@@noalloc]
 
 let whenopt f = function Some x -> f x | _ -> ()
 
