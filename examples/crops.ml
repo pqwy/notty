@@ -5,11 +5,6 @@
 open Notty
 open Common
 
-let d2 a b c d x (w, h) =
-  if x = a then (w - 1, h) else
-  if x = b then (w + 1, h) else
-  if x = c then (w, h - 1) else (w, h + 1)
-
 let hdistribute ?align w imgs =
   let n = List.length imgs in
   I.(List.map (hsnap ?align (w / n)) imgs |> hcat)

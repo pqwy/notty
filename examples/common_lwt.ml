@@ -9,7 +9,7 @@ let simpleterm_lwt ~imgf ~f ~s =
   let term = T.create () in
   let imgf (w, h) s =
     I.(string A.(fg lightblack) "[ESC quits.]" <-> imgf (w, h - 1) s) in
-  let rec step e s = match e with
+  let step e s = match e with
     | `Key (`Escape, []) | `Key (`Uchar 67, [`Ctrl]) ->
         T.release term >|= fun () -> s
     | `Resize dim -> T.image term (imgf dim s) >|= fun () -> s

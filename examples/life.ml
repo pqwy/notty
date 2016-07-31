@@ -30,7 +30,7 @@ let erem x y = (x mod y + y) mod y
 let square (w, h) (a, b as ab) =
   if a < 0 || a >= w || b < 0 || b >= h then (-1, -1) else ab
 let torus (w, h) (a, b) = (erem a w, erem b h)
-let moebius (w, h) (a, b as ab) = if a < 0 || a >= w then (erem a w, -b) else ab
+let moebius (w, _) (a, b as ab) = if a < 0 || a >= w then (erem a w, -b) else ab
 
 let neigh topo (a, b) = [
   (a-1, b); (a+1, b); (a-1, b-1); (a-1, b+1)
