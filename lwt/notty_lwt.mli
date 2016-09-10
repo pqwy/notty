@@ -3,7 +3,10 @@
     This is an IO module for {!Notty}.
 
     It mirrors {!Notty_unix} and the corresponding operations behave
-    analogously. Consult its documentation for more info. *)
+    analogously. Consult its documentation for more info.
+
+    {e %%VERSION%% — {{:%%PKG_HOMEPAGE%% }homepage}} *)
+
 open Notty
 
 (** {1:fullscreen Fullscreen input and output}. *)

@@ -1,4 +1,3 @@
-
 type uchar = int
 
 let (&.) f g x = f (g x)
@@ -7,8 +6,6 @@ let btw (x : int) a b = a <= x && x <= b
 let bit n b = b land (1 lsl n) > 0
 
 let invalid_arg_s fmt = Printf.ksprintf invalid_arg fmt
-
-let spr = Printf.sprintf
 
 let maccum ~empty ~append xs =
   let rec step = function
@@ -71,19 +68,14 @@ module String = struct
 
   let sub0cp s i len = if i > 0 || len < length s then sub s i len else s
 
-  let fold_left f s str =
-    let acc = ref s in
-    for i = 0 to length str - 1 do acc := f !acc str.[i] done;
-    !acc
+  let for_all f s =
+    let rec go f s i = i < 0 || f s.[i] && go f s (i - 1) in
+    go f s (length s - 1)
 
-  let for_all f = fold_left (fun a c -> a && f c) true
-
-  let find f str =
-    let n = length str in
-    let rec go f str = function
-      | i when i < n -> if f str.[i] then Some i else go f str (succ i)
-      | _            -> None in
-    go f str 0
+  let find f s =
+    let rec go f s i = function
+      | 0 -> None | _ when f s.[i] -> Some i | n -> go f s (i + 1) (n - 1)
+    in go f s 0 (length s)
 
   let of_uchars_rev = function
     | []  -> ""
@@ -92,8 +84,8 @@ module String = struct
         let n = List.length ucs in
         let rec go bs i = function
           | []    -> Bytes.unsafe_to_string bs
-          | x::xs -> Bytes.unsafe_set bs i (Char.chr x); go bs (pred i) xs in
-        go (Bytes.create n) (n - 1) ucs
+          | x::xs -> Bytes.unsafe_set bs i (Char.chr x); go bs (pred i) xs
+        in go (Bytes.create n) (n - 1) ucs
 end
 
 module Int = struct
@@ -109,7 +101,7 @@ module Option = struct
   let map f = function Some x -> Some (f x) | _ -> None
   let get def = function Some x -> x | _ -> def
   let to_list = function Some x -> [x] | _ -> []
-  let (>|=) a f = map f a
+  let (>>|) a f = map f a
   let (>>=) a f = match a with Some x -> f x | _ -> None
 end
 
@@ -210,7 +202,7 @@ module Text = struct
 
   let replicatec w c =
     if is_ctrl c then
-      err_ctrl_uchar (code c) (spr "%d * %c" w c)
+      err_ctrl_uchar (code c) (Printf.sprintf "%d * %c" w c)
     else if w < 1 then empty else Ascii (String.make w c, 0, w)
 
   let replicateu w u =
@@ -405,7 +397,7 @@ module I = struct
   let zcat xs = List.fold_right (</>) xs empty
 
   let text attr tx =
-    if Text.is_empty tx then Empty else Segment (attr, tx)
+    if Text.is_empty tx then void 0 1 else Segment (attr, tx)
 
   let string attr s = text attr (Text.of_string s)
 
@@ -828,7 +820,7 @@ module Unescape = struct
           | ('m', #button, false)        -> Some `Release
           (* | ('M', `ALL   , true)         -> Some `Move *)
           | _                            -> None
-        ) >|= fun e -> `Mouse (e, (x - 1, y - 1), mods)
+        ) >>| fun e -> `Mouse (e, (x - 1, y - 1), mods)
 
     | CSI ("",[p;x;y],'M') | Esc_M (p,x,y) as evt ->
         let (x, y) = match evt with Esc_M _ -> x - 32, y - 32 | _ -> x, y
@@ -839,7 +831,7 @@ module Unescape = struct
           | (`ALL        , false) -> Some `Release
           (* | (`ALL        , true)  -> Some `Move *)
           | _                     -> None
-        ) >|= fun e -> `Mouse (e, (x - 1, y - 1), mods)
+        ) >>| fun e -> `Mouse (e, (x - 1, y - 1), mods)
 
     | CSI _ | SS2 _ -> None
 

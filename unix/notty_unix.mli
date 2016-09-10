@@ -1,6 +1,9 @@
 (** [Notty] IO for pure [Unix].
 
-    This is an IO module for {!Notty}. *)
+    This is an IO module for {!Notty}.
+
+    {e %%VERSION%% — {{:%%PKG_HOMEPAGE%% }homepage}} *)
+
 open Notty
 
 (** {1:fullscreen Fullscreen input and output}. *)

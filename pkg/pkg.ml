@@ -16,8 +16,8 @@ let () =
     let unix = Conf.value c unix in
     let lwt = unix && Conf.value c lwt
     and speed = unix && Conf.value c speed
-    and demos = unix && Conf.value c demos in
-    let demos' = demos && lwt in
+    and demos0 = unix && Conf.value c demos in
+    let demos1 = demos0 && lwt in
     Ok [ Pkg.mllib "src/notty.mllib";
          Pkg.mllib ~cond:unix "unix/notty_unix.mllib";
          Pkg.mllib ~cond:lwt "lwt/notty_lwt.mllib";
@@ -25,18 +25,18 @@ let () =
 
          bin ~cond:speed "benchmarks/speed";
 
-         bin ~cond:demos "examples/testpatterns";
-         bin ~cond:demos "examples/letters";
-         bin ~cond:demos "examples/keys";
-         bin ~cond:demos "examples/colors";
-         bin ~cond:demos "examples/sierpinski";
-         bin ~cond:demos "examples/cuts";
-         bin ~cond:demos "examples/thisbig";
-         bin ~cond:demos "examples/runes";
-         bin ~cond:demos "examples/crops";
-         bin ~cond:demos "examples/mouse";
-         bin ~cond:demos "examples/cursor";
-         bin ~cond:demos' "examples/sierpinski_lwt";
-         bin ~cond:demos' "examples/life";
-         bin ~cond:demos' "examples/linear";
+         bin ~cond:demos0 "examples/testpatterns";
+         bin ~cond:demos0 "examples/letters";
+         bin ~cond:demos0 "examples/keys";
+         bin ~cond:demos0 "examples/colors";
+         bin ~cond:demos0 "examples/sierpinski";
+         bin ~cond:demos0 "examples/cuts";
+         bin ~cond:demos0 "examples/thisbig";
+         bin ~cond:demos0 "examples/runes";
+         bin ~cond:demos0 "examples/crops";
+         bin ~cond:demos0 "examples/mouse";
+         bin ~cond:demos0 "examples/cursor";
+         bin ~cond:demos1 "examples/sierpinski_lwt";
+         bin ~cond:demos1 "examples/life";
+         bin ~cond:demos1 "examples/linear";
     ]

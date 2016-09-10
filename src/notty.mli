@@ -9,7 +9,9 @@
     Input and output are provided by {!Notty_unix} and {!Notty_lwt}.
 
     Consult the {{!basics}basics}, {{!examples}examples} and
-    {{!limitations}limitations}. *)
+    {{!limitations}limitations}.
+
+    {e %%VERSION%% — {{:%%PKG_HOMEPAGE%% }homepage}} *)
 
 (** {1 Interface} *)
 
