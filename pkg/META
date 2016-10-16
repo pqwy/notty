@@ -1,4 +1,4 @@
-version = "0.1.1"
+version = "%%VERSION_NUM%%"
 description = "Declaring terminals"
 requires = "result uucp uuseg uutf"
 archive(byte) = "notty.cma"
@@ -8,7 +8,7 @@ plugin(native) = "notty.cmxs"
 exists_if = "notty.cma"
 
 package "unix" (
- version = "0.1.1"
+ version = "%%VERSION_NUM%%"
  description = "Declaring terminals"
  requires = "notty unix"
  archive(byte) = "notty_unix.cma"

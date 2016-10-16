@@ -179,8 +179,8 @@ module Text = struct
 
   open Char
 
-  let err_ctrl_uchar = invalid_arg_s "Notty: control char: 0x%02x (in: %s)"
-  let err_malformed  = invalid_arg_s "Notty: malformed UTF-8: %s (in: %s)"
+  let err_ctrl_uchar = invalid_arg_s "Notty: control char: 0x%02x (in: %S)"
+  let err_malformed  = invalid_arg_s "Notty: malformed UTF-8: %s (in: %S)"
 
   let of_ascii str =
     match String.find is_ctrl str with

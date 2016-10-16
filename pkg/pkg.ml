@@ -1,6 +1,7 @@
 #!/usr/bin/env ocaml
 #use "topfind"
 #require "topkg"
+#require "ocb-stubblr.topkg"
 open Topkg
 
 let unix  = Conf.with_pkg ~default:true "unix"
@@ -11,8 +12,10 @@ and demos = Conf.(key ~doc:"Build examples" "examples" bool ~absent:false)
 let bin ?cond name = Pkg.test ~run:false ?cond name
   (* Pkg.bin ?cond ~dst:Fpath.("bin" // "notty." ^ basename name) name *)
 
+let build = Pkg.build ~cmd:Ocb_stubblr_topkg.cmd ()
+
 let () =
-  Pkg.describe "notty" @@ fun c ->
+  Pkg.describe "notty" ~build @@ fun c ->
     let unix = Conf.value c unix in
     let lwt = unix && Conf.value c lwt
     and speed = unix && Conf.value c speed
