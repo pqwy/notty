@@ -4,9 +4,9 @@
 open Notty
 open Common
 
-let lnv = 0x2502
-and lnh = 0x2500
-and crs = 0x253c
+let lnv = Uchar.of_int 0x2502
+and lnh = Uchar.of_int 0x2500
+and crs = Uchar.of_int 0x253c
 
 let () =
   simpleterm ~s:(`Down, (0, 0), [], 11)

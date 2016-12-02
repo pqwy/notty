@@ -16,9 +16,10 @@ depends: [
   "topkg" {build}
   "ocb-stubblr" {build & >="0.1.0"}
   "result"
-  "uucp"
-  "uuseg"
-  "uutf"
+  "uchar"
+  "uucp" {>= "2.0.0"}
+  "uuseg" {>= "1.0.0"}
+  "uutf" {>= "1.0.0"}
 ]
 depopts: [ "lwt" ]
 conflicts: [ "lwt" {< "2.5.2"} ]

@@ -9,7 +9,7 @@ open Common
 let () =
   simpleterm ~s:1
     ~f:(fun s -> function
-      | `Key (`Uchar 113, _) -> None
+      | `Key (`Uchar u, _) when Uchar.to_int u = 113 -> None
       | `Key (`Arrow a, _) ->
         ( match a with
           | `Up | `Left -> Some (max 1 (s - 1))

@@ -58,7 +58,7 @@ let glider = CSet.of_list [(2,1); (3,2); (1,3); (2,3); (3,3)]
 open Notty
 open Notty.Infix
 
-let dot = I.uchar A.(fg lightred) 0x25cf 1 1
+let dot = I.uchar A.(fg lightred) (Uchar.of_int 0x25cf) 1 1
 
 let background step (n, m) =
   let k = int_of_float @@ (sin (float (step + m + n) /. 10.)) *. 24. in
@@ -86,8 +86,8 @@ let event term = Lwt_stream.get (Term.events term) >|= function
 
 let rec loop term (e, t) (dim, n, life as st) =
   (e <?> t) >>= function
-  | `End | `Key (`Escape, []) | `Key (`Uchar 67, [`Ctrl]) ->
-      Lwt.return_unit
+  | `End | `Key (`Escape, []) -> Lwt.return_unit
+  | `Key (`Uchar u, [`Ctrl]) when Uchar.to_int u = 67 -> Lwt.return_unit
   | `Timer ->
       Term.image term (render dim n life) >>= fun () ->
         loop term (e, timer ())

@@ -15,10 +15,6 @@
 
 (** {1 Interface} *)
 
-type uchar = int
-(** A lone Unicode
-   {{: http://unicode.org/glossary/#unicode_scalar_value}scalar value}. *)
-
 type attr
 (** Visual characteristics of displayed text. *)
 
@@ -161,7 +157,7 @@ module I : sig
       @raise Invalid_argument if [string] is not a valid UTF-8 sequence, or
       contains {{!ctrls}control characters}. *)
 
-  val uchars : attr -> uchar array -> image
+  val uchars : attr -> Uchar.t array -> image
   (** [uchars attr us] is an image containing text [us], styled with [attr].
 
       @raise Invalid_argument if [us] contains {{!ctrls}control characters}. *)
@@ -171,7 +167,7 @@ module I : sig
 
       @raise Invalid_argument if [c] is a {{!ctrls}control character}. *)
 
-  val uchar : attr -> uchar -> int -> int -> image
+  val uchar : attr -> Uchar.t -> int -> int -> image
   (** [uchar attr u w h] is a [w * h] grid of [u].
 
       @raise Invalid_argument if [u] is a {{!ctrls}control character}. *)
@@ -413,7 +409,7 @@ module Unescape : sig
   type mods = [ `Meta | `Ctrl | `Shift ] list
   (** Modifier state. *)
 
-  type key = [ special | `Uchar of uchar ] * mods
+  type key = [ special | `Uchar of Uchar.t ] * mods
   (** Keypress event. *)
 
   type mouse = [ `Press of button | `Drag | `Release ] * (int * int) * mods
@@ -425,9 +421,10 @@ module Unescape : sig
       {ul
       {- [`Key (k, mods)] is keyboard input.
 
-         [k] is either a special {{!key}key}, or [`Uchar u] where [u] is
-         {{!uchar}[uchar]}. This value is guaranteed not to be a {{!I.ctrls}control
-         character}, and is safe to use in constructing images.
+         [k] is either a special {{!key}key}, or [`Uchar u] where [u]
+         is an {!Uchar.t}. This value is guaranteed not to be a
+         {{!I.ctrls}control character}, and is safe to use in
+         constructing images.
 
          [mods] are the extra {{!mods}modifier keys}.
 
@@ -514,7 +511,7 @@ module Unescape : sig
       {{: http://www.ecma-international.org/publications/standards/Ecma-048.htm}ECMA-48},
       as needed by terminal emulators in common use. *)
 
-  val decode : uchar list -> event list
+  val decode : int list -> event list
   (** [decode us] are the events encoded by [us].
 
       [us] are assumed to have been generated in a burst, and the end of the

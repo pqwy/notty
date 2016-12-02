@@ -93,9 +93,9 @@ module Images = struct
 
   let outline attr i =
     let (w, h) = I.(width i, height i) in
-    let chr x = I.uchar attr x 1 1
-    and hbar  = I.uchar attr 0x2500 w 1
-    and vbar  = I.uchar attr 0x2502 1 h in
+    let chr x = I.uchar attr (Uchar.of_int x) 1 1
+    and hbar  = I.uchar attr (Uchar.of_int 0x2500) w 1
+    and vbar  = I.uchar attr (Uchar.of_int 0x2502) 1 h in
     let (a, b, c, d) = (chr 0x256d, chr 0x256e, chr 0x256f, chr 0x2570) in
     grid [ [a; hbar; b]; [vbar; i; vbar]; [d; hbar; c] ]
 end
@@ -109,7 +109,8 @@ let simpleterm ~imgf ~f ~s =
   let rec go s =
     Term.image term (imgf (Term.size term) s);
     match Term.event term with
-    | `End | `Key (`Escape, []) | `Key (`Uchar 67, [`Ctrl]) -> ()
+    | `End | `Key (`Escape, []) -> ()
+    | `Key (`Uchar u, [`Ctrl]) when Uchar.to_int u = 67 -> ()
     | `Resize _ -> go s
     | #Unescape.event as e ->
         match f s e with Some s -> go s | _ -> ()
