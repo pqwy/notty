@@ -9,9 +9,10 @@ let simpleterm_lwt ~imgf ~f ~s =
   let term = T.create () in
   let imgf (w, h) s =
     I.(string A.(fg lightblack) "[ESC quits.]" <-> imgf (w, h - 1) s) in
+  let quit () = T.release term >|= fun () -> s in
   let step e s = match e with
-    | `Key (`Escape, []) | `Key (`Uchar 67, [`Ctrl]) ->
-        T.release term >|= fun () -> s
+    | `Key (`Escape, []) -> quit ()
+    | `Key (`Uchar u, [`Ctrl]) when Uchar.to_int u = 67 -> quit ()
     | `Resize dim -> T.image term (imgf dim s) >|= fun () -> s
     | #Unescape.event as e ->
         match f s e with
@@ -35,8 +36,8 @@ let simpleterm_lwt_timed ?delay ~f s0 =
   let term = T.create () in
   let rec loop (e, t) dim s =
     (e <?> t) >>= function
-    | `End | `Key (`Escape, []) | `Key (`Uchar 67, [`Ctrl]) ->
-        Lwt.return_unit
+    | `End | `Key (`Escape, []) -> Lwt.return_unit
+    | `Key (`Uchar u, [`Ctrl]) when Uchar.to_int u = 67 -> Lwt.return_unit
     | `Resize dim as evt     -> invoke (event term, t) dim s evt
     | #Unescape.event as evt -> invoke (event term, t) dim s evt
     | `Timer as evt          -> invoke (e, timer delay) dim s evt

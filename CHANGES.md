@@ -1,4 +1,5 @@
 (trunk):
+* Uchar.t support.
 * More examples
 * Reduced memory pressure
 * Lines are now completely redrawn; reduces blinking

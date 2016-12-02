@@ -1,4 +1,3 @@
-type uchar = int
 
 let (&.) f g x = f (g x)
 
@@ -51,15 +50,15 @@ module Buffer = struct
   let add_chars b c n = for _ = 1 to n do add_char b c done
 end
 
-module Uchar = struct
+module Ucharp = struct
   let is_ctrl  u = btw u 0x00 0x1f || btw u 0x7f 0x9f
   let is_ascii u = u = u land 0x7f
 end
 
 module Char = struct
   include Char
-  let is_ctrl  c = Uchar.is_ctrl  (code c)
-  let is_ascii c = Uchar.is_ascii (code c)
+  let is_ctrl  c = Ucharp.is_ctrl  (code c)
+  let is_ascii c = Ucharp.is_ascii (code c)
 end
 
 module String = struct
@@ -151,7 +150,7 @@ module Text = struct
       | `Boundary ->
           let is = match w with 0 -> is | 1 -> i::is | _ -> i::(-1)::is
           in go is 0 0 `Await
-      | `Uchar u when Uchar.is_ctrl u -> Error (`Control u)
+      | `Uchar u when Ucharp.is_ctrl (Uchar.to_int u) -> Error (`Control u)
       | `Uchar u -> go is (w + Uucp.Break.tty_width_hint u) i `Await
       | `End -> Ok (is |> List.rev |> Array.of_list) (* XXX *)
     in
@@ -179,7 +178,7 @@ module Text = struct
 
   open Char
 
-  let err_ctrl_uchar = invalid_arg_s "Notty: control char: 0x%02x (in: %S)"
+  let err_ctrl_uchar = invalid_arg_s "Notty: control char: U+%04X (in: %S)"
   let err_malformed  = invalid_arg_s "Notty: malformed UTF-8: %s (in: %S)"
 
   let of_ascii str =
@@ -191,7 +190,7 @@ module Text = struct
     match graphemes ~encoding:`UTF_8 str with
     | Ok ix                  -> Utf8 (str, ix, 0, Array.length ix - 1)
     | Error (`Malformed err) -> err_malformed err str
-    | Error (`Control u)     -> err_ctrl_uchar u str
+    | Error (`Control u)     -> err_ctrl_uchar (Uchar.to_int u) str
 
   let of_string = function
     | "" -> empty
@@ -206,10 +205,12 @@ module Text = struct
     else if w < 1 then empty else Ascii (String.make w c, 0, w)
 
   let replicateu w u =
-    if Uchar.is_ascii u then replicatec w (chr u)
+    let u = Uchar.to_int u in
+    if Ucharp.is_ascii u then replicatec w (chr u)
     else if w < 1 then empty
     else of_unicode @@ Utf8.on_encoder ~hint:w @@ fun enc ->
-      for _ = 1 to w do Uutf.encode enc (`Uchar u) |> ignore done
+      let uchar = `Uchar (Uchar.unsafe_of_int u) in
+      for _ = 1 to w do Uutf.encode enc uchar |> ignore done
 end
 
 module A = struct
@@ -405,7 +406,7 @@ module I = struct
 
   let chars ctor attr c w h =
     if w < 1 || h < 1 then void w h else
-      text attr (ctor w c) |> List.replicate h |> vcat
+    text attr (ctor w c) |> List.replicate h |> vcat
 
   let char  = chars Text.replicatec
   let uchar = chars Text.replicateu
@@ -670,7 +671,7 @@ module Unescape = struct
 
   type mods = [ `Meta | `Ctrl | `Shift ] list
 
-  type key = [ special | `Uchar of uchar ] * mods
+  type key = [ special | `Uchar of Uchar.t ] * mods
 
   type mouse = [ `Press of button | `Drag | `Release ] * (int * int) * mods
 
@@ -704,7 +705,7 @@ module Unescape = struct
     | (0x1b::(0x5b::xs) | 0x9b::xs) ->
         let (r, xs) = csi xs |> Option.get (C1 '\x5b', xs) in r :: demux xs
     | (0x1b::0x4f::x::xs | 0x8f::x::xs)
-      when Uchar.is_ascii x               -> SS2 (chr x) :: demux xs
+      when Ucharp.is_ascii x              -> SS2 (chr x) :: demux xs
     | 0x1b::x::xs when btw x 0x40 0x5f    -> C1 (chr x) :: demux xs
     | x::xs when btw x 0x80 0x9f          -> C1 (chr (x - 0x40)) :: demux xs
     | x::xs when btw x 0 0x1f || x = 0x7f -> C0 (chr x) :: demux xs
@@ -758,17 +759,18 @@ module Unescape = struct
   let key k mods = Some (`Key (k, mods))
 
   let event_of_control_code =
+    let uchar u = `Uchar (Uchar.of_int u) in
     let open Option in function
 
-    | Uchar u -> Some (`Key (`Uchar u, []))
+    | Uchar u -> Some (`Key (uchar u, []))
 
     | C0 '\x1b'        -> key `Escape []
     | C0 ('\b'|'\x7f') -> key `Backspace []
     | C0 '\n'          -> key `Enter []
     | C0 '\t'          -> key `Tab []
 
-    | C0 x -> key (`Uchar (Char.code x + 0x40)) [`Ctrl]
-    | C1 x -> key (`Uchar (Char.code x)) [`Meta]
+    | C0 x -> key (uchar (Char.code x + 0x40)) [`Ctrl]
+    | C1 x -> key (uchar (Char.code x)) [`Meta]
 
     | CSI ("",[],'Z') -> key `Tab [`Shift]
 
@@ -856,7 +858,7 @@ module Unescape = struct
     | _           -> `End
 
   let list_of_utf8 buf i l =
-    let f cs _ = function `Uchar c -> c::cs | _ -> cs in
+    let f cs _ = function `Uchar c -> (Uchar.to_int c) :: cs | _ -> cs in
     String.sub0cp (Bytes.unsafe_to_string buf) i l
     |> Uutf.String.fold_utf_8 f [] |> List.rev
 
