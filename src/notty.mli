@@ -773,7 +773,7 @@ open Notty_unix
 
 let img (double, n) =
   let s = sierp n in
-  if double then I.(s </> hpad 1 0 s) else s in
+  if double then I.(s </> hpad 1 0 s) else s
 let rec update t state =
   Term.image t (img state); loop t state
 and loop t (double, n as state) =
@@ -784,8 +784,7 @@ and loop t (double, n as state) =
   | `Key (`Uchar 0x20,_)   -> update t (not double, n)
   | `Resize _              -> update t state
   | _                      -> loop t state
-in
-let t = Term.create () in
+let t = Term.create ();;
 update t (false, 1);
 Term.release t
 ]}
