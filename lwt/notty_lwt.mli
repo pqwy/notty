@@ -34,7 +34,7 @@ module Term : sig
 
       {b Note} [~dispose] arranges for the terminal to be disposed of at the end
       of the [Lwt] main loop, and not at process exit.
-      
+
       See {!Notty_unix.Term.create}. *)
 
   val release : t -> unit Lwt.t

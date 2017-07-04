@@ -1,7 +1,7 @@
 true: color(always)
 true: bin_annot, safe_string
 true: warn(A-4-33-40-41-42-43-34-44-48)
-true: package(result), package(uucp), package(uuseg), package(uutf)
+true: package(result uchar uucp uuseg uutf)
 
 <src>: include
 
@@ -11,7 +11,7 @@ true: package(result), package(uucp), package(uuseg), package(uutf)
 <unix/native/*.c>: ccopt(-O3 -Wall -Wextra)
 
 <lwt>: include
-<lwt/*.ml{,i}>: package(lwt.unix)
+<lwt/*.ml{,i}>: package(lwt lwt.unix)
 
 <benchmarks/*>: use_notty_unix, package(unmark)
 

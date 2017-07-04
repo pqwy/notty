@@ -1,14 +1,12 @@
 (* Copyright (c) 2016-2017 David Kaloper Meršinjak. All rights reserved.
    See LICENSE.md. *)
 
-type uchar = int
-
 let (&.) f g x = f (g x)
 
 let btw (x : int) a b = a <= x && x <= b
 let bit n b = b land (1 lsl n) > 0
 
-let invalid_arg_s fmt = Printf.ksprintf invalid_arg fmt
+let invalid_arg_pp fmt = Format.kasprintf invalid_arg fmt
 
 let maccum ~empty ~append xs =
   let rec step = function
@@ -21,28 +19,21 @@ let maccum ~empty ~append xs =
   in step xs
 
 module Queue = struct
-
   include Queue
-
   let addv q xs = List.iter (fun x -> add x q) xs
   let of_list xs = let q = create () in addv q xs; q
   let singleton x = of_list [x]
 end
 
 module List = struct
-
   include List
-
   let rec replicate n a = if n < 1 then [] else a :: replicate (n - 1) a
   let rec (--) a b = if a > b then [] else a :: succ a -- b
 end
 
 module Buffer = struct
-
   include Buffer
-
   let on size f = let buf = create size in f buf; contents buf
-
   let add_decimal b = function
     | x when btw x 0 999 ->
         let d1 = x / 100 and d2 = (x mod 100) / 10 and d3 = x mod 10 in
@@ -54,19 +45,25 @@ module Buffer = struct
   let add_chars b c n = for _ = 1 to n do add_char b c done
 end
 
-module Uchar = struct
-  let is_ctrl  u = btw u 0x00 0x1f || btw u 0x7f 0x9f
-  let is_ascii u = u = u land 0x7f
+module Int = struct
+  type t = int
+  let max (a : t) (b : t) = if a > b then a else b
+  let min (a : t) (b : t) = if a < b then a else b
+  let is_ctrl  x = btw x 0x00 0x1f || btw x 0x7f 0x9f
+  let is_ascii x = x = x land 0x7f
 end
 
 module Char = struct
   include Char
-  let is_ctrl  c = Uchar.is_ctrl  (code c)
-  let is_ascii c = Uchar.is_ascii (code c)
+  let (is_ctrl, is_ascii) = Int.(is_ctrl &. code, is_ascii &. code)
+end
+
+module Uchar = struct
+  include Uchar
+  let (is_ctrl, is_ascii) = Int.(is_ctrl &. to_int, is_ascii &. to_int)
 end
 
 module String = struct
-
   include String
 
   let sub0cp s i len = if i > 0 || len < length s then sub s i len else s
@@ -80,23 +77,15 @@ module String = struct
       | 0 -> None | _ when f s.[i] -> Some i | n -> go f s (i + 1) (n - 1)
     in go f s 0 (length s)
 
-  let of_uchars_rev = function
+  let of_chars_rev = function
     | []  -> ""
-    | [u] -> String.make 1 (Char.chr u)
-    | ucs ->
-        let n = List.length ucs in
-        let rec go bs i = function
-          | []    -> Bytes.unsafe_to_string bs
-          | x::xs -> Bytes.unsafe_set bs i (Char.chr x); go bs (pred i) xs
-        in go (Bytes.create n) (n - 1) ucs
-end
-
-module Int = struct
-
-  type t = int
-
-  let max (a : t) (b : t) = if a > b then a else b
-  let min (a : t) (b : t) = if a < b then a else b
+    | [c] -> String.make 1 c
+    | cs  ->
+        let n = List.length cs in
+        let rec go bs i = Bytes.(function
+          | []    -> unsafe_to_string bs
+          | x::xs -> unsafe_set bs i x; go bs (pred i) xs
+        ) in go (Bytes.create n) (n - 1) cs
 end
 
 module Option = struct
@@ -180,36 +169,33 @@ module Text = struct
       | Ascii (s, off, _) -> Ascii (s, off + x, w)
       | Utf8 (s, ix, off, _) -> Utf8 (s, ix, off + x, w)
 
-  open Char
-
-  let err_ctrl_uchar = invalid_arg_s "Notty: control char: 0x%02x (in: %S)"
-  let err_malformed  = invalid_arg_s "Notty: malformed UTF-8: %s (in: %S)"
+  let err_ctrl = invalid_arg_pp "Notty: control char: %a from: %S" Uchar.dump
+  let err_malformed = invalid_arg_pp "Notty: malformed UTF-8: %s (in: %S)"
 
   let of_ascii str =
-    match String.find is_ctrl str with
-    | Some i -> err_ctrl_uchar (code str.[i]) str
+    match String.find Char.is_ctrl str with
+    | Some i -> err_ctrl (Uchar.of_char str.[i]) str
     | None   -> Ascii (str, 0, String.length str)
 
   let of_unicode str =
     match graphemes ~encoding:`UTF_8 str with
     | Ok ix                  -> Utf8 (str, ix, 0, Array.length ix - 1)
     | Error (`Malformed err) -> err_malformed err str
-    | Error (`Control u)     -> err_ctrl_uchar u str
+    | Error (`Control u)     -> err_ctrl u str
 
   let of_string = function
     | "" -> empty
-    | str when String.for_all is_ascii str -> of_ascii str
+    | str when String.for_all Char.is_ascii str -> of_ascii str
     | str -> of_unicode str
 
   let of_uchars = of_string &. Utf8.of_uchars
 
   let replicatec w c =
-    if is_ctrl c then
-      err_ctrl_uchar (code c) (Printf.sprintf "%d * %c" w c)
+    if Char.is_ctrl c then err_ctrl (Uchar.of_char c) "<NOWHERE>"
     else if w < 1 then empty else Ascii (String.make w c, 0, w)
 
   let replicateu w u =
-    if Uchar.is_ascii u then replicatec w (chr u)
+    if Uchar.is_ascii u then replicatec w (Uchar.unsafe_to_char u)
     else if w < 1 then empty
     else of_unicode @@ Utf8.on_encoder ~hint:w @@ fun enc ->
       for _ = 1 to w do Uutf.encode enc (`Uchar u) |> ignore done
@@ -412,6 +398,7 @@ module I = struct
 
   let char  = chars Text.replicatec
   let uchar = chars Text.replicateu
+  let ichar = chars (fun w x -> Text.replicateu w (Uchar.of_int x))
 
   let tile w h i = List.(replicate h (replicate w i |> hcat) |> vcat)
 
@@ -673,7 +660,7 @@ module Unescape = struct
 
   type mods = [ `Meta | `Ctrl | `Shift ] list
 
-  type key = [ special | `Uchar of uchar ] * mods
+  type key = [ special | `Uchar of Uchar.t  | `ASCII of char ] * mods
 
   type mouse = [ `Press of button | `Drag | `Release ] * (int * int) * mods
 
@@ -685,13 +672,15 @@ module Unescape = struct
   | SS2   of char
   | CSI   of string * int list * char
   | Esc_M of int * int * int
-  | Uchar of int
+  | Uchar of Uchar.t
+
+  let uchar = function `Uchar u -> u | `ASCII c -> Uchar.of_char c
 
   let csi =
     let open Option in
     let rec priv acc = function
-      | x::xs when btw x 0x3c 0x3f -> priv (x::acc) xs
-      | xs                         -> param (String.of_uchars_rev acc) None [] xs
+      | x::xs when btw x 0x3c 0x3f -> priv (Char.unsafe_chr x::acc) xs
+      | xs                         -> param (String.of_chars_rev acc) None [] xs
     and param prv p ps = function
       | x::xs when btw x 0x30 0x39 -> param prv (Some (get 0 p * 10 + x - 0x30)) ps xs
       | 0x3b::xs                   -> param prv None (get 0 p :: ps) xs
@@ -702,17 +691,18 @@ module Unescape = struct
       | _ -> None in
     priv []
 
-  let rec demux = let open Char in function
+  let rec demux =
+    let chr = Char.chr in function
     | 0x1b::0x5b::0x4d::a::b::c::xs -> Esc_M (a, b, c) :: demux xs
     | (0x1b::(0x5b::xs) | 0x9b::xs) ->
         let (r, xs) = csi xs |> Option.get (C1 '\x5b', xs) in r :: demux xs
     | (0x1b::0x4f::x::xs | 0x8f::x::xs)
-      when Uchar.is_ascii x               -> SS2 (chr x) :: demux xs
+      when Int.is_ascii x                 -> SS2 (chr x) :: demux xs
     | 0x1b::x::xs when btw x 0x40 0x5f    -> C1 (chr x) :: demux xs
     | x::xs when btw x 0x80 0x9f          -> C1 (chr (x - 0x40)) :: demux xs
     | x::xs when btw x 0 0x1f || x = 0x7f -> C0 (chr x) :: demux xs
-    | x::xs                               -> Uchar x :: demux xs
-    | []                                  -> []
+    | x::xs -> Uchar (Uchar.unsafe_of_int x) :: demux xs
+    | [] -> []
 
   let xtrm_mod_flags = function
     | 2 -> Some [`Shift]
@@ -762,7 +752,8 @@ module Unescape = struct
 
   let event_of_control_code =
     let open Option in function
-
+    | Uchar u when Uchar.is_ascii u ->
+        Some (`Key (`ASCII (Uchar.unsafe_to_char u), []))
     | Uchar u -> Some (`Key (`Uchar u, []))
 
     | C0 '\x1b'        -> key `Escape []
@@ -770,8 +761,8 @@ module Unescape = struct
     | C0 '\n'          -> key `Enter []
     | C0 '\t'          -> key `Tab []
 
-    | C0 x -> key (`Uchar (Char.code x + 0x40)) [`Ctrl]
-    | C1 x -> key (`Uchar (Char.code x)) [`Meta]
+    | C0 x -> key (`ASCII Char.(code x + 0x40 |> unsafe_chr)) [`Ctrl]
+    | C1 x -> key (`ASCII x) [`Meta]
 
     | CSI ("",[],'Z') -> key `Tab [`Shift]
 
@@ -847,7 +838,7 @@ module Unescape = struct
     | cc::ccs -> (event_of_control_code cc |> Option.to_list) @ events ccs
     | [] -> []
 
-  let decode = events &. demux
+  let decode = events &. demux &. List.map Uchar.to_int
 
   type t = (event list * bool) ref
 
@@ -868,7 +859,6 @@ module Unescape = struct
     | (es, _)                -> (es, true)
 
   let pending t = match !t with ([], false) -> false | _ -> true
-
 end
 
 module Tmachine = struct

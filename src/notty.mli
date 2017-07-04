@@ -18,10 +18,6 @@
 
 (** {1 Interface} *)
 
-type uchar = int
-(** A lone Unicode
-   {{: http://unicode.org/glossary/#unicode_scalar_value}scalar value}. *)
-
 type attr
 (** Visual characteristics of displayed text. *)
 
@@ -164,7 +160,7 @@ module I : sig
       @raise Invalid_argument if [string] is not a valid UTF-8 sequence, or
       contains {{!ctrls}control characters}. *)
 
-  val uchars : attr -> uchar array -> image
+  val uchars : attr -> Uchar.t array -> image
   (** [uchars attr us] is an image containing text [us], styled with [attr].
 
       @raise Invalid_argument if [us] contains {{!ctrls}control characters}. *)
@@ -174,10 +170,13 @@ module I : sig
 
       @raise Invalid_argument if [c] is a {{!ctrls}control character}. *)
 
-  val uchar : attr -> uchar -> int -> int -> image
+  val uchar : attr -> Uchar.t -> int -> int -> image
   (** [uchar attr u w h] is a [w * h] grid of [u].
 
       @raise Invalid_argument if [u] is a {{!ctrls}control character}. *)
+
+  val ichar : attr -> int -> int -> int -> image
+  (** [ichar attr x w h] is [uchar attr (Uchar.of_int x) w h]. *)
 
   val void  : int -> int -> image
   (** [void w h] is a [w * h] rectangle of transparent cells.
@@ -416,7 +415,7 @@ module Unescape : sig
   type mods = [ `Meta | `Ctrl | `Shift ] list
   (** Modifier state. *)
 
-  type key = [ special | `Uchar of uchar ] * mods
+  type key = [ special | `Uchar of Uchar.t | `ASCII of char ] * mods
   (** Keypress event. *)
 
   type mouse = [ `Press of button | `Drag | `Release ] * (int * int) * mods
@@ -428,13 +427,20 @@ module Unescape : sig
       {ul
       {- [`Key (k, mods)] is keyboard input.
 
-         [k] is either a special {{!key}key}, or [`Uchar u] where [u] is
-         {{!uchar}[uchar]}. This value is guaranteed not to be a {{!I.ctrls}control
-         character}, and is safe to use in constructing images.
+         [k] is a {{!key}key}, one of:
+         {ul
+         {- A {{!special}special key};}
+         {- [`ASCII c] where [c] is a [char] in the
+            {{: https://tools.ietf.org/html/rfc20}ASCII} range; or}
+         {- [`Uchar u] where [u] is any other {{!Uchar.t}unicode character}.}}
 
-         [mods] are the extra {{!mods}modifier keys}.
+         [`ASCII] and [`Uchar] together represent the textual part of the input.
+         These characters are guaranteed not to be {{!ctrls}control
+         characters}, and are safe to use when constructing images. The purpose
+         of separating ASCII from the rest of Unicode is convenience of
+         pattern-matching.
 
-         }
+         [mods] are the extra {{!mods}modifier keys}.}
       {- [`Mouse (event, (x, y), mods)] is mouse input.
 
          [event] is the actual mouse event: {{!button}[button]} press, release,
@@ -443,9 +449,9 @@ module Unescape : sig
          [(x, y)] are column and row position of the mouse. The origin is
          [(0,0)], the upper-left corner.
 
-         {b Note} Every [`Press(`Left|`Middle|`Right)] generates a corresponding
+         {b Note} Every [`Press (`Left|`Middle|`Right)] generates a corresponding
          [`Release], but there is no portable way to detect which button was
-         released. [`Scroll(`Up|`Down)] presses are not followed by releases. }}
+         released. [`Scroll (`Up|`Down)] presses are not followed by releases. }}
 
       Terminal input protocols are historical cruft, and heavily overload the
       ASCII range. For instance:
@@ -468,6 +474,10 @@ module Unescape : sig
       {- Terminals will variously under-report modifier key state.}}
 
       Perform own experiments before relying on elaborate key combinations. *)
+
+  val uchar : [< `Uchar of Uchar.t | `ASCII of char ] -> Uchar.t
+  (** [uchar x] is the {!Uchar.t} corresponding to [x]. This operations merges
+      the ASCII and Unicode variants of {{!key}key}. *)
 
   (** {1 Decoding filter}
 
@@ -517,7 +527,7 @@ module Unescape : sig
       {{: http://www.ecma-international.org/publications/standards/Ecma-048.htm}ECMA-48},
       as needed by terminal emulators in common use. *)
 
-  val decode : uchar list -> event list
+  val decode : Uchar.t list -> event list
   (** [decode us] are the events encoded by [us].
 
       [us] are assumed to have been generated in a burst, and the end of the
