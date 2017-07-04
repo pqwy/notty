@@ -59,8 +59,9 @@ let () =
       let attr = magenta in
       let msg = I.string A.empty "Push keys."
       and ks = List.map (function
-        | `Key (`Uchar u, mods) ->
-            I.(uchar blue u 1 1 <|> strf ~attr " u%04x %a" u pp_mods mods)
+        | `Key ((`ASCII _ | `Uchar _) as c, mods) ->
+            let u = Unescape.uchar c in
+            I.(uchar blue u 1 1 <|> strf ~attr " %a %a" Uchar.dump u pp_mods mods)
         | `Key (#Unescape.special as k, mods) ->
             I.strf ~attr "%a %a" pp_special k pp_mods mods
         | `Mouse (e, (x, y), mods) ->
