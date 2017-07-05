@@ -21,7 +21,7 @@ let () =
     and speed = unix && Conf.value c speed
     and demos0 = unix && Conf.value c demos in
     let demos1 = demos0 && lwt in
-    Ok [ Pkg.mllib "src/notty.mllib";
+    Ok [ Pkg.mllib ~api:["Notty"] "src/notty.mllib";
          Pkg.mllib ~cond:unix "unix/notty_unix.mllib";
          Pkg.mllib ~cond:lwt "lwt/notty_lwt.mllib";
          Pkg.clib ~cond:unix "unix/libnotty_unix_stubs.clib";

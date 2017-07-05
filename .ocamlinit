@@ -1,4 +1,4 @@
-#require "result,uucp,uuseg,uutf"
+#require "result,uuseg,uutf"
 #directory "_build/src"
 #load "notty.cma"
 

@@ -1,7 +1,7 @@
 true: color(always)
 true: bin_annot, safe_string
 true: warn(A-4-33-40-41-42-43-34-44-48)
-true: package(result uchar uucp uuseg uutf)
+true: package(result uchar uuseg uutf)
 
 <src>: include
 

@@ -16,7 +16,6 @@ depends: [
   "topkg" {build}
   "ocb-stubblr" {build & >="0.1.0"}
   "result"
-  "uucp"
   "uuseg"
   "uutf"
 ]

@@ -144,7 +144,7 @@ module Text = struct
           let is = match w with 0 -> is | 1 -> i::is | _ -> i::(-1)::is
           in go is 0 0 `Await
       | `Uchar u when Uchar.is_ctrl u -> Error (`Control u)
-      | `Uchar u -> go is (w + Uucp.Break.tty_width_hint u) i `Await
+      | `Uchar u -> go is (w + Notty_wcwidth.wcwidth u) i `Await
       | `End -> Ok (is |> List.rev |> Array.of_list) (* XXX *)
     in
     go [0] 0 0 `Await
