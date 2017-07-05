@@ -1,3 +1,6 @@
+(* Copyright (c) 2016-2017 David Kaloper Meršinjak. All rights reserved.
+   See LICENSE.md. *)
+
 open Notty
 
 let pow n e = int_of_float (float n ** float e)

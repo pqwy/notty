@@ -1,3 +1,6 @@
+(* Copyright (c) 2016-2017 David Kaloper Meršinjak. All rights reserved.
+   See LICENSE.md. *)
+
 (** Declaring terminals.
 
     Notty is a terminal library that revolves around construction and

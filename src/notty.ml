@@ -1,3 +1,6 @@
+(* Copyright (c) 2016-2017 David Kaloper Meršinjak. All rights reserved.
+   See LICENSE.md. *)
+
 type uchar = int
 
 let (&.) f g x = f (g x)

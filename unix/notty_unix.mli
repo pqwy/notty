@@ -1,3 +1,6 @@
+(* Copyright (c) 2016-2017 David Kaloper Meršinjak. All rights reserved.
+   See LICENSE.md. *)
+
 (** [Notty] IO for pure [Unix].
 
     This is an IO module for {!Notty}.
