@@ -36,9 +36,7 @@ let escapes_m =
 
 let chars = String.(make (length escapes) 'x')
 
-let () = Unmark.warmup ()
-
-let () =
+let b_render () =
   let measure = `Cputime_ns in
 
   let ops image () = Operation.of_image (200, 200) image in
@@ -67,7 +65,7 @@ let () =
 
   ()
 
-let () =
+let b_input () =
   let measure = `Cputime in
 
   Unmark.time ~tag:"decode escapes" ~measure ~n:100
@@ -86,7 +84,7 @@ let () =
 
   ()
 
-let () =
+let b_construct () =
   let measure = `Cputime_ns in
 
   let s1 = String.repeat 10 "☭"
@@ -97,3 +95,11 @@ let () =
     (fun () -> I.string A.empty s2);
 
   ()
+
+let () =
+  List.iter (fun f -> f ()) [
+    Unmark.warmup
+  ; b_render
+  ; b_input
+  ; b_construct
+  ]

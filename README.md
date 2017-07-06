@@ -38,7 +38,7 @@ let render (w, h) step life =
 ```
 
 Building with `./pkg/pkg.ml build --with-lwt true --examples true` will produce
-several little demo programs that also double as tests.
+several little example programs that also double as tests.
 
 [documentation]: https://pqwy.github.io/notty
 [examples]: http://pqwy.github.io/notty/Notty.html#examples

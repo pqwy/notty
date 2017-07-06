@@ -796,7 +796,7 @@ and loop t (double, n as state) =
   | `Key (`Enter,_)        -> ()
   | `Key (`Arrow `Left,_)  -> update t (double, max 1 (n - 1))
   | `Key (`Arrow `Right,_) -> update t (double, min 8 (n + 1))
-  | `Key (`Uchar 0x20,_)   -> update t (not double, n)
+  | `Key (`ASCII ' ', _)   -> update t (not double, n)
   | `Resize _              -> update t state
   | _                      -> loop t state
 in

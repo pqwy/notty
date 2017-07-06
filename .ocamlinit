@@ -11,3 +11,4 @@
 #load "notty_lwt.cma"
 
 open Notty
+open Notty.Infix

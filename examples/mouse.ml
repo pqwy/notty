@@ -11,12 +11,14 @@ let lnv = 0x2502
 and lnh = 0x2500
 and crs = 0x253c
 
+let clip a b x = min b (max a x)
+
 let () =
   simpleterm ~s:(`Down, (0, 0), [], 11)
     ~f:(fun (st, pos, mods, scr as s) -> function
       | `Mouse ((`Press `Left|`Drag), pos, mods) -> Some (`Drag, pos, mods, scr)
       | `Mouse (`Press (`Scroll s), _, _) ->
-          Some (st, pos, mods, scr + match s with `Up -> 1 | _ -> -1)
+          Some (st, pos, mods, clip 0 23 (scr + match s with `Up -> 1 | _ -> -1))
       | `Mouse (`Release, pos, _) -> Some (`Down, pos, [], scr)
       | _ -> Some s)
     ~imgf:I.(fun (w, h) (st, (x, y), mods, scr) ->
@@ -29,10 +31,9 @@ let () =
         |> hpad 1 1
         |> vsnap ~align:`Top (h - 1)
       and scroll =
-        let x = ((scr mod 24) + 24) mod 24 in
-        List.(range 0 x |> rev |> map (fun level ->
-          Images.square A.(gray level)
-        )) |> vcat |> vsnap ~align:`Bottom (h - 1)
+        List.(range 0 scr |> rev |> map @@ fun level ->
+          Images.dot A.(gray level)
+        ) |> vcat |> vsnap ~align:`Bottom (h - 1)
       and status =
         let a = A.(fg lightblack ++ bg black) in
         let fa m = if List.mem m mods then A.(fg lightgreen ++ bg black) else a in

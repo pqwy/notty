@@ -16,9 +16,13 @@ depends: [
   "topkg" {build}
   "ocb-stubblr" {build & >="0.1.0"}
   "result"
+  "uchar"
   "uuseg"
-  "uutf"
+  "uutf" {>= "1.0.0"}
 ]
 depopts: [ "lwt" ]
-conflicts: [ "lwt" {< "2.5.2"} ]
+conflicts: [
+  "ocb-stubblr" {<"0.1.0"}
+  "lwt" {<"2.5.2"}
+]
 available: [ ocaml-version >= "4.02.0" ]

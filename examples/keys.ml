@@ -46,6 +46,7 @@ let pp_mouse fmt = function
         | `Scroll `Up   -> "Scroll Up"
         | `Scroll `Down -> "Scroll Down"
 
+let pp_u ppf u = Format.fprintf ppf "U+%04X" (Uchar.to_int u)
 
 let () =
   let magenta = A.(fg lightmagenta ++ bg black)
@@ -61,7 +62,7 @@ let () =
       and ks = List.map (function
         | `Key ((`ASCII _ | `Uchar _) as c, mods) ->
             let u = Unescape.uchar c in
-            I.(uchar blue u 1 1 <|> strf ~attr " %a %a" Uchar.dump u pp_mods mods)
+            I.(uchar blue u 1 1 <|> strf ~attr " %a %a" pp_u u pp_mods mods)
         | `Key (#Unescape.special as k, mods) ->
             I.strf ~attr "%a %a" pp_special k pp_mods mods
         | `Mouse (e, (x, y), mods) ->

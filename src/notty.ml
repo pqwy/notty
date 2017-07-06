@@ -47,8 +47,8 @@ end
 
 module Int = struct
   type t = int
-  let max (a : t) (b : t) = if a > b then a else b
-  let min (a : t) (b : t) = if a < b then a else b
+  let max (a : t) b = if a > b then a else b
+  let min (a : t) b = if a < b then a else b
   let is_ctrl  x = btw x 0x00 0x1f || btw x 0x7f 0x9f
   let is_ascii x = x = x land 0x7f
 end
@@ -169,7 +169,8 @@ module Text = struct
       | Ascii (s, off, _) -> Ascii (s, off + x, w)
       | Utf8 (s, ix, off, _) -> Utf8 (s, ix, off + x, w)
 
-  let err_ctrl = invalid_arg_pp "Notty: control char: %a from: %S" Uchar.dump
+  let err_ctrl u =
+    invalid_arg_pp "Notty: control char: U+%04X from: %S" (Uchar.to_int u)
   let err_malformed = invalid_arg_pp "Notty: malformed UTF-8: %s (in: %S)"
 
   let of_ascii str =

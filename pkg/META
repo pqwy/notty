@@ -9,7 +9,7 @@ exists_if = "notty.cma"
 
 package "unix" (
  version = "%%VERSION_NUM%%"
- description = "Declaring terminals"
+ description = "Notty Unix IO"
  requires = "notty unix"
  archive(byte) = "notty_unix.cma"
  archive(native) = "notty_unix.cmxa"
@@ -19,8 +19,8 @@ package "unix" (
 )
 
 package "lwt" (
- version = "0.1.1"
- description = "Declaring terminals"
+ version = "%%VERSION_NUM%%"
+ description = "Notty Lwt+Unix IO"
  requires = "notty notty.unix lwt lwt.unix"
  archive(byte) = "notty_lwt.cma"
  archive(native) = "notty_lwt.cmxa"
