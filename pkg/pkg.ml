@@ -42,4 +42,5 @@ let () =
          bin ~cond:demos1 "examples/sierpinski_lwt";
          bin ~cond:demos1 "examples/life";
          bin ~cond:demos1 "examples/linear";
+         bin ~cond:demos1 "examples/emoji";
     ]

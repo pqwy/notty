@@ -712,7 +712,7 @@ I.(string a1 "Rad" <|> (void 0 1 <-> string a2 "stuff!"))
     Sierpinski triangle:
 
 {[
-let square = "\xe2\x97\xbe"
+let square = "\xe2\x96\xaa"
 
 let rec sierp n =
   if n > 1 then

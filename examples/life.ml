@@ -61,7 +61,7 @@ let glider = CSet.of_list [(2,1); (3,2); (1,3); (2,3); (3,3)]
 open Notty
 open Notty.Infix
 
-let dot = I.ichar A.(fg lightred) 0x25cf 1 1
+let dot = I.string A.(fg lightred) "●"
 
 let background step (n, m) =
   let k = int_of_float @@ (sin (float (step + m + n) /. 10.)) *. 24. in

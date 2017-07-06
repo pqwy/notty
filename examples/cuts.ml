@@ -26,7 +26,7 @@ let colors = A.[red; green; yellow; blue; magenta; cyan]
 
 let patterns = [
   "desu"
-; ".◾e\204\129●."
+; ".▪e\204\129●."
 ; "(茶‸茶‶)"
 ; "(⌐■_■)"
 (* ; "¯\\(ツ)/¯" *)

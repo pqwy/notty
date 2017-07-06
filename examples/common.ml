@@ -70,8 +70,10 @@ module Images = struct
       range 0 15 |> map (fun i -> pad ~t:i ~l:(i*2) i2) |> zcat
     )
 
-
-  let square color = I.string (A.fg color) "◾"
+  (* U+25CF BLACK CIRCLE *)
+  let dot color = I.string (A.fg color) "●"
+  (* U+25AA BLACK SMALL SQUARE *)
+  let square color = I.string (A.fg color) "▪"
 
   let rec cantor = let open I in function
     | 0 -> square A.lightblue
@@ -89,7 +91,7 @@ module Images = struct
   let rec sierp c n = I.(
     if n > 1 then
       let ss = sierp c (pred n) in ss <-> (ss <|> ss)
-    else hpad 1 0 (string (A.fg c) "◾")
+    else hpad 1 0 (square c)
   )
 
   let grid xxs = xxs |> List.map I.hcat |> I.vcat
