@@ -15,7 +15,6 @@ depends: [
   "ocamlfind" {build}
   "topkg" {build}
   "ocb-stubblr" {build & >="0.1.0"}
-  "result"
   "uchar"
   "uuseg"
   "uutf" {>= "1.0.0"}

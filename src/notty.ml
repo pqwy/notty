@@ -112,7 +112,9 @@ end
 
 module Text = struct
 
-  open Result
+  let err_ctrl u =
+    invalid_arg_pp "Notty: control char: U+%04X from: %S" (Uchar.to_int u)
+  let err_malformed = invalid_arg_pp "Notty: malformed UTF-8: %s (in: %S)"
 
   type t =
     | Ascii of string * int * int
@@ -129,25 +131,22 @@ module Text = struct
 
   let is_empty t = width t = 0
 
-  let graphemes ?encoding str =
-    let dec = Uutf.decoder ?encoding (`String str)
-    and seg = Uuseg.create `Grapheme_cluster in
-    let rec go is w i evt =
+  let graphemes str =
+    let seg = Uuseg.create `Grapheme_cluster in
+    let rec f seg (is, w as acc) i evt =
       match Uuseg.add seg evt with
-      | `Await ->
-        ( let i = Uutf.decoder_byte_count dec in
-          match Uutf.decode dec with
-          | `Await -> assert false
-          | `Malformed _ as err -> Error err
-          | `End | `Uchar _ as evt -> go is w i evt )
-      | `Boundary ->
-          let is = match w with 0 -> is | 1 -> i::is | _ -> i::(-1)::is
-          in go is 0 0 `Await
-      | `Uchar u when Uchar.is_ctrl u -> Error (`Control u)
-      | `Uchar u -> go is (w + Notty_wcwidth.wcwidth u) i `Await
-      | `End -> Ok (is |> List.rev |> Array.of_list) (* XXX *)
-    in
-    go [0] 0 0 `Await
+      | `Await | `End -> acc
+      | `Uchar u      -> f seg (is, w + Notty_wcwidth.wcwidth u) i `Await
+      | `Boundary     ->
+          let is = match w with 0 -> is | 1 -> i::is | _ -> i::(-1)::is in
+          f seg (is, 0) i `Await in
+    let g acc i = function
+      | `Malformed err                -> err_malformed err str
+      | `Uchar u when Uchar.is_ctrl u -> err_ctrl u str
+      | `Uchar _ as x                 -> f seg acc i x in
+    let acc = Uutf.String.fold_utf_8 g ([0], 0) str in
+    let acc = f seg acc (String.length str) `End in
+    acc |> fst |> List.rev |> Array.of_list (* XXX *)
 
   let dead = ' '
 
@@ -169,20 +168,13 @@ module Text = struct
       | Ascii (s, off, _) -> Ascii (s, off + x, w)
       | Utf8 (s, ix, off, _) -> Utf8 (s, ix, off + x, w)
 
-  let err_ctrl u =
-    invalid_arg_pp "Notty: control char: U+%04X from: %S" (Uchar.to_int u)
-  let err_malformed = invalid_arg_pp "Notty: malformed UTF-8: %s (in: %S)"
-
   let of_ascii str =
     match String.find Char.is_ctrl str with
     | Some i -> err_ctrl (Uchar.of_char str.[i]) str
     | None   -> Ascii (str, 0, String.length str)
 
   let of_unicode str =
-    match graphemes ~encoding:`UTF_8 str with
-    | Ok ix                  -> Utf8 (str, ix, 0, Array.length ix - 1)
-    | Error (`Malformed err) -> err_malformed err str
-    | Error (`Control u)     -> err_ctrl u str
+    let is = graphemes str in Utf8 (str, is, 0, Array.length is - 1)
 
   let of_string = function
     | "" -> empty

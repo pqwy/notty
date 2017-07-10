@@ -1,6 +1,6 @@
 version = "%%VERSION_NUM%%"
 description = "Declaring terminals"
-requires = "result uchar uuseg uutf"
+requires = "uchar uuseg uutf"
 archive(byte) = "notty.cma"
 archive(native) = "notty.cmxa"
 plugin(byte) = "notty.cma"
