@@ -627,7 +627,7 @@ module Render = struct
       | [ln]    -> render_line ln
       | ln::lns -> render_line ln; cap.newline buf; lines lns
     in
-    lines (Operation.of_image dim img)
+    lines (Operation.of_image ?off dim img); cap.sgr A.empty buf
 
   let to_string cap dim i =
     Buffer.on I.(width i * height i * 2) (fun buf -> to_buffer buf cap dim i)
