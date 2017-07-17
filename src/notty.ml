@@ -531,8 +531,8 @@ module Operation = struct
     | Vcrop ((i, top, _), (_, h1)) ->
         if row < h1 then scan x w (top + row) i k else Skip w @: k
 
-  let of_image (w, h) i =
-    List.(0 -- pred h |> map (fun row -> scan 0 w row i []))
+  let of_image ?off:((x, y)=(0, 0)) (w, h) i =
+    List.(y -- (y + h - 1) |> map (fun row -> scan x (x + w) row i []))
 
 end
 
@@ -612,7 +612,7 @@ end
 
 module Render = struct
 
-  let to_buffer buf cap dim img =
+  let to_buffer buf cap ?off dim img =
     let open Cap in
     let render_op = Operation.(function
       | Skip n      -> cap.skip n buf
@@ -629,8 +629,8 @@ module Render = struct
     in
     lines (Operation.of_image ?off dim img); cap.sgr A.empty buf
 
-  let to_string cap dim i =
-    Buffer.on I.(width i * height i * 2) (fun buf -> to_buffer buf cap dim i)
+  let to_string cap ?off dim i =
+    Buffer.on I.(width i * height i * 2) (fun b -> to_buffer b ?off cap dim i)
 
 end
 

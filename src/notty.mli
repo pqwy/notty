@@ -380,14 +380,17 @@ end
     you want to take your business elsewhere. *)
 module Render : sig
 
-  val to_string : Cap.t -> int * int -> image -> string
-  (** [to_string cap (w, h) i] is the string describing the [w * h] top-left
-      rectangle of [i], as interpreted by {{!Cap}[cap]}. [i] is implicitly
-      padded with {{!I.void}[void]} along the bottom and right edges. *)
+  val to_string : Cap.t -> ?off:(int * int) -> int * int -> image -> string
+  (** [to_string cap ~off:(x, y) (w, h) i] is the string describing the [w * h]
+      rectangle of [i] starting with the offset [~off] from top-left, as
+      interpreted by {{!Cap}[cap]}.
 
-  val to_buffer : Buffer.t -> Cap.t -> int * int -> image -> unit
-  (** [to_buffer buf cap (w, h) i] renders [i] to a buffer. Otherwise behaves
-      like [to_string]. *)
+      [~off] defaults to [(0, 0)]. *)
+
+  val to_buffer : Buffer.t -> Cap.t -> ?off:(int * int) -> int * int -> image -> unit
+  (** [to_buffer buf ~off cap (w, h) i] renders [i] to a buffer. Otherwise
+      behaves like [to_string]. *)
+
 end
 
 (** Parse and decode escape sequences in character streams. *)
@@ -545,7 +548,7 @@ end
     {b Note} This is a private interface. *)
 module Operation : sig
   type t
-  val of_image : int * int -> image -> t list list
+  val of_image : ?off:(int * int) -> int * int -> image -> t list list
 end
 
 (** IO-less model of full-screen terminal output.
