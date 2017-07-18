@@ -7,6 +7,16 @@ plugin(byte) = "notty.cma"
 plugin(native) = "notty.cmxs"
 exists_if = "notty.cma"
 
+package "top" (
+ version = "%%VERSION_NUM%%"
+ description = "Notty toplevel support"
+ requires = "notty"
+ archive(byte) = "notty_top.cma"
+ archive(native) = "notty_top.cmxa"
+ plugin(byte) = "notty_top.cma"
+ plugin(native) = "notty_top.cmxs"
+)
+
 package "unix" (
  version = "%%VERSION_NUM%%"
  description = "Notty Unix IO"

@@ -1,6 +1,7 @@
 #require "uuseg,uutf"
 #directory "_build/src"
 #load "notty.cma"
+#load "notty_top.cma"
 
 #require "unix"
 #directory "_build/unix"
@@ -9,6 +10,3 @@
 #require "lwt,lwt.unix"
 #directory "_build/lwt"
 #load "notty_lwt.cma"
-
-open Notty
-open Notty.Infix

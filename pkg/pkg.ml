@@ -22,6 +22,8 @@ let () =
     and ex0 = unix && Conf.value c ex in
     let ex1 = ex0 && lwt in
     Ok [ Pkg.mllib ~api:["Notty"] "src/notty.mllib";
+         Pkg.mllib ~api:[] "src/notty_top.mllib";
+         Pkg.lib "src/notty_top_init.ml";
          Pkg.mllib ~cond:unix "unix/notty_unix.mllib";
          Pkg.mllib ~cond:lwt "lwt/notty_lwt.mllib";
          Pkg.clib ~cond:unix "unix/libnotty_unix_stubs.clib";

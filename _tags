@@ -1,9 +1,11 @@
 true: color(always)
 true: bin_annot, safe_string
-true: warn(A-4-33-40-41-42-43-34-44-48)
+true: warn(A-4-33-40-41-42-43-34-44-48-58)
 true: package(uchar uuseg uutf)
 
 <src>: include
+
+<src/notty_top*>: package(compiler-libs.toplevel)
 
 <unix>: include
 <unix/*.ml{,i}>: package(unix)
