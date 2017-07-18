@@ -27,4 +27,4 @@ let () =
       ) uus |> I.vcat
       |> I.pad ~t:1 ~l:1
       |> I.hsnap ~align:`Left (nw + 1)
-      |> I.tile nw 1)
+      |> tile nw 1)

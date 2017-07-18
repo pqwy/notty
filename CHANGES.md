@@ -5,6 +5,7 @@ Breaking changes:
 * Rename input `#key` to `#special`
 * Separate ASCII from general Unicode input
 * Move the cursor origin from (1, 1) to (0, 0)
+* Replace `I.tile` with more general `I.tabulate`
 
 Other changes:
 * More examples

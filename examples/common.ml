@@ -2,6 +2,7 @@
    See LICENSE.md. *)
 
 open Notty
+open Notty.Infix
 
 let pow n e = int_of_float (float n ** float e)
 
@@ -47,27 +48,27 @@ module String = struct
     Buffer.contents b
 end
 
+let tile w h i = I.tabulate w h (fun _ _ -> i)
+
 (** A few images used in several places. *)
 module Images = struct
 
   let i1 =
-    let open I in
-    (string A.(fg lightblack) "omgbbq" <->
-      string A.(fg white ++ bg red) "@")
-    <|> pad ~t:2 @@ string A.(fg green) "xo"
+    I.(string A.(fg lightblack) "omgbbq" <->
+       string A.(fg white ++ bg red) "@")
+    <|> I.(pad ~t:2 @@ string A.(fg green) "xo")
 
   let i2 = I.(hpad 1 1 (hcrop 1 1 @@ tile 3 3 i1) <|> i1)
 
-  let i3 = I.tile 5 5 i2
+  let i3 = tile 5 5 i2
 
   let i4 =
     let i = I.(i3 <|> crop ~t:1 i3 <|> i3) in
     I.(crop ~l:1 i <-> crop ~r:1 i <-> crop ~b:2 i)
 
   let i5 =
-    let open I in
     tile 5 1 List.(
-      range 0 15 |> map (fun i -> pad ~t:i ~l:(i*2) i2) |> zcat
+      range 0 15 |> map (fun i -> I.pad ~t:i ~l:(i*2) i2) |> I.zcat
     )
 
   (* U+25CF BLACK CIRCLE *)
@@ -75,12 +76,12 @@ module Images = struct
   (* U+25AA BLACK SMALL SQUARE *)
   let square color = I.string (A.fg color) "▪"
 
-  let rec cantor = let open I in function
+  let rec cantor = function
     | 0 -> square A.lightblue
     | n ->
         let sub = cantor (pred n) in
-        hcat (List.replicate (pow 3 n) (square A.lightblue)) <->
-        (sub <|> void (pow 3 (n - 1)) 0 <|> sub)
+        I.hcat (List.replicate (pow 3 n) (square A.lightblue)) <->
+        (sub <|> I.void (pow 3 (n - 1)) 0 <|> sub)
 
   let checker n m i =
     let w = I.width i in

@@ -8,15 +8,16 @@ let bit n b = b land (1 lsl n) > 0
 
 let invalid_arg_pp fmt = Format.kasprintf invalid_arg fmt
 
-let maccum ~empty ~append xs =
-  let rec step = function
-    | []  -> empty
-    | [x] -> x
-    | xs  -> step (accum xs)
-  and accum = function
+let rec concatm z (@) xs =
+  let rec accum (@) = function
     | []|[_] as xs -> xs
-    | a::b::xs     -> append a b :: accum xs
-  in step xs
+    | a::b::xs -> (a @ b) :: accum (@) xs in
+  match xs with [] -> z | [x] -> x | xs -> concatm z (@) (accum (@) xs)
+
+let rec linspcm z (@) x n f = match n with
+  | 0 -> z
+  | 1 -> f x
+  | _ -> let m = n / 2 in linspcm z (@) x m f @ linspcm z (@) (x + m) (n - m) f
 
 module Queue = struct
   include Queue
@@ -27,7 +28,6 @@ end
 
 module List = struct
   include List
-  let rec replicate n a = if n < 1 then [] else a :: replicate (n - 1) a
   let rec (--) a b = if a > b then [] else a :: succ a -- b
 end
 
@@ -372,9 +372,9 @@ module I = struct
   let pad ?(l=0) ?(r=0) ?(t=0) ?(b=0) img =
     crop ~l:(-l) ~r:(-r) ~t:(-t) ~b:(-b) img
 
-  let hcat = maccum ~empty ~append:(<|>)
+  let hcat = concatm empty (<|>)
 
-  let vcat = maccum ~empty ~append:(<->)
+  let vcat = concatm empty (<->)
 
   let zcat xs = List.fold_right (</>) xs empty
 
@@ -385,15 +385,17 @@ module I = struct
 
   let uchars attr a = text attr (Text.of_uchars a)
 
+  let tabulate m n f =
+    let m = Int.max m 0 and n = Int.max n 0 in
+    linspcm empty (<->) 0 n (fun y -> linspcm empty (<|>) 0 m (fun x -> f x y))
+
   let chars ctor attr c w h =
     if w < 1 || h < 1 then void w h else
-      text attr (ctor w c) |> List.replicate h |> vcat
+      let line = text attr (ctor w c) in tabulate 1 h (fun _ _ -> line)
 
   let char  = chars Text.replicatec
   let uchar = chars Text.replicateu
   let ichar = chars (fun w x -> Text.replicateu w (Uchar.of_int x))
-
-  let tile w h i = List.(replicate h (replicate w i |> hcat) |> vcat)
 
   let hsnap ?(align=`Middle) w img =
     let off = width img - w in match align with

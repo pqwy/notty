@@ -286,9 +286,13 @@ v}
   val zcat : image list -> image
   (** [zcat xs] overlays [xs]. See {{!(</>)}over}. *)
 
-  val tile : int -> int -> image -> image
-  (** [tile m n i] is a grid of [m] horizontal and [n] vertical repetitions
-      of [i]. *)
+  val tabulate : int -> int -> (int -> int -> image) -> image
+  (** [tabulate m n f] is the grid of values [f x y] with [x = 0..m-1]
+      and [y = 0..n-1], where [x] grows to the right, and [y] growns down.
+
+      [f a y] is to the left of [f b y] if [a < b], and [f x a] is above [f x b]
+      if [a < b], but the exact alignment is unspecified if the various [f x y]
+      have different dimensions. *)
 
   val hsnap : ?align:[ `Left | `Middle | `Right ] -> int -> image -> image
   (** [hsnap ~align w i] is an image of width strictly [w] obtained by either
