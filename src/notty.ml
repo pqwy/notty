@@ -632,6 +632,14 @@ module Render = struct
   let to_string cap ?off dim i =
     Buffer.on I.(width i * height i * 2) (fun b -> to_buffer b ?off cap dim i)
 
+  let pp cap ppf img =
+    let open Format in
+    let (h, w) = I.(height img, width img |> min (pp_get_margin ppf ())) in
+    let img    = I.(img </> vpad (h - 1) 0 (char A.empty ' ' w 1)) in
+    let line y = pp_print_as ppf w (to_string cap ~off:(0, y) (w, 1) img) in
+    pp_open_vbox ppf 0;
+    for y = 0 to h - 1 do line y; if y < h - 1 then pp_print_cut ppf () done;
+    pp_close_box ppf ()
 end
 
 module Unescape = struct

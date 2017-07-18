@@ -391,6 +391,12 @@ module Render : sig
   (** [to_buffer buf ~off cap (w, h) i] renders [i] to a buffer. Otherwise
       behaves like [to_string]. *)
 
+  val pp : Cap.t -> Format.formatter -> image -> unit
+  (** [pp cap ppf i] pretty-prints [i] to [ppf], as interpreted by
+      {{!Cap}[cap]}.
+
+      [pp] is meant for development and debugging. It tries to be reasonable,
+      but dedicated IO modules handle the actual output better. *)
 end
 
 (** Parse and decode escape sequences in character streams. *)
