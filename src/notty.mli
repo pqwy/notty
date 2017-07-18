@@ -322,9 +322,8 @@ v}
   (** [kstrf ?attr ?w k format ...] is continuation-based [strf ?attr ?w format ...]. *)
 
   val pp_attr : attr -> (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a -> unit
-  (** [attr a f] is a pretty-printer like [f], except its output is styled
-      with [a]. This applies only outside of any styling [f] itself might
-      embed. *)
+  (** [pp_attr a f] is a pretty-printer like [f], except its output is styled
+      with [a]. This applies only outside of any styling [f] itself might embed. *)
 end
 
 (** Operators, repeated. *)
@@ -675,25 +674,21 @@ I.(wow <-> (void 2 0 <|> wow)) |> Notty_unix.output_image_endline
 
     There are further examples in the [/examples] directory in the source tree.
 
-    We assume the module is open:
-
-    {[open Notty]}
-
-    As the core module has no IO, we borrow a helper from {!Notty_unix}:
-
-    {[let output_image_endline = Notty_unix.output_image_endline]}
+    We assume a toplevel with [Notty] support ([#require "notty.top"]).
 
     {2 Hello}
 
-    Output ["Rad!"] with default foreground and background:
+    ["Rad!"] with default foreground and background:
 
-    {[I.string A.empty "Rad!" |> output_image_endline]}
+    {[I.string A.empty "Rad!"]}
 
-    {2 Hello, with colors}
+    Everything has to start somewhere.
 
-    Output ["Rad!"] in rad letters:
+    {2 Colors}
 
-    {[I.string A.(fg lightred) "Rad!" |> output_image_endline]}
+    ["Rad!"] in rad letters:
+
+    {[I.string A.(fg lightred) "Rad!"]}
 
     {2 Padding and spacing}
 
@@ -702,19 +697,13 @@ let a1 = A.(fg lightwhite ++ bg red)
 and a2 = A.(fg red)
 ]}
 
-    Output ["Rad"] and [" stuff!"] in different colors:
+    ["Rad"] and [" stuff!"] in different colors:
 
-{[
-I.(string a1 "Rad" <|> string a2 " stuff!")
-  |> output_image_endline
-]}
+    {[I.(string a1 "Rad" <|> string a2 " stuff!")]}
 
-    Output them with the second word hanging on a line below:
+    The second word hanging on a line below:
 
-{[
-I.(string a1 "Rad" <|> (void 0 1 <-> string a2 "stuff!"))
-  |> output_image_endline
-]}
+    {[I.(string a1 "Rad" <|> (void 0 1 <-> string a2 "stuff!"))]}
 
     {2 More geometry}
 
@@ -729,15 +718,11 @@ let rec sierp n =
   else I.(string A.(fg magenta) square |> hpad 1 0)
 ]}
 
-    Print a triangle:
+    {[sierp 8]}
 
-    {[sierp 8 |> output_image_endline]}
+    A triangle overlaid over its shifted copy:
 
-    (Note the cropping behavior.)
-
-    Print a triangle overlaid over its shifted copy:
-
-    {[let s = sierp 6 in I.(s </> hpad 1 0 s) |> output_image_endline]}
+    {[let s = sierp 6 in I.(s </> vpad 1 0 s)]}
 
     Blinkenlights:
 
@@ -745,13 +730,15 @@ let rec sierp n =
 let rad n color =
   let a1 = A.fg color in
   let a2 = A.(st blink ++ a1) in
-  I.((string a1 "Rad" |> hpad n 0) <->
-     (string a2 "stuff!" |> hpad (n + 6) 0))
-in
-A.[ red; green; yellow; blue; magenta; cyan ]
-  |> List.mapi I.(fun i c -> rad i c |> pad ~t:i ~l:(2 * i))
-  |> I.zcat
-  |> output_image_endline
+  I.((string a2 "Rad" |> hpad n 0) <->
+     (string a1 "(⌐■_■)" |> hpad (n + 7) 0))
+
+let colors = A.[red; green; yellow; blue; magenta; cyan]
+]}
+
+{[
+colors |> List.mapi I.(fun i c -> rad i c |> pad ~t:i ~l:(2 * i))
+       |> I.zcat
 ]}
 
     {b Note} Usage of {{!A.blink}[blink]} might be regulated by law in some
@@ -759,20 +746,31 @@ A.[ red; green; yellow; blue; magenta; cyan ]
 
     {2 Pretty-printing}
 
-    Pretty-printing into an [image]:
+    Images can be pretty-printed into:
 
-    {[I.strf ~attr:A.(fg green) "(%d)" 42 |> output_image_endline]}
+    {[I.strf "(%d)" 42]}
 
-    Decorated pretty-printers:
+    Attributes can be applied to the entire format string, or by decorating
+    {e user-defined printers} that are supplied with [%a] conversions:
 
-{[
-let pp = Format.pp_print_int |> I.pp_attr A.(fg green) in
-I.strf "(%a)" pp 43 |> output_image_endline
-]}
+    {[let pp = Format.pp_print_int]}
 
-    {2 Taking terminal size into account}
+    {[I.strf ~attr:A.(fg lightwhite) "(%a)" (I.pp_attr A.(fg green) pp) 42]}
 
-    Space a line end-to-end horizontally:
+    {2 Now with output}
+
+    The core module has no real IO. Examples above are simple [image]-valued
+    expressions, displayed by the pretty-printer that is installed by the
+    toplevel support. Self-contained programs need a separate IO module:
+
+    {[#require "notty.unix"]}
+
+    {[sierp 8 |> Notty_unix.output_image_endline]}
+
+    (Note the difference in cropping behavior.)
+
+    Computations can be adapted to the current terminal size. A line can stretch
+    end-to-end:
 
 {[
 Notty_unix.output_image_size @@ fun (w, _) ->
@@ -781,7 +779,7 @@ Notty_unix.output_image_size @@ fun (w, _) ->
   I.(i1 <|> void (w - width i1 - width i2) 1 <|> i2)
 ]}
 
-    Print a triangle that fits into the terminal:
+    The largest triangle that horizontally fits into the terminal:
 
 {[
 Notty_unix.output_image_size @@ fun (w, _) ->
@@ -792,14 +790,15 @@ Notty_unix.output_image_size @@ fun (w, _) ->
     {2 Simple interaction}
 
     Interactive Sierpinski:
-{[
-open Notty_unix
 
+    {[open Notty_unix]}
+
+{[
 let img (double, n) =
   let s = sierp n in
-  if double then I.(s </> hpad 1 0 s) else s in
-let rec update t state =
-  Term.image t (img state); loop t state
+  if double then I.(s </> vpad 1 0 s) else s
+in
+let rec update t state = Term.image t (img state); loop t state
 and loop t (double, n as state) =
   match Term.event t with
   | `Key (`Enter,_)        -> ()
@@ -809,9 +808,9 @@ and loop t (double, n as state) =
   | `Resize _              -> update t state
   | _                      -> loop t state
 in
-let t = Term.create () in
-update t (false, 1);
-Term.release t
+let t = Term.create ()
+in
+update t (false, 1); Term.release t
 ]}
 
     The program uses a fullscreen {{!Notty_unix.Term}terminal} and loops reading
