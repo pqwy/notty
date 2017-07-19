@@ -37,20 +37,54 @@ module A : sig
   (** {1 Colors} *)
 
   type color
-  (** One of 256 {e Xterm-style} colors.
+  (** An ineffable quality of light.
 
+      There are three kinds of colors:
       {ul
-      {- The first 16 are supported on almost all terminals. The names are
-         standardized, but the actual colors are not. The colors are often
-         user-definable.}
-      {- The next 216 form a 6*6*6 {e color cube}.}
-      {- The final 24 are a {e grayscale ramp}.}}
+      {- {e Core 16 colors.}
 
-      Colors outside of the core 16 are widely, but not universally supported.
+         ANSI defines 8 color {e names}, with the actual display colors
+         considered an implementation detail. Historically, this palette was
+         extended with their light (sometimes {e bright} or {e high-intensity})
+         counterparts. Their presentation is undefined too, but typically
+         produces a brighter shade. These colors - often called the {e ANSI
+         colors} - tend to be unpredictable, but ubiquitously supported.
 
-      {b Note} No attempt is made to remap colors depending on the
-      terminal. Colors not recognized by a particular terminal will simply be
-      ignored in the output. *)
+         }
+      {- {e Extended 256-color palette.}
+
+         This common feature extends the palette by further 240 colors. They
+         come in two groups:
+
+         {ul
+         {- The {e color cube}, a 6*6*6 approximation to the usual 24-bit RGB
+            color cube; and}
+         {- the {e grayscale ramp}, containing (merely) 24 shades of gray.}}
+
+         XTerm was the first to support this extension. Many terminals have
+         since cloned it, so the support is wide, but not universal.
+
+         As the extended colors are still palette-driven they do not have a
+         fixed presentation, and the presentation can be changed in some
+         terminals. Default palette tends to match {{:
+         https://upload.wikimedia.org/wikipedia/commons/1/15/Xterm_256color_chart.svg}
+         XTerm's}.
+
+         }
+      {- {e True color}
+
+         A recently established convention allows directly sending 24-bit colors
+         to the terminal. This has been adopted by a growing minority of
+         terminals. A reasonably up-to-date status document maintained by the
+         community can be found {{:https://gist.github.com/XVilka/8346728}here}.}}
+
+      Some of the technical and historical background can be found in {{:
+      http://invisible-island.net/xterm/xterm.faq.html#problems_colors}
+      XTerm's FAQ}.
+
+      {b Note} No attempt is made to remap colors depending on the terminal.
+      Terminals might ignore, remap, or completely misinterpret unsupported
+      colors. *)
 
   (** {2:corecolors Core 16 colors}
 
@@ -73,19 +107,33 @@ module A : sig
   val lightcyan    : color
   val lightwhite   : color
 
-  (** {2 Extended colors} *)
+  (** {2 Extended 256-color palette} *)
 
   val rgb : r:int -> g:int -> b:int -> color
-  (** [rgb ~r:red ~g:green ~b:blue] is an extended color from the color cube.
-      All three components must be in the range [0-5].
+  (** [rgb ~r:red ~g:green ~b:blue] is an extended-palette color from the color cube.
 
-      @raise Invalid_argument if a component is outside the range. *)
+      All three channels must be in the range [0 - 5]. XTerm default palette maps
+      this to [0x00], [0x5f], [0x87], [0xaf], [0xd7], and [0xff] independently
+      per channel.
+
+      @raise Invalid_argument if a channel is outside the range. *)
 
   val gray : int -> color
-  (** [gray level] is an extended color from the grayscale ramp. [level] must be
-      in the range [0-23].
+  (** [gray level] is an extended-palette color from the grayscale ramp.
+
+      [level] must be in the range [0 - 23]. XTerm default palette maps this to
+      [8 + level * 10] on all three channels.
 
       @raise Invalid_argument if the [level] is outside the range. *)
+
+  (** {2 True Color} *)
+
+  val rgb_888 : r:int -> g:int -> b:int -> color
+  (** [rgb_888 ~r:red ~g:green ~b:blue] is a 24-bit color.
+
+      All three channels must be in the range [0 - 255].
+
+      @raise Invalid_argument if a channel is outside the range. *)
 
   (** {1 Text styles} *)
 

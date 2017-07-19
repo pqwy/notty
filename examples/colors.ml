@@ -38,30 +38,25 @@ let styles = A.[
 ; "bold/rev"   , st reverse ++ st bold
 ]
 
-let image =
+let image w =
   let open List in
-  let open I in
   let core16 =
-    let c1  = map (fun (n, c) -> string A.(fg c) n) colors
-    and c2  = map (fun (n, c) -> string A.(fg black ++ bg c) n) colors
-    in vcat c1 <|> void 1 0 <|> vcat c2
-  and rgb =
-    let range = range 0 5 in
-    range |> map (fun r ->
-      range |> map (fun g ->
-        range |> map (fun b ->
-          char A.(bg (rgb ~r ~g ~b)) ' ' 1 1
-        ) |> hcat
-      ) |> vcat <|> void 1 0
-    ) |> hcat
-  and gray =
-    range 0 23 |> map (fun level ->
-      char A.(bg (gray level)) ' ' 1 1
-    ) |> hcat
-  and attr =
-    styles |> map (fun (n, s) -> hpad 0 1 (string A.(fg red ++ s) n)) |> hcat
-  in
-  intersperse (void 0 1) [core16; rgb; gray; attr]
-  |> vcat |> pad ~l:1 ~t:1
+    let c1  = map (fun (n, c) -> I.string A.(fg c) n) colors
+    and c2  = map (fun (n, c) -> I.string A.(fg black ++ bg c) n) colors
+    in I.(vcat c1 <|> void 1 0 <|> vcat c2)
+  and attr = I.(
+    styles |> map (fun (n, s) ->
+      hpad 0 1 (string A.(fg red ++ s) n)
+    ) |> hcat) in
+  let combine imgs =
+    List.map I.(fun (n, i) -> string A.empty n <-> i <-> void 0 1) imgs
+    |> I.vcat |> I.pad ~l:1 ~t:1 in
+  combine [
+    "System colors:",     core16;
+    "Color cube, 6x6x6:", Images.c_cube_ix;
+    "Grayscale ramp:",    Images.c_gray_ramp;
+    "24bit:",             Images.c_rainbow (w - 2) 1;
+    "Text styles:",       attr
+  ]
 
-let () = Notty_unix.output_image_endline image
+let () = Notty_unix.output_image_size @@ fun (w, _) -> image w

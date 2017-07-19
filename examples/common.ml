@@ -71,6 +71,29 @@ module Images = struct
       range 0 15 |> map (fun i -> I.pad ~t:i ~l:(i*2) i2) |> I.zcat
     )
 
+  let c_gray_ramp =
+    I.tabulate 24 1 (fun g _ -> I.string A.(bg (gray g)) " ")
+
+  let c_cube_ix =
+    I.tabulate 6 1 @@ fun r _ ->
+      I.hpad 0 1 @@ I.tabulate 6 6 @@ fun b g ->
+        I.string A.(bg (rgb ~r ~g ~b)) " "
+
+  let c_cube_rgb =
+    let f x = [| 0x00; 0x5f; 0x87; 0xaf; 0xd7; 0xff |].(x) in
+    I.tabulate 6 1 @@ fun r _ ->
+      I.hpad 0 1 @@ I.tabulate 6 6 @@ fun b g ->
+        I.string A.(bg (rgb_888 ~r:(f r) ~g:(f g) ~b:(f b))) " "
+
+  let c_rainbow w h =
+    let pi2     = 2. *. 3.14159 in
+    let pi2_3   = pi2 /. 3.
+    and f t off = sin (t +. off) *. 128. +. 128. |> truncate in
+    let color t = A.rgb_888 ~r:(f t (-.pi2_3)) ~g:(f t 0.) ~b:(f t pi2_3) in
+    I.tabulate (w - 1) 1 @@ fun x _ ->
+      let t = (pi2 *. float x /. float w) +. 3.7 in
+      I.char A.(bg (color t)) ' ' 1 h
+
   (* U+25CF BLACK CIRCLE *)
   let dot color = I.string (A.fg color) "●"
   (* U+25AA BLACK SMALL SQUARE *)

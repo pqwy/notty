@@ -6,7 +6,7 @@ let (&.) f g x = f (g x)
 let btw (x : int) a b = a <= x && x <= b
 let bit n b = b land (1 lsl n) > 0
 
-let invalid_arg_pp fmt = Format.kasprintf invalid_arg fmt
+let invalid_arg fmt = Format.kasprintf invalid_arg fmt
 
 let rec concatm z (@) xs =
   let rec accum (@) = function
@@ -41,8 +41,8 @@ module Buffer = struct
         if (d1 + d2) > 0 then 0x30 + d2 |> Char.unsafe_chr |> add_char b;
         0x30 + d3 |> Char.unsafe_chr |> add_char b
     | x -> string_of_int x |> add_string b
-
   let add_chars b c n = for _ = 1 to n do add_char b c done
+  let add_byte b n = add_char b (n land 0xff |> Char.unsafe_chr)
 end
 
 module Int = struct
@@ -113,8 +113,8 @@ end
 module Text = struct
 
   let err_ctrl u =
-    invalid_arg_pp "Notty: control char: U+%04X from: %S" (Uchar.to_int u)
-  let err_malformed = invalid_arg_pp "Notty: malformed UTF-8: %s (in: %S)"
+    invalid_arg "Notty: control char: U+%04X from: %S" (Uchar.to_int u)
+  let err_malformed = invalid_arg "Notty: malformed UTF-8: %s (in: %S)"
 
   type t =
     | Ascii of string * int * int
@@ -196,41 +196,51 @@ end
 
 module A = struct
 
-  type color = int
+  type color = Default | Index of int | Rgb of int
   type style = int
-  type t = { fg : color option; bg : color option; st : style }
+  type t = { fg : color; bg : color; st : style }
 
   let equal t1 t2 =
-    let f o1 o2 = match (o1, o2) with
-      | (Some x, Some y) -> (x : int) = y | (None, None) -> true | _ -> false
-    in f t1.fg t2.fg && f t1.bg t2.bg && t1.st = t2.st
+    let f c1 c2 = match (c1, c2) with
+    | (Index a, Index b) | (Rgb a, Rgb b) -> a = b
+    | (Default, Default) -> true | _ -> false in
+    f t1.fg t2.fg && f t1.bg t2.bg && t1.st = t2.st
 
-  let black        = 0
-  and red          = 1
-  and green        = 2
-  and yellow       = 3
-  and blue         = 4
-  and magenta      = 5
-  and cyan         = 6
-  and white        = 7
-  and lightblack   = 8
-  and lightred     = 9
-  and lightgreen   = 10
-  and lightyellow  = 11
-  and lightblue    = 12
-  and lightmagenta = 13
-  and lightcyan    = 14
-  and lightwhite   = 15
+  let black        = Index 0
+  and red          = Index 1
+  and green        = Index 2
+  and yellow       = Index 3
+  and blue         = Index 4
+  and magenta      = Index 5
+  and cyan         = Index 6
+  and white        = Index 7
+  and lightblack   = Index 8
+  and lightred     = Index 9
+  and lightgreen   = Index 10
+  and lightyellow  = Index 11
+  and lightblue    = Index 12
+  and lightmagenta = Index 13
+  and lightcyan    = Index 14
+  and lightwhite   = Index 15
 
   let rgb ~r ~g ~b =
     if r < 0 || g < 0 || b < 0 || r > 5 || g > 5 || b > 5 then
-      invalid_arg "Notty.A.rgb: a component outside of range [0, 5]"
-    else r * 36 + g * 6 + b + 16
+      invalid_arg "Notty.A.rgb %d %d %d: channel out of range" r g b
+    else Index (r * 36 + g * 6 + b + 16)
 
   let gray level =
     if level < 0 || level > 23 then
-      invalid_arg "Notty.A.gray: level outside of range [0, 23]"
-    else level + 232
+      invalid_arg "Notty.A.gray %d: level out of range" level
+    else Index (level + 232)
+
+  let rgb_888 ~r ~g ~b =
+    if r < 0 || g < 0 || b < 0 || r > 255 || g > 255 || b > 255 then
+      invalid_arg "Notty.A.rgb_888 %d %d %d: channel out of range" r g b
+    else Rgb ((r lsl 16) lor (g lsl 8) lor b)
+
+  let r x = x lsr 16 land 0xff
+  and g x = x lsr 8 land 0xff
+  and b x = x land 0xff
 
   let bold      = 1
   and italic    = 2
@@ -238,30 +248,33 @@ module A = struct
   and blink     = 8
   and reverse   = 16
 
-  let empty = { fg = None; bg = None; st = 0 }
+  let empty = { fg = Default; bg = Default; st = 0 }
 
   let (++) a1 a2 = {
-    fg = (match a2.fg with None -> a1.fg | x -> x)
-  ; bg = (match a2.bg with None -> a1.bg | x -> x)
+    fg = (match a2.fg with Default -> a1.fg | x -> x)
+  ; bg = (match a2.bg with Default -> a1.bg | x -> x)
   ; st = a1.st lor a2.st
   }
 
-  let fg f = { empty with fg = Some f }
-  let bg b = { empty with bg = Some b }
-  let st s = { empty with st = s }
+  let fg fg = { empty with fg }
+  let bg bg = { empty with bg }
+  let st st = { empty with st }
 
   let to_tag { fg; bg; st } =
-    let f = ref 0 and chr = Char.unsafe_chr in
-    let g k = function Some x -> f := !f + k; chr x | _ -> '\x00' in
-    String.init 3 @@ function
-      | 0 -> g 1 fg | 1 -> g 2 bg | _ -> (st lsl 2) lor !f |> chr
+    let (<<) = Buffer.add_byte in
+    let enc buf = Buffer.(function
+      | Default -> add_char buf '\x00'
+      | Index x -> add_char buf '\x01'; buf << x
+      | Rgb x   -> add_char buf '\x02'; buf << r x; buf << g x; buf << b x
+    ) in Buffer.on 5 @@ fun buf -> buf << st; enc buf fg; enc buf bg
 
   let of_tag s =
-    if String.length s <> 3 then None else
-      let f = Char.code s.[2] in Some {
-        fg = if bit 0 f then Some Char.(code s.[0]) else None
-      ; bg = if bit 1 f then Some Char.(code s.[1]) else None
-      ; st = f lsr 2 }
+    let b8 i shift = Char.code s.[i] lsl shift in
+    let dec i = match s.[i] with
+      | '\x00' -> (Default, i + 1)
+      | '\x01' -> (Index (b8 (i + 1) 0), i + 2)
+      | _      -> (Rgb (b8 (i + 1) 16 lor b8 (i + 2) 8 lor b8 (i + 3) 0), i + 4)
+    in let (fg, i) = dec 1 in Some { st = b8 0 0; fg; bg = fst (dec i) }
 end
 
 module I = struct
@@ -573,23 +586,28 @@ module Cap = struct
     ; mouse   = (fun x b -> b <| if x then "\x1b[?1000;1002;1005;1015;1006h"
                                       else "\x1b[?1000;1002;1005;1015;1006l")
     ; sgr     =
-      fun attr b ->
-        b <| "\x1b[0";
-        ( match attr.A.fg with
-          | Some c when c < 8   -> b <. ';' ; b <! (c + 30)
-          | Some c when c < 16  -> b <. ';' ; b <! (c + 82)
-          | Some c              -> b <| ";38;5;" ; b <! c
-          | None -> ());
-        ( match attr.A.bg with
-          | Some c when c < 8   -> b <. ';' ; b <! (c + 40)
-          | Some c when c < 16  -> b <. ';' ; b <! (c + 92)
-          | Some c              -> b <| ";48;5;" ; b <! c
-          | None -> ());
-        let rec stflags f xs = match (f, xs) with
-          | (0, _)|(_, []) -> ()
-          | (_, x::xs)     -> if f land 1 > 0 then b <| x; stflags (f lsr 1) xs
-        in stflags attr.A.st sts;
-        b <. 'm'
+      fun attr buf ->
+        let tc buf x =
+          buf <! A.r x; buf <. ';'; buf <! A.g x; buf <. ';'; buf <! A.b x in
+        buf <| "\x1b[0";
+        A.( match attr.fg with
+          | Index c when c < 8  -> buf <. ';'; buf <! (c + 30)
+          | Index c when c < 16 -> buf <. ';'; buf <! (c + 82)
+          | Index c             -> buf <| ";38;5;"; buf <! c
+          | Rgb c               -> buf <| ";38;2;"; tc buf c
+          | Default             -> () );
+        A.( match attr.bg with
+          | Index c when c < 8  -> buf <. ';'; buf <! (c + 40)
+          | Index c when c < 16 -> buf <. ';'; buf <! (c + 92)
+          | Index c             -> buf <| ";48;5;"; buf <! c
+          | Rgb c               -> buf <| ";48;2;"; tc buf c
+          | Default             -> () );
+        if attr.A.st <> 0 then begin
+          let rec stflags f xs = match (f, xs) with
+            | (0, _) | (_, []) -> ()
+            | (_, x::xs) -> if f land 1 > 0 then buf <| x; stflags (f lsr 1) xs
+          in stflags attr.A.st sts end;
+        buf <. 'm'
     }
 
   let no0 _     = ()
