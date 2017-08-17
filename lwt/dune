@@ -1,0 +1,6 @@
+(library
+ (name notty_lwt)
+ (public_name notty_lwt)
+ (synopsis "Notty Lwt+Unix IO")
+ (wrapped false)
+ (libraries notty.unix lwt.unix))

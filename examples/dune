@@ -1,0 +1,13 @@
+(executables
+ (names testpatterns
+        letters keys colors sierpinski
+        cuts thisbig runes crops mouse cursor
+        sierpinski_lwt life linear emoji)
+ (libraries notty.unix notty.lwt))
+
+(alias
+ (name examples)
+ (deps testpatterns.exe
+       letters.exe keys.exe colors.exe sierpinski.exe
+       cuts.exe thisbig.exe runes.exe crops.exe mouse.exe
+       cursor.exe sierpinski_lwt.exe life.exe linear.exe emoji.exe))

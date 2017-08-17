@@ -8,20 +8,16 @@ maintainer:   "David Kaloper <david@numm.org>"
 license:      "ISC"
 
 build: [
-  "ocaml" "pkg/pkg.ml" "build" "--pinned" "%{pinned}%"
-          "--with-lwt" "%{lwt:installed}%"
+  ["dune" "subst"] {pinned}
+  ["dune" "build" "-p" name "-j" jobs]
 ]
 depends: [
-  "ocamlbuild" {build}
-  "ocamlfind" {build}
-  "topkg" {build}
-  "ocb-stubblr" {build & >="0.1.0"}
+  "dune" {build & >= "1.1"}
   "uchar"
   "uucp" {>= "2.0.0"}
   "uuseg" {>= "1.0.0"}
   "uutf" {>= "1.0.0"}
 ]
-depopts: [ "lwt" ]
 conflicts: [
   "ocb-stubblr" {<"0.1.0"}
   "lwt" {<"2.5.2"}

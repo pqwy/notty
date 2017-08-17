@@ -1,0 +1,7 @@
+(executables
+ (names speed)
+ (libraries notty.unix unmark))
+
+(alias
+ (name benchmarks)
+ (deps speed.exe))
