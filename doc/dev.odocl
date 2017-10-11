@@ -1,5 +1,4 @@
 src/Notty
-src/Notty_wcwidth
 unix/Notty_unix
 lwt/Notty_lwt
 

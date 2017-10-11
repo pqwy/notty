@@ -136,7 +136,7 @@ module Text = struct
     let rec f seg (is, w as acc) i evt =
       match Uuseg.add seg evt with
       | `Await | `End -> acc
-      | `Uchar u      -> f seg (is, w + Notty_wcwidth.wcwidth u) i `Await
+      | `Uchar u      -> f seg (is, w + Uucp.Break.tty_width_hint u) i `Await
       | `Boundary     ->
           let is = match w with 0 -> is | 1 -> i::is | _ -> i::(-1)::is in
           f seg (is, 0) i `Await in

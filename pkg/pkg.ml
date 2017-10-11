@@ -21,7 +21,7 @@ let () =
     and speed = unix && Conf.value c speed
     and ex0 = unix && Conf.value c ex in
     let ex1 = ex0 && lwt in
-    Ok [ Pkg.mllib ~api:["Notty"] "src/notty.mllib";
+    Ok [ Pkg.mllib "src/notty.mllib";
          Pkg.mllib ~api:[] "src/notty_top.mllib";
          Pkg.lib "src/notty_top_init.ml";
          Pkg.mllib ~cond:unix "unix/notty_unix.mllib";

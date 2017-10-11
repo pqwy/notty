@@ -709,8 +709,6 @@ I.(wow <-> (void 2 0 <|> wow)) |> Notty_unix.output_image_endline
     {{: http://erratique.ch/software/uucp/doc/Uucp.Break.html#VALtty_width_hint}
     [Uucp.Break.tty_width_hint]}.
 
-    {b Note} This version uses a private copy of [Uucp] with Unicode 8.0.0 data.
-
     Unicode also has a special interaction with {{!hcrop}horizontal cropping}:
     {ul
     {- Strings within images are cropped at {{:
