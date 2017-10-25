@@ -86,7 +86,7 @@ let () =
     |> Images.outline attr
     |> pad ~t:1 ~b:1 ~l:2 ~r:2
   ) <->
-    note [ "Alignment will usually break on the last few scripts." 
+    note [ "Alignment will usually break on the last few scripts."
          ; "This is at the limit of what terminals can do."
          ; ":(" ]
   in Notty_unix.(eol img |> output_image)

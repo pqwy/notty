@@ -28,7 +28,8 @@ end
 
 module List = struct
   include List
-  let rec (--) a b = if a > b then [] else a :: succ a -- b
+  let init n f =
+    let rec go a n = if n < 0 then a else go (f n :: a) (n - 1) in go [] (n - 1)
 end
 
 module Buffer = struct
@@ -47,11 +48,11 @@ end
 
 module Int = struct
   type t = int
-  let max (a : t) b = if a > b then a else b
-  let min (a : t) b = if a < b then a else b
   let is_ctrl  x = btw x 0x00 0x1f || btw x 0x7f 0x9f
   let is_ascii x = x = x land 0x7f
 end
+let max (a : int) b = if a > b then a else b
+let min (a : int) b = if a < b then a else b
 
 module Char = struct
   include Char
@@ -133,20 +134,19 @@ module Text = struct
 
   let graphemes str =
     let seg = Uuseg.create `Grapheme_cluster in
-    let rec f seg (is, w as acc) i evt =
+    let rec f (is, w as acc) i evt =
       match Uuseg.add seg evt with
       | `Await | `End -> acc
-      | `Uchar u      -> f seg (is, w + Uucp.Break.tty_width_hint u) i `Await
+      | `Uchar u      -> f (is, w + Uucp.Break.tty_width_hint u) i `Await
       | `Boundary     ->
           let is = match w with 0 -> is | 1 -> i::is | _ -> i::(-1)::is in
-          f seg (is, 0) i `Await in
+          f (is, 0) i `Await in
     let g acc i = function
       | `Malformed err                -> err_malformed err str
       | `Uchar u when Uchar.is_ctrl u -> err_ctrl u str
-      | `Uchar _ as x                 -> f seg acc i x in
-    let acc = Uutf.String.fold_utf_8 g ([0], 0) str in
-    let acc = f seg acc (String.length str) `End in
-    acc |> fst |> List.rev |> Array.of_list (* XXX *)
+      | `Uchar _ as x                 -> f acc i x in
+    f (Uutf.String.fold_utf_8 g ([0], 0) str) (String.length str) `End
+      |> fst |> List.rev |> Array.of_list (* XXX *)
 
   let dead = ' '
 
@@ -163,7 +163,7 @@ module Text = struct
   let sub t x w =
     let w1 = width t in
     if w = 0 || x >= w1 then empty else
-      let w = Int.min w (w1 - x) in
+      let w = min w (w1 - x) in
       match t with
       | Ascii (s, off, _) -> Ascii (s, off + x, w)
       | Utf8 (s, ix, off, _) -> Utf8 (s, ix, off + x, w)
@@ -333,14 +333,14 @@ module I = struct
     | (Empty, _) -> t2
     | _          ->
         let w = width t1 + width t2
-        and h = Int.max (height t1) (height t2) in
+        and h = max (height t1) (height t2) in
         Hcompose ((t1, t2), (w, h))
 
   let (<->) t1 t2 = match (t1, t2) with
     | (_, Empty) -> t1
     | (Empty, _) -> t2
     | _          ->
-        let w = Int.max (width t1) (width t2)
+        let w = max (width t1) (width t2)
         and h = height t1 + height t2 in
         Vcompose ((t1, t2), (w, h))
 
@@ -348,12 +348,12 @@ module I = struct
     | (_, Empty) -> t1
     | (Empty, _) -> t2
     | _          ->
-        let w = Int.max (width t1) (width t2)
-        and h = Int.max (height t1) (height t2) in
+        let w = max (width t1) (width t2)
+        and h = max (height t1) (height t2) in
         Zcompose ((t1, t2), (w, h))
 
   let void w h =
-    if w < 1 && h < 1 then Empty else Void Int.(max 0 w, max 0 h)
+    if w < 1 && h < 1 then Empty else Void (max 0 w, max 0 h)
 
   let lincropinv crop void (++) init fini img =
     match (init >= 0, fini >= 0) with
@@ -399,7 +399,7 @@ module I = struct
   let uchars attr a = text attr (Text.of_uchars a)
 
   let tabulate m n f =
-    let m = Int.max m 0 and n = Int.max n 0 in
+    let m = max m 0 and n = max n 0 in
     linspcm empty (<->) 0 n (fun y -> linspcm empty (<|>) 0 m (fun x -> f x y))
 
   let chars ctor attr c w h =
@@ -547,8 +547,7 @@ module Operation = struct
         if row < h1 then scan x w (top + row) i k else Skip w @: k
 
   let of_image ?off:((x, y)=(0, 0)) (w, h) i =
-    List.(y -- (y + h - 1) |> map (fun row -> scan x (x + w) row i []))
-
+    List.init h (fun off -> scan x (x + w) (y + off) i [])
 end
 
 module Cap = struct
@@ -591,26 +590,26 @@ module Cap = struct
                                       else "\x1b[?1000;1002;1005;1015;1006l")
     ; sgr     =
       fun attr buf ->
-        let tc buf x =
-          buf <! A.r x; buf <. ';'; buf <! A.g x; buf <. ';'; buf <! A.b x in
         buf <| "\x1b[0";
+        let rgb888 buf x =
+          buf <! A.r x; buf <. ';'; buf <! A.g x; buf <. ';'; buf <! A.b x in
         A.( match attr.fg with
           | Index c when c < 8  -> buf <. ';'; buf <! (c + 30)
           | Index c when c < 16 -> buf <. ';'; buf <! (c + 82)
           | Index c             -> buf <| ";38;5;"; buf <! c
-          | Rgb c               -> buf <| ";38;2;"; tc buf c
+          | Rgb c               -> buf <| ";38;2;"; rgb888 buf c
           | Default             -> () );
         A.( match attr.bg with
           | Index c when c < 8  -> buf <. ';'; buf <! (c + 40)
           | Index c when c < 16 -> buf <. ';'; buf <! (c + 92)
           | Index c             -> buf <| ";48;5;"; buf <! c
-          | Rgb c               -> buf <| ";48;2;"; tc buf c
+          | Rgb c               -> buf <| ";48;2;"; rgb888 buf c
           | Default             -> () );
-        if attr.A.st <> 0 then begin
-          let rec stflags f xs = match (f, xs) with
-            | (0, _) | (_, []) -> ()
-            | (_, x::xs) -> if f land 1 > 0 then buf <| x; stflags (f lsr 1) xs
-          in stflags attr.A.st sts end;
+        if attr.A.st <> 0 then
+          ( let rec go f xs = match (f, xs) with
+              | (0, _) | (_, []) -> ()
+              | (_, x::xs) -> if f land 1 > 0 then buf <| x; go (f lsr 1) xs in
+            go attr.A.st sts );
         buf <. 'm'
     }
 
@@ -924,12 +923,10 @@ module Tmachine = struct
     }
 
   let release t =
-    if t.dead then false else begin
-      emitv t [Cap.(
-        get (t.cap.altscr false & t.cap.cursvis true & t.cap.mouse false)
-      )];
-      t.dead <- true; true
-    end
+    if t.dead then false else
+      ( emitv t [Cap.(
+          get (t.cap.altscr false & t.cap.cursvis true & t.cap.mouse false) )];
+        t.dead <- true; true )
 
   let output t = Queue.(try `Output (take t.frags) with Empty -> `Await)
 

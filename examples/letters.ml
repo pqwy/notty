@@ -14,8 +14,9 @@ let () =
   simpleterm ~s:[]
     ~f:(fun us -> function
       | `Key ((`Delete|`Backspace), _) ->
-          Some (match us with _::xs   -> xs | _ -> us)
-      | `Key (`Uchar u, _) -> Some (List.take (nw * nh) (u::us))
+          Some (match us with _::xs -> xs | _ -> us)
+      | `Key ((`ASCII _|`Uchar _ as u), _) ->
+          Some (List.take (nw * nh) (Unescape.uchar u :: us))
       | _  -> Some us)
     ~imgf:(fun _ us ->
       let open List in

@@ -44,10 +44,8 @@ let image w =
     let c1  = map (fun (n, c) -> I.string A.(fg c) n) colors
     and c2  = map (fun (n, c) -> I.string A.(fg black ++ bg c) n) colors
     in I.(vcat c1 <|> void 1 0 <|> vcat c2)
-  and attr = I.(
-    styles |> map (fun (n, s) ->
-      hpad 0 1 (string A.(fg red ++ s) n)
-    ) |> hcat) in
+  and attr =
+    I.( styles |> map (fun (n, s) -> hpad 0 1 (string s n)) |> hcat) in
   let combine imgs =
     List.map I.(fun (n, i) -> string A.empty n <-> i <-> void 0 1) imgs
     |> I.vcat |> I.pad ~l:1 ~t:1 in

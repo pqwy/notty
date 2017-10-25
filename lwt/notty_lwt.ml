@@ -21,11 +21,6 @@ let rec write fd buf off = function
   | 0 -> Lwt.return_unit
   | n -> Lwt_unix.write fd buf off n >>= fun w -> write fd buf (off + w) (n - w)
 
-let output_buffer fd buf = Buffer.(write fd (to_bytes buf) 0 (length buf))
-
-let write_string fd str =
-  write fd (Bytes.unsafe_of_string str) 0 (String.length str)
-
 module Lwt_condition = struct
 
   include Lwt_condition

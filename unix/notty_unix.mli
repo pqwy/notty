@@ -185,9 +185,18 @@ val move_cursor :
        {b Note} Behavior is terminal dependent if the movement overshoots the
        output size.}} *)
 
-(**/**)
+(** {1:caps Capability detection}
 
-(** {1 Private interfaces}
+    All [image] output requires {{!Notty.Cap.t}terminal capabilities}.
+
+    When not provided, capabilities are auto-detected, by checking that the
+    output is a tty, that the environment variable [$TERM] is set, and that it
+    is not set to either [""] or ["dumb"]. If these conditions hold,
+    {{!Notty.Cap.ansi}ANSI} escapes are used. Otherwise, {{!Notty.Cap.dumb}no}
+    escapes are used. *)
+
+(**/**)
+(** {1 Private}
 
     These are private interfaces, prone to breakage. Don't use them. *)
 module Private : sig
@@ -211,15 +220,3 @@ module Private : sig
   end
 end
 (**/**)
-
-(** {1:caps Capability detection}
-
-    All [image] output requires {{!Notty.Cap.t}terminal
-    capabilities}.
-
-    When not provided, capabilities are auto-detected, by checking that the
-    output is a tty, that the environment variable [$TERM] is set, and that it
-    is not set to either [""] or ["dumb"]. If these conditions hold,
-    {{!Notty.Cap.ansi}ANSI} escapes are used. Otherwise, {{!Notty.Cap.dumb}no}
-    escapes are used.
-*)

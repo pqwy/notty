@@ -8,16 +8,13 @@ external winch_number : unit -> int = "caml_notty_winch_number" [@@noalloc]
 
 let whenopt f = function Some x -> f x | _ -> ()
 
-let winsize fd =
-  match c_winsize fd with
+let winsize fd = match c_winsize fd with
   | 0  -> None
   | wh -> Some (wh lsr 16, wh lsr 1 land 0x7fff)
 
 module Private = struct
 
-  let once f =
-    let r = ref None in fun () ->
-      match !r with Some y -> y | _ -> let y = f () in r := Some y; y
+  let once f = let v = lazy (f ()) in fun () -> Lazy.force v
 
   let cap_for_fd =
     let open Cap in
@@ -27,15 +24,13 @@ module Private = struct
     | _                   -> fun fd -> if Unix.isatty fd then ansi else dumb
 
   let setup_tcattr ~nosig fd =
-    let open Unix in
-    let tweak tc =
-      let tc = { tc with c_icanon = false ; c_echo = false } in
-      if nosig then { tc with c_isig = false ; c_ixon = false } else tc in
-    try
+    let open Unix in try
       let tc = tcgetattr fd in
-      tweak tc |> tcsetattr fd TCSANOW;
-      `Revert (once @@ fun () -> tcsetattr fd TCSANOW tc)
-    with Unix_error (ENOTTY, _, _) -> `Revert (fun () -> ())
+      let tc1 = { tc with c_icanon = false; c_echo = false } in
+      tcsetattr fd TCSANOW
+        ( if nosig then { tc1 with c_isig = false; c_ixon = false } else tc1 );
+      `Revert (once @@ fun _ -> tcsetattr fd TCSANOW tc)
+    with Unix_error (ENOTTY, _, _) -> `Revert ignore
 
   let set_winch_handler f =
     let signum = winch_number () in

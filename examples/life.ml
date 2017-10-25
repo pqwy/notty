@@ -5,7 +5,6 @@
  * Game of Life with some ZX spectrum kitsch.
  *)
 
-let rec (--) a b = if a > b then [] else a :: succ a -- b
 let flip f a b = f b a
 
 (** Live, **)
@@ -68,12 +67,9 @@ let background step (n, m) =
   if k > 0 then I.char A.(fg (gray k)) '.' 1 1 else I.void 1 1
 
 let render (w, h) step life =
-  0 -- (h - 2) |> List.map (fun m ->
-    0 -- (w - 1) |> List.map (fun n ->
-      let pt = (n, m) in if CSet.mem pt life then dot else background step pt
-    ) |> I.hcat
-  ) |> I.vcat
-  <->
+  I.tabulate w (h - 1) (fun x y ->
+    let pt = (x, y) in if CSet.mem pt life then dot else background step pt
+  ) <->
   I.(strf ~attr:A.(fg lightblack) "[generation %04d]" step
       |> hsnap ~align:`Right w)
 
