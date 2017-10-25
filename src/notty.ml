@@ -566,6 +566,8 @@ module Cap = struct
   ; clreol  : op
   ; cursvis : bool -> op
   ; cursat  : int -> int -> op
+  ; cubcuf  : int -> op
+  ; cuucud  : int -> op
   ; cr      : op
   ; altscr  : bool -> op
   ; mouse   : bool -> op
@@ -579,7 +581,9 @@ module Cap = struct
       skip    = (fun n b -> b <| "\x1b[0m"; Buffer.add_chars b ' ' n)
     ; newline = (fun b -> b <| "\x1bE")
     ; altscr  = (fun x b -> b <| if x then "\x1b[?1049h" else "\x1b[?1049l")
-    ; cursat  = (fun w h b -> b <| "\x1b["; b <! w; b <. ';'; b <! h; b <. 'H')
+    ; cursat  = (fun w h b -> b <| "\x1b["; b <! h; b <. ';'; b <! w; b <. 'H')
+    ; cubcuf  = (fun x b -> b <| "\x1b["; b <! abs x; b <. if x < 0 then 'D' else 'C')
+    ; cuucud  = (fun y b -> b <| "\x1b["; b <! abs y; b <. if y < 0 then 'A' else 'B')
     ; cr      = (fun b -> b <| "\x1b[1G")
     ; clreol  = (fun b -> b <| "\x1b[K")
     ; cursvis = (fun x b -> b <| if x then "\x1b[34h\x1b[?25h" else "\x1b[?25l")
@@ -619,6 +623,8 @@ module Cap = struct
     ; newline = (fun b -> b <| "\n")
     ; altscr  = no1
     ; cursat  = no2
+    ; cubcuf  = no1
+    ; cuucud  = no1
     ; cr      = no0
     ; clreol  = no0
     ; cursvis = no1
@@ -626,8 +632,8 @@ module Cap = struct
     ; mouse   = no1
     }
 
-  let clear cap = cap.cr & cap.clreol
   let erase cap = cap.sgr A.empty & cap.clreol
+  let cursat0 cap w h = cap.cursat (max w 0 + 1) (max h 0 + 1)
 end
 
 module Render = struct
@@ -902,7 +908,7 @@ module Tmachine = struct
 
   let cursor cap = Cap.(function
     | None        -> cap.cursvis false
-    | Some (w, h) -> cap.cursvis true & cap.cursat (max h 0 + 1) (max w 0 + 1)
+    | Some (w, h) -> cap.cursvis true & cursat0 cap w h
     )
 
   let create ~mouse cap = {
@@ -928,7 +934,7 @@ module Tmachine = struct
   let output t = Queue.(try `Output (take t.frags) with Empty -> `Await)
 
   let refresh t = emitv t [
-      Cap.(get (cursor t.cap None & t.cap.Cap.cursat 1 1))
+      Cap.(get (cursor t.cap None & cursat0 t.cap 0 0))
     ; Render.to_string t.cap t.dim t.image
     ; Cap.get (cursor t.cap t.curs)
     ]
@@ -939,6 +945,15 @@ module Tmachine = struct
 
   let size t = t.dim
   let dead t = t.dead
+end
+
+module Direct = struct
+  let show_cursor buf cap x = cap.Cap.cursvis x buf
+  and move_cursor buf cap cmd = match cmd with
+    | `To (w, h) -> Cap.cursat0 cap w h buf
+    | `Home      -> cap.Cap.cr buf
+    | `By (x, y) ->
+        Cap.(if x <> 0 then cap.cubcuf x buf; if y <> 0 then cap.cuucud y buf)
 end
 
 type attr  = A.t

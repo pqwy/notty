@@ -137,14 +137,8 @@ end
 
 let winsize fd = winsize (Lwt_unix.unix_file_descr fd)
 
-let output_image_size ?cap ?clear ?(fd=Lwt_unix.stdout) i =
-  output_image_gen
-    ~to_fd:Lwt_unix.unix_file_descr
-    ~write:output_buffer
-    ?cap ?clear fd i
-
-let output_image ?cap ?clear ?fd i =
-  output_image_size ?cap ?clear ?fd (fun _ -> i)
-
-let output_image_endline ?cap ?clear ?(fd=Lwt_unix.stdout) i =
-  output_image ?cap ?clear ~fd i >>= fun () -> write_string fd "\n"
+include Gen_output (struct
+  type fd = Lwt_unix.file_descr and k = unit Lwt.t
+  let (def, to_fd) = Lwt_unix.(stdout, unix_file_descr)
+  and write fd buf = Buffer.(write fd (to_bytes buf) 0 (length buf))
+end)

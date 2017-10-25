@@ -419,10 +419,6 @@ module Cap : sig
   val dumb : t
   (** Pure text output. Text attributes are stripped and positioning is done
       with the character [U+0020], SPACE. *)
-
-  (**/**)
-  val clear : t -> Buffer.t -> unit
-  (**/**)
 end
 
 (** Convert images to [string].
@@ -599,18 +595,15 @@ module Unescape : sig
 end
 
 (**/**)
+(** {1 Private}
 
-(** Core rasterizer.
+    These are private interfaces, prone to breakage. Don't use them. *)
 
-    {b Note} This is a private interface. *)
 module Operation : sig
   type t
   val of_image : ?off:(int * int) -> int * int -> image -> t list list
 end
 
-(** IO-less model of full-screen terminal output.
-
-    {b Note} This is a private interface. *)
 module Tmachine : sig
 
   type t
@@ -627,6 +620,11 @@ module Tmachine : sig
 
   val size : t -> int * int
   val dead : t -> bool
+end
+
+module Direct : sig
+  val move_cursor : Buffer.t -> Cap.t -> [ `Home | `By of int * int | `To of int * int ] -> unit
+  val show_cursor : Buffer.t -> Cap.t -> bool -> unit
 end
 (**/**)
 

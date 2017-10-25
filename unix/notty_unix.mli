@@ -134,57 +134,81 @@ end
 
 (** {1:inline Inline output}
 
-    These operations do not change the terminal state and do not assume
-    exclusive access to the output. They can be combined with other means of
-    producing output. *)
+    These operations do not assume exclusive access to the output. This means
+    that they can be combined with other means of producing output. At the same
+    time, it means that they are affected by the current terminal state, and
+    that this state is not tracked. *)
 
 val winsize : Unix.file_descr -> (int * int) option
 (** [winsize fd] is [Some (columns, rows)], the current dimensions of [fd]'s
     backing tty, or [None], when [fd] is not backed by a tty. *)
 
+val eol : image -> image
+(** [eol image] is [image], producing an extra newline when printed. *)
+
 val output_image :
-  ?cap:Cap.t -> ?clear:bool -> ?chan:out_channel -> image -> unit
-(** [output_image ~cap ~clear ~chan i] writes the image [i] to [chan].
+  ?cap:Cap.t -> ?fd:out_channel -> image -> unit
+(** [output_image ?cap ?fd image] writes [image] to [fd].
 
     The image is displayed in its full height. If the output is a tty, image
-    width is clipped to the output width, otherwise, full width is used.
+    width is clipped to the output width. Otherwise, full width is used.
 
     [~cap] is the {{!caps}optional} terminal capability set.
 
-    [~clear] repositions the cursor to the beginning of the line and clears is.
-    Otherwise, the output continues from the current position. Defaults to
-    [false].
+    [~fd] defaults to [stdout]. *)
 
-    [~chan] defaults to [stdout]. *)
-
-val output_image_size :
-  ?cap:Cap.t -> ?clear:bool -> ?chan:out_channel -> (int * int -> image) -> unit
-(** [output_image_size ~cap ~clear ~chan f] is
-    [output_image ~cap ~chan (f size)] where [size] are [chan]'s current
+val output_image_size : ?cap:Cap.t -> ?fd:out_channel -> (int * int -> image) -> unit
+(** [output_image_size ?cap ?fd f] is
+    [output_image ?cap ?fd (f size)] where [size] are [fd]'s current
     {{!winsize}output dimensions}.
 
-    If [chan] is not backed by a tty, as a matter of convenience, [f] is
-    applied to [(80, 24)]. Use {!Unix.isatty} or {{!winsize}[winsize]} to detect
-    whether the output has a well-defined size. *)
+    If [fd] is not backed by a tty, as a matter of convenience, [f] is applied
+    to [(80, 24)]. Use {!Unix.isatty} or {{!winsize}[winsize]} to detect whether
+    the output has a well-defined size. *)
 
-val output_image_endline :
-  ?cap:Cap.t -> ?clear:bool -> ?chan:out_channel -> image -> unit
-(** [print_image_endline ~cap ~clear ~chan i] is [output_image ~cap ~chan i]
-    followed by a newline. *)
+val show_cursor : ?cap:Cap.t -> ?fd:out_channel -> bool -> unit
+(** [show_cursor ?cap ?fd visible] toggles the cursor visibility on [fd]. *)
+
+val move_cursor :
+  ?cap:Cap.t -> ?fd:out_channel ->
+    [ `Home | `By of int * int | `To of int * int ] -> unit
+(** [move_cursor ?cap ?fd motion] moves the cursor on [fd].
+
+    [motion] is one of:
+    {ul
+    {- [`To (column, line)], positioning the cursor to [(column, line)]. Origin
+       is [(0, 0)], the upper-left corner of the screen.}
+    {- [`Home], moving the cursor the beginning of line.}
+    {- [`By (columns, lines)], moving the cursor [columns] to the right (left if
+       negative) and [lines] down (up if negative).
+
+       {b Note} Behavior is terminal dependent if the movement overshoots the
+       output size.}} *)
 
 (**/**)
 
 (** {1 Private interfaces}
 
-    These are subject to change and shouldn't be used. *)
+    These are private interfaces, prone to breakage. Don't use them. *)
 module Private : sig
 
   val cap_for_fd        : Unix.file_descr -> Cap.t
   val setup_tcattr      : nosig:bool -> Unix.file_descr -> [ `Revert of (unit -> unit) ]
   val set_winch_handler : (unit -> unit) -> [ `Revert of (unit -> unit) ]
-  val output_image_gen  :
-    to_fd:('fd -> Unix.file_descr) -> write:('fd -> Buffer.t -> 'r) ->
-      ?cap:Cap.t -> ?clear:bool -> 'fd -> (int * int -> image) -> 'r
+
+  module Gen_output (O : sig
+    type fd
+    type k
+    val def   : fd
+    val to_fd : fd -> Unix.file_descr
+    val write : fd -> Buffer.t -> k
+  end ) : sig
+    val output_image : ?cap:Cap.t -> ?fd:O.fd -> image -> O.k
+    val output_image_size : ?cap:Cap.t -> ?fd:O.fd -> (int * int -> image) -> O.k
+    val show_cursor : ?cap:Cap.t -> ?fd:O.fd -> bool -> O.k
+    val move_cursor : ?cap:Cap.t -> ?fd:O.fd -> [ `Home | `By of int * int | `To of int * int ] -> O.k
+    val eol : image -> image
+  end
 end
 (**/**)
 

@@ -48,11 +48,11 @@ let () =
 
   patterns |> List.map (fun s ->
     cuts (string A.(fg lightmagenta ++ bg lightblack) s)
-  ) |> I.vcat |> output_image_endline ;
+  ) |> I.vcat |> eol |> output_image ;
 
   colors |> List.mapi (fun i c ->
     pad ~l:i ~t:i (
       string A.(fg black ++ bg c ++ st blink) "茶" <|>
       pad ~l:2 ~t:1
         (string A.(fg c ++ st blink) "PARTY!"))
-  ) |> zcat |> pad ~l:2 ~t:2 ~b:2 |> output_image_endline
+  ) |> zcat |> pad ~l:2 ~t:2 ~b:2 |> output_image

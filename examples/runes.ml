@@ -89,4 +89,4 @@ let () =
     note [ "Alignment will usually break on the last few scripts." 
          ; "This is at the limit of what terminals can do."
          ; ":(" ]
-  in Notty_unix.output_image_endline img
+  in Notty_unix.(eol img |> output_image)
