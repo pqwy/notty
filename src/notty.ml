@@ -649,10 +649,10 @@ module Render = struct
       | op::ops -> render_op op; render_line ops in
     let rec lines = function
       | []      -> ()
-      | [ln]    -> render_line ln
+      | [ln]    -> render_line ln; cap.sgr A.empty buf
       | ln::lns -> render_line ln; cap.newline buf; lines lns
     in
-    lines (Operation.of_image ?off dim img); cap.sgr A.empty buf
+    lines (Operation.of_image ?off dim img)
 
   let to_string cap ?off dim i =
     Buffer.on I.(width i * height i * 2) (fun b -> to_buffer b ?off cap dim i)
