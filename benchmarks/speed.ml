@@ -36,16 +36,20 @@ let escapes_m =
 
 let chars = String.(make (length escapes) 'x')
 
+let buf = Buffer.create 1024
+let buf_render off dim image =
+  Buffer.clear buf; Render.to_buffer buf Cap.ansi off dim image
+
 let b_render () =
   let measure = `Cputime_ns in
 
-  let ops image () = Operation.of_image (200, 200) image in
+  let ops image () = Operation.of_image (0, 0) (200, 200) image in
   Unmark.time ~tag:"rasterize i2" ~measure ~n:1000 (ops i2);
   Unmark.time ~tag:"rasterize i3" ~measure ~n:1000 (ops i3);
   Unmark.time ~tag:"rasterize i4" ~measure ~n:1000 (ops i4);
   Unmark.time ~tag:"rasterize i5" ~measure ~n:1000 (ops i5);
 
-  let render image () = Render.to_string Cap.ansi (200, 200) image in
+  let render image () = buf_render (0, 0) (200, 200) image in
   Unmark.time ~tag:"render i2" ~measure ~n:1000 (render i2);
   Unmark.time ~tag:"render i3" ~measure ~n:1000 (render i3);
   Unmark.time ~tag:"render i4" ~measure ~n:1000 (render i4);

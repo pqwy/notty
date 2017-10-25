@@ -19,13 +19,6 @@ let rec linspcm z (@) x n f = match n with
   | 1 -> f x
   | _ -> let m = n / 2 in linspcm z (@) x m f @ linspcm z (@) (x + m) (n - m) f
 
-module Queue = struct
-  include Queue
-  let addv q xs = List.iter (fun x -> add x q) xs
-  let of_list xs = let q = create () in addv q xs; q
-  let singleton x = of_list [x]
-end
-
 module List = struct
   include List
   let init n f =
@@ -34,7 +27,8 @@ end
 
 module Buffer = struct
   include Buffer
-  let on size f = let buf = create size in f buf; contents buf
+  let buf = Buffer.create 1024
+  let mkstring f = f buf; let res = contents buf in reset buf; res
   let add_decimal b = function
     | x when btw x 0 999 ->
         let d1 = x / 100 and d2 = (x mod 100) / 10 and d3 = x mod 10 in
@@ -100,15 +94,14 @@ end
 
 module Utf8 = struct
 
-  let on_encoder ?(hint=16) f =
-    Buffer.on hint @@ fun buf ->
-      let enc = Uutf.encoder `UTF_8 (`Buffer buf) in
-      f enc; Uutf.encode enc `End |> ignore
+  let encode f = Buffer.mkstring @@ fun buf ->
+    let enc = Uutf.encoder `UTF_8 (`Buffer buf) in
+    f enc; Uutf.encode enc `End |> ignore
 
-  let of_uchars arr =
-    let n = Array.length arr in
-    on_encoder ~hint:n @@ fun enc ->
-      for i = 0 to n - 1 do Uutf.encode enc (`Uchar arr.(i)) |> ignore done
+  let of_uchars arr = encode @@ fun enc ->
+    for i = 0 to Array.length arr - 1 do
+      Uutf.encode enc (`Uchar arr.(i)) |> ignore
+    done
 end
 
 module Text = struct
@@ -190,7 +183,7 @@ module Text = struct
   let replicateu w u =
     if Uchar.is_ascii u then replicatec w (Uchar.unsafe_to_char u)
     else if w < 1 then empty
-    else of_unicode @@ Utf8.on_encoder ~hint:w @@ fun enc ->
+    else of_unicode @@ Utf8.encode @@ fun enc ->
       for _ = 1 to w do Uutf.encode enc (`Uchar u) |> ignore done
 end
 
@@ -261,12 +254,13 @@ module A = struct
   let st st = { empty with st }
 
   let to_tag { fg; bg; st } =
-    let (<<) = Buffer.add_byte in
-    let enc buf = Buffer.(function
+    let open Buffer in
+    let (<<) = add_byte in
+    let enc buf = function
       | Default -> add_char buf '\x00'
       | Index x -> add_char buf '\x01'; buf << x
-      | Rgb x   -> add_char buf '\x02'; buf << r x; buf << g x; buf << b x
-    ) in Buffer.on 5 @@ fun buf -> buf << st; enc buf fg; enc buf bg
+      | Rgb x   -> add_char buf '\x02'; buf << r x; buf << g x; buf << b x in
+    mkstring (fun buf -> buf << st; enc buf fg; enc buf bg)
 
   let of_tag s =
     let b8 i shift = Char.code s.[i] lsl shift in
@@ -546,15 +540,13 @@ module Operation = struct
     | Vcrop ((i, top, _), (_, h1)) ->
         if row < h1 then scan x w (top + row) i k else Skip w @: k
 
-  let of_image ?off:((x, y)=(0, 0)) (w, h) i =
+  let of_image (x, y) (w, h) i =
     List.init h (fun off -> scan x (x + w) (y + off) i [])
 end
 
 module Cap = struct
 
   type op = Buffer.t -> unit
-
-  let get op = Buffer.on 8 op
 
   let (&) op1 op2 buf = op1 buf; op2 buf
 
@@ -640,7 +632,7 @@ end
 
 module Render = struct
 
-  let to_buffer buf cap ?off dim img =
+  let to_buffer buf cap off dim img =
     let open Cap in
     let render_op = Operation.(function
       | Skip n      -> cap.skip n buf
@@ -655,16 +647,15 @@ module Render = struct
       | [ln]    -> render_line ln; cap.sgr A.empty buf
       | ln::lns -> render_line ln; cap.newline buf; lines lns
     in
-    lines (Operation.of_image ?off dim img)
-
-  let to_string cap ?off dim i =
-    Buffer.on I.(width i * height i * 2) (fun b -> to_buffer b ?off cap dim i)
+    lines (Operation.of_image off dim img)
 
   let pp cap ppf img =
     let open Format in
+    let buf    = Buffer.create (I.width img * 2) in
     let (h, w) = I.(height img, width img |> min (pp_get_margin ppf ())) in
     let img    = I.(img </> vpad (h - 1) 0 (char A.empty ' ' w 1)) in
-    let line y = pp_print_as ppf w (to_string cap ~off:(0, y) (w, 1) img) in
+    let line y = Buffer.clear buf; to_buffer buf cap (0, y) (w, 1) img;
+                 pp_print_as ppf w (Buffer.contents buf) in
     pp_open_vbox ppf 0;
     for y = 0 to h - 1 do line y; if y < h - 1 then pp_print_cut ppf () done;
     pp_close_box ppf ()
@@ -897,26 +888,26 @@ end
 
 module Tmachine = struct
 
+  open Cap
   (* XXX This is sad. This should be a composable, stateless transducer. *)
 
   type t = {
     cap           : Cap.t
-  ; frags         : string Queue.t
+  ; mutable write : Buffer.t -> unit
   ; mutable curs  : (int * int) option
   ; mutable dim   : (int * int)
   ; mutable image : I.t
   ; mutable dead  : bool
   }
 
-  let emitv t xs =
+  let emit t op =
     if t.dead then
       invalid_arg "Notty: use of released terminal"
-    else Queue.addv t.frags xs
+    else t.write <- t.write & op
 
-  let cursor cap = Cap.(function
+  let cursor cap = function
     | None        -> cap.cursvis false
     | Some (w, h) -> cap.cursvis true & cursat0 cap w h
-    )
 
   let create ~mouse ~bpaste cap = {
       cap
@@ -924,28 +915,26 @@ module Tmachine = struct
     ; dim   = (0, 0)
     ; image = I.empty
     ; dead  = false
-    ; frags = Queue.singleton Cap.(get
-      (cap.altscr true & cursor cap None & cap.mouse mouse & cap.bpaste bpaste))
+    ; write =
+        cap.altscr true & cursor cap None & cap.mouse mouse & cap.bpaste bpaste
     }
 
   let release t =
     if t.dead then false else
-      ( emitv t [Cap.(get (
-          t.cap.altscr false & t.cap.cursvis true &
-          t.cap.mouse false & t.cap.bpaste false) )];
+      ( emit t ( t.cap.altscr false & t.cap.cursvis true &
+                 t.cap.mouse false & t.cap.bpaste false );
         t.dead <- true; true )
 
-  let output t = Queue.(try `Output (take t.frags) with Empty -> `Await)
+  let output t buf = t.write buf; t.write <- ignore
 
-  let refresh t = emitv t [
-      Cap.(get (cursor t.cap None & cursat0 t.cap 0 0))
-    ; Render.to_string t.cap t.dim t.image
-    ; Cap.get (cursor t.cap t.curs)
-    ]
+  let refresh ({ dim; image; _ } as t) =
+    emit t ( cursor t.cap None & cursat0 t.cap 0 0 &
+             (fun buf -> Render.to_buffer buf t.cap (0, 0) dim image) &
+             cursor t.cap t.curs )
 
   let set_size t dim = t.dim <- dim
   let image t image = t.image <- image; refresh t
-  let cursor t curs = t.curs <- curs; emitv t [Cap.get (cursor t.cap curs)]
+  let cursor t curs = t.curs <- curs; emit t (cursor t.cap curs)
 
   let size t = t.dim
   let dead t = t.dead

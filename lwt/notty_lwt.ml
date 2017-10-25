@@ -71,15 +71,16 @@ module Term = struct
   type t = {
     ochan  : Lwt_io.output_channel
   ; trm    : Tmachine.t
+  ; buf    : Buffer.t
   ; fds    : Lwt_unix.file_descr * Lwt_unix.file_descr
   ; events : [ Unescape.event | `Resize of (int * int) ] Lwt_stream.t
   ; stop   : (unit -> unit)
   }
 
-  let rec write t =
-    match Tmachine.output t.trm with
-    | `Output s -> Lwt_io.write t.ochan s >>= fun () -> write t
-    | `Await    -> Lwt_io.flush t.ochan
+  let write t =
+    Tmachine.output t.trm t.buf;
+    let out = Buffer.contents t.buf in (* XXX There goes 0copy. :/ *)
+    Buffer.clear t.buf; Lwt_io.write t.ochan out
 
   let refresh t      = Tmachine.refresh t.trm; write t
   let image t image  = Tmachine.image t.trm image; write t
@@ -89,7 +90,7 @@ module Term = struct
 
   let release t =
     if Tmachine.release t.trm then
-      ( t.stop (); write t )
+      ( t.stop (); write t >>= fun () -> Lwt_io.flush t.ochan )
     else Lwt.return_unit
 
   let resizef fd stop on_resize =
@@ -112,12 +113,13 @@ module Term = struct
     let rec t = lazy {
         trm    = Tmachine.create ~mouse ~bpaste (cap_for_fd fd)
       ; ochan  = Lwt_io.(of_fd ~mode:output) output
+      ; buf    = Buffer.create 4096
       ; fds    = (input, output)
       ; stop   = (fun () -> Lwt.wakeup stopw None)
-      ; events = [
-          resizef fd stop (fun x -> set_size Lazy.(force t) x)
-        ; input_stream ~nosig input stop
-        ] |> Lwt_stream.choose
+      ; events = Lwt_stream.choose
+          [ input_stream ~nosig input stop
+          ; resizef fd stop @@ fun dim ->
+              let t = Lazy.force t in Buffer.reset t.buf; set_size t dim ]
       } in
     let t = Lazy.force t in
     winsize fd |> whenopt (set_size t);

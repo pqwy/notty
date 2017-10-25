@@ -427,16 +427,10 @@ end
     you want to take your business elsewhere. *)
 module Render : sig
 
-  val to_string : Cap.t -> ?off:(int * int) -> int * int -> image -> string
-  (** [to_string cap ~off:(x, y) (w, h) i] is the string describing the [w * h]
-      rectangle of [i] starting with the offset [~off] from top-left, as
-      interpreted by {{!Cap}[cap]}.
-
-      [~off] defaults to [(0, 0)]. *)
-
-  val to_buffer : Buffer.t -> Cap.t -> ?off:(int * int) -> int * int -> image -> unit
-  (** [to_buffer buf ~off cap (w, h) i] renders [i] to a buffer. Otherwise
-      behaves like [to_string]. *)
+  val to_buffer : Buffer.t -> Cap.t -> (int * int) -> int * int -> image -> unit
+  (** [to_buffer buf cap (x, y) (w, h) i] writes the string representation of
+      [i], as interpreted by [cap], to [buf]. Only the [w * h] rectangle of [i]
+      offset by [(x, y)] from top left is rendered. *)
 
   val pp : Cap.t -> Format.formatter -> image -> unit
   (** [pp cap ppf i] pretty-prints [i] to [ppf], as interpreted by
@@ -613,7 +607,7 @@ end
 
 module Operation : sig
   type t
-  val of_image : ?off:(int * int) -> int * int -> image -> t list list
+  val of_image : (int * int) -> int * int -> image -> t list list
 end
 
 module Tmachine : sig
@@ -622,7 +616,7 @@ module Tmachine : sig
 
   val create  : mouse:bool -> bpaste:bool -> Cap.t -> t
   val release : t -> bool
-  val output  : t -> [ `Output of string | `Await ]
+  val output  : t -> Buffer.t -> unit
 
   val refresh  : t -> unit
   val cursor   : t -> (int * int) option -> unit

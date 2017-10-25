@@ -37,9 +37,6 @@ module Private = struct
     let old_hdl = Sys.(signal signum (Signal_handle (fun _ -> f ()))) in
     `Revert (once @@ fun () -> Sys.set_signal signum old_hdl)
 
-  let bsize   = 4096
-  let scratch = lazy (Buffer.create bsize)
-
   module Gen_output (O : sig
     type fd
     type k
@@ -48,11 +45,12 @@ module Private = struct
     val write : fd -> Buffer.t -> k
   end) = struct
 
+    let scratch = lazy (Buffer.create 4096)
+
     let output ?cap ?(fd = O.def) f =
       let cap = match cap with Some cap -> cap | _ -> cap_for_fd (O.to_fd fd) in
       let buf = Lazy.force scratch in
-      Buffer.(if length buf > bsize then reset else clear) buf;
-      f buf cap fd; O.write fd buf
+      Buffer.reset buf; f buf cap fd; O.write fd buf
 
     let output_image_size ?cap ?fd f =
       output ?cap ?fd @@ fun buf cap fd ->
@@ -61,7 +59,7 @@ module Private = struct
         let dim = match size with
           | Some (w, _) -> I.(w, height i)
           | None        -> I.(width i, height i) in
-        Render.to_buffer buf cap dim i
+        Render.to_buffer buf cap (0, 0) dim i
 
     let show_cursor ?cap ?fd x =
       output ?cap ?fd @@ fun buf cap _ -> Direct.show_cursor buf cap x
@@ -134,23 +132,17 @@ module Term = struct
   type t = {
     output   : out_channel
   ; trm      : Tmachine.t
+  ; buf      : Buffer.t
   ; input    : Input.t
   ; fds      : Unix.file_descr * Unix.file_descr
   ; unwinch  : Winch.remove Lazy.t
   ; mutable winched : bool
   }
 
-  let rec write t =
-    match Tmachine.output t.trm with
-    | `Output s -> output_string t.output s; write t
-    | `Await    -> flush t.output
-
-  let release t =
-    if Tmachine.release t.trm then begin
-      Winch.remove Lazy.(force t.unwinch);
-      t.input.Input.cleanup ();
-      write t
-    end
+  let write t =
+    Buffer.clear t.buf;
+    Tmachine.output t.trm t.buf;
+    Buffer.output_buffer t.output t.buf; flush t.output
 
   let set_size t dim = Tmachine.set_size t.trm dim
   let refresh t      = Tmachine.refresh t.trm; write t
@@ -158,18 +150,24 @@ module Term = struct
   let cursor t curs  = Tmachine.cursor t.trm curs; write t
   let size t         = Tmachine.size t.trm
 
+  let release t =
+    if Tmachine.release t.trm then
+      ( Winch.remove Lazy.(force t.unwinch);
+        t.input.Input.cleanup ();
+        write t )
+
   let create ?(dispose=true) ?(nosig=true) ?(mouse=true) ?(bpaste=true)
              ?(input=Unix.stdin) ?(output=Unix.stdout) () =
     let rec t = {
         output  = Unix.out_channel_of_descr output
       ; trm     = Tmachine.create ~mouse ~bpaste (cap_for_fd input)
+      ; buf     = Buffer.create 4096
       ; input   = Input.create ~nosig input
       ; fds     = (input, output)
       ; winched = false
-      ; unwinch = lazy (
-          Winch.add output (fun dim -> t.winched <- true; set_size t dim)
-        )
-      } in
+      ; unwinch = lazy (Winch.add output @@ fun dim ->
+          Buffer.reset t.buf; t.winched <- true; set_size t dim
+      )} in
     winsize output |> whenopt (set_size t);
     Lazy.force t.unwinch |> ignore;
     if dispose then at_exit (fun () -> release t);
