@@ -26,6 +26,7 @@ module Term : sig
   val create : ?dispose:bool ->
                ?nosig:bool ->
                ?mouse:bool ->
+               ?bpaste:bool ->
                ?input:Lwt_unix.file_descr ->
                ?output:Lwt_unix.file_descr ->
                unit -> t

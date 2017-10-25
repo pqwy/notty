@@ -105,12 +105,12 @@ module Term = struct
         |> Lwt_stream.map (fun dim -> `Resize dim)
     else Lwt_stream.of_list []
 
-  let create ?(dispose=true) ?(nosig=true) ?(mouse=true)
+  let create ?(dispose=true) ?(nosig=true) ?(mouse=true) ?(bpaste=true)
              ?(input=Lwt_unix.stdin) ?(output=Lwt_unix.stdout) () =
     let fd = Lwt_unix.unix_file_descr output in
     let (stop, stopw) = Lwt.wait () in
     let rec t = lazy {
-        trm    = Tmachine.create ~mouse (cap_for_fd fd)
+        trm    = Tmachine.create ~mouse ~bpaste (cap_for_fd fd)
       ; ochan  = Lwt_io.(of_fd ~mode:output) output
       ; fds    = (input, output)
       ; stop   = (fun () -> Lwt.wakeup stopw None)

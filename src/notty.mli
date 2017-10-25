@@ -477,7 +477,10 @@ module Unescape : sig
   type mouse = [ `Press of button | `Drag | `Release ] * (int * int) * mods
   (** Mouse event. *)
 
-  type event = [ `Key of key | `Mouse of mouse ]
+  type paste = [ `Start | `End ]
+  (** Paste event. *)
+
+  type event = [ `Key of key | `Mouse of mouse | `Paste of paste ]
   (** Things that terminals say to applications.
 
       {ul
@@ -485,18 +488,19 @@ module Unescape : sig
 
          [k] is a {{!key}key}, one of:
          {ul
-         {- A {{!special}special key};}
          {- [`ASCII c] where [c] is a [char] in the
-            {{: https://tools.ietf.org/html/rfc20}ASCII} range; or}
-         {- [`Uchar u] where [u] is any other {{!Uchar.t}unicode character}.}}
+            {{: https://tools.ietf.org/html/rfc20}ASCII} range;}
+         {- [`Uchar u] where [u] is any other {{!Uchar.t}unicode character}; or}
+         {- a {{!special}special key}.}}
 
          [`ASCII] and [`Uchar] together represent the textual part of the input.
          These characters are guaranteed not to be {{!ctrls}control
-         characters}, and are safe to use when constructing images. The purpose
-         of separating ASCII from the rest of Unicode is convenience of
-         pattern-matching.
+         characters}, and are safe to use when constructing images. ASCII is
+         separated from the rest of Unicode for convenient pattern-matching.
 
-         [mods] are the extra {{!mods}modifier keys}.}
+         [mods] are the extra {{!mods}modifier keys}.
+
+         }
       {- [`Mouse (event, (x, y), mods)] is mouse input.
 
          [event] is the actual mouse event: {{!button}[button]} press, release,
@@ -507,7 +511,15 @@ module Unescape : sig
 
          {b Note} Every [`Press (`Left|`Middle|`Right)] generates a corresponding
          [`Release], but there is no portable way to detect which button was
-         released. [`Scroll (`Up|`Down)] presses are not followed by releases. }}
+         released. [`Scroll (`Up|`Down)] presses are not followed by releases.
+
+         }
+      {- [`Paste (`Start|`End)] are {e bracketed paste} events, signalling the
+         beginning and end of a sequence of events pasted into the terminal.
+
+         {b Note} This mechanism is useful, but not reliable. The pasted text
+         could contain spurious start-of-paste or end-of-paste markers, or they
+         could be entered by hand. }}
 
       Terminal input protocols are historical cruft, and heavily overload the
       ASCII range. For instance:
@@ -608,7 +620,7 @@ module Tmachine : sig
 
   type t
 
-  val create  : mouse:bool -> Cap.t -> t
+  val create  : mouse:bool -> bpaste:bool -> Cap.t -> t
   val release : t -> bool
   val output  : t -> [ `Output of string | `Await ]
 

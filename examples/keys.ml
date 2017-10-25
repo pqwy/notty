@@ -67,5 +67,7 @@ let () =
             I.strf ~attr "%a %a" pp_special k pp_mods mods
         | `Mouse (e, (x, y), mods) ->
             I.strf ~attr "MOUSE %a (%d, %d) %a" pp_mouse e x y pp_mods mods
+        | `Paste e ->
+            I.strf ~attr "PASTE %s" (if e = `Start then "START" else "END")
         ) xs |> I.vcat in
       I.(vsnap ~align:`Top (h - 3) ks <-> void 0 1 <-> msg |> pad ~l:1 ~t:1))

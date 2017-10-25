@@ -570,6 +570,7 @@ module Cap = struct
   ; cr      : op
   ; altscr  : bool -> op
   ; mouse   : bool -> op
+  ; bpaste  : bool -> op
   }
 
   let ((<|), (<.), (<!)) = Buffer.(add_string, add_char, add_decimal)
@@ -588,6 +589,7 @@ module Cap = struct
     ; cursvis = (fun x b -> b <| if x then "\x1b[34h\x1b[?25h" else "\x1b[?25l")
     ; mouse   = (fun x b -> b <| if x then "\x1b[?1000;1002;1005;1015;1006h"
                                       else "\x1b[?1000;1002;1005;1015;1006l")
+    ; bpaste  = (fun x b -> b <| if x then "\x1b[?2004h" else "\x1b[?2004l")
     ; sgr     =
       fun attr buf ->
         buf <| "\x1b[0";
@@ -629,6 +631,7 @@ module Cap = struct
     ; cursvis = no1
     ; sgr     = no1
     ; mouse   = no1
+    ; bpaste  = no1
     }
 
   let erase cap = cap.sgr A.empty & cap.clreol
@@ -690,7 +693,9 @@ module Unescape = struct
 
   type mouse = [ `Press of button | `Drag | `Release ] * (int * int) * mods
 
-  type event = [ `Key of key | `Mouse of mouse ]
+  type paste = [ `Start | `End ]
+
+  type event = [ `Key of key | `Mouse of mouse | `Paste of paste ]
 
   type esc =
     C0    of char
@@ -853,6 +858,9 @@ module Unescape = struct
           | _                     -> None
         ) >>| fun e -> `Mouse (e, (x - 1, y - 1), mods)
 
+    | CSI ("",[200],'~') -> Some (`Paste `Start)
+    | CSI ("",[201],'~') -> Some (`Paste `End)
+
     | CSI _ | SS2 _ -> None
 
   let rec events = function
@@ -910,22 +918,21 @@ module Tmachine = struct
     | Some (w, h) -> cap.cursvis true & cursat0 cap w h
     )
 
-  let create ~mouse cap = {
+  let create ~mouse ~bpaste cap = {
       cap
     ; curs  = None
     ; dim   = (0, 0)
     ; image = I.empty
     ; dead  = false
-    ; frags =
-      Queue.singleton Cap.(
-        get (cap.altscr true & cursor cap None & cap.mouse mouse)
-      )
+    ; frags = Queue.singleton Cap.(get
+      (cap.altscr true & cursor cap None & cap.mouse mouse & cap.bpaste bpaste))
     }
 
   let release t =
     if t.dead then false else
-      ( emitv t [Cap.(
-          get (t.cap.altscr false & t.cap.cursvis true & t.cap.mouse false) )];
+      ( emitv t [Cap.(get (
+          t.cap.altscr false & t.cap.cursvis true &
+          t.cap.mouse false & t.cap.bpaste false) )];
         t.dead <- true; true )
 
   let output t = Queue.(try `Output (take t.frags) with Empty -> `Await)

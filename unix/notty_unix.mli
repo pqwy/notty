@@ -25,16 +25,18 @@ module Term : sig
   val create : ?dispose:bool ->
                ?nosig:bool ->
                ?mouse:bool ->
+               ?bpaste:bool ->
                ?input:Unix.file_descr ->
                ?output:Unix.file_descr ->
                unit -> t
   (** [create ~dispose ~nosig ~mouse ~input ~output ()] creates a fresh
       {{!t}terminal}. It has the following side effects:
       {ul
-      {- [Unix.tcsetattr] is applied to [input] to disable {e echo} and {e
-         canonical mode}.}
-      {- [output] is set to {e alternate screen mode}, the cursor is hidden, and
-         mouse reporting is enabled, using the appropriate control sequences.}
+      {- [Unix.tcsetattr] is applied to [input] to disable {e echo} and
+         {e canonical mode}.}
+      {- [output] is set to {e alternate screen mode}, and the cursor is
+         hidden. Mouse and {e bracketed paste} reporting are (optionally)
+         enabled.}
       {- [SIGWINCH] signal, normally ignored, is handled.}}
 
       [~dispose] arranges for automatic {{!release}cleanup} of the terminal
@@ -46,6 +48,8 @@ module Term : sig
       {e CTRL-\{C,Z,\,S,Q\}}. Defaults to [true].
 
       [~mouse] activates mouse reporting. Defaults to [true].
+
+      [~bpaste] activates bracketed paste reporting. Defaults to [true].
 
       [~input] is the input file descriptor. Defaults to [stdin].
 
