@@ -92,18 +92,6 @@ module Option = struct
   let (>>=) a f = match a with Some x -> f x | _ -> None
 end
 
-module Utf8 = struct
-
-  let encode f = Buffer.mkstring @@ fun buf ->
-    let enc = Uutf.encoder `UTF_8 (`Buffer buf) in
-    f enc; Uutf.encode enc `End |> ignore
-
-  let of_uchars arr = encode @@ fun enc ->
-    for i = 0 to Array.length arr - 1 do
-      Uutf.encode enc (`Uchar arr.(i)) |> ignore
-    done
-end
-
 module Text = struct
 
   let err_ctrl u =
@@ -174,7 +162,8 @@ module Text = struct
     | str when String.for_all Char.is_ascii str -> of_ascii str
     | str -> of_unicode str
 
-  let of_uchars = of_string &. Utf8.of_uchars
+  let of_uchars ucs = of_string @@ Buffer.mkstring @@ fun buf ->
+    Array.iter (Uutf.Buffer.add_utf_8 buf) ucs
 
   let replicatec w c =
     if Char.is_ctrl c then err_ctrl (Uchar.of_char c) "<NOWHERE>"
@@ -183,8 +172,8 @@ module Text = struct
   let replicateu w u =
     if Uchar.is_ascii u then replicatec w (Uchar.unsafe_to_char u)
     else if w < 1 then empty
-    else of_unicode @@ Utf8.encode @@ fun enc ->
-      for _ = 1 to w do Uutf.encode enc (`Uchar u) |> ignore done
+    else of_unicode @@ Buffer.mkstring @@ fun buf ->
+      for _ = 1 to w do Uutf.Buffer.add_utf_8 buf u done
 end
 
 module A = struct
