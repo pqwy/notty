@@ -436,11 +436,12 @@ module I = struct
         b.line  <- [void 0 1]
       and out_flush () = flush_b b in
       let fmt = make_formatter out_string out_flush in
-      pp_set_formatter_out_functions fmt {
-        out_flush; out_string; out_spaces; out_newline };
-      pp_set_formatter_tag_functions fmt {
-        print_open_tag = ignore; print_close_tag = ignore;
-        mark_open_tag; mark_close_tag };
+      let fns = pp_get_formatter_out_functions fmt () in
+      pp_set_formatter_out_functions fmt
+        { fns with out_newline; out_spaces; (* out_indent = out_spaces *) };
+      pp_set_formatter_tag_functions fmt
+        { print_open_tag = ignore; print_close_tag = ignore
+        ; mark_open_tag; mark_close_tag };
       pp_set_mark_tags fmt true;
       fmt
 
