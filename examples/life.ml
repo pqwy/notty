@@ -63,20 +63,20 @@ open Notty.Infix
 let dot = I.string A.(fg lightred) "●"
 
 let background step (n, m) =
-  let k = int_of_float @@ (sin (float (step + m + n) /. 10.)) *. 24. in
-  if k > 0 then I.char A.(fg (gray k)) '.' 1 1 else I.void 1 1
+  let k = 24. *. sin (float (step + m + n) /. 10.) |> truncate in
+  if k > 0 then I.string A.(fg (gray k)) "." else I.void 1 1
 
 let render (w, h) step life =
   I.tabulate w (h - 1) (fun x y ->
     let pt = (x, y) in if CSet.mem pt life then dot else background step pt
   ) <->
-  I.(strf ~attr:A.(fg lightblack) "[generation %04d]" step
-      |> hsnap ~align:`Right w)
+  I.(strf ~attr:A.(fg lightblack) "[generation %04d]" step |>
+      hsnap ~align:`Right w)
 
 (** ...and interact. **)
 
 open Lwt.Infix
-module Term = Notty_lwt.Term
+open Notty_lwt
 
 let timer () = Lwt_unix.sleep 0.1 >|= fun () -> `Timer
 let event term = Lwt_stream.get (Term.events term) >|= function
