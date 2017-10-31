@@ -640,7 +640,7 @@ end
 
 {[
 let wow = I.string A.(fg lightred) "Wow!" in
-I.(wow <-> (void 2 0 <|> wow)) |> Notty_unix.output_image_endline
+I.(wow <-> (void 2 0 <|> wow)) |> Notty_unix.output_image
 ]}
 
     {2:meaning The meaning of images}
@@ -706,14 +706,14 @@ I.(wow <-> (void 2 0 <|> wow)) |> Notty_unix.output_image_endline
         works for abjad scripts, and is a matter of luck for abugidas.}
     {- East Asian scripts work better when in
         {{:http://unicode.org/glossary/#normalization_form_c}NFC}.}
-    {- Emoji tend to be consistent with the actual rendering, and the actual
-        rendering tends to be wrong.}}
+    {- For proper emoji display, [Uucp] and the terminal have to agree on the
+       Unicode version.}}
 
     When in doubt, see
     {{: http://erratique.ch/software/uucp/doc/Uucp.Break.html#VALtty_width_hint}
     [Uucp.Break.tty_width_hint]}.
 
-    Unicode also has a special interaction with {{!hcrop}horizontal cropping}:
+    Unicode has special interaction with {{!I.hcrop}horizontal cropping}:
     {ul
     {- Strings within images are cropped at {{:
         http://unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries}grapheme
@@ -725,8 +725,6 @@ I.(wow <-> (void 2 0 <|> wow)) |> Notty_unix.output_image_endline
         more than one cell.}}
 
     {1:examples Examples}
-
-    There are further examples in the [/examples] directory in the source tree.
 
     We assume a toplevel with [Notty] support ([#require "notty.top"]).
 
@@ -757,7 +755,7 @@ and a2 = A.(fg red)
 
     The second word hanging on a line below:
 
-    {[I.(string a1 "Rad" <|> (void 0 1 <-> string a2 "stuff!"))]}
+    {[I.(string a1 "Rad" <|> (string a2 "stuff!" |> vpad 1 0))]}
 
     {2 More geometry}
 
@@ -819,7 +817,7 @@ colors |> List.mapi I.(fun i c -> rad i c |> pad ~t:i ~l:(2 * i))
 
     {[#require "notty.unix"]}
 
-    {[sierp 8 |> Notty_unix.output_image_endline]}
+    {[sierp 8 |> Notty_unix.output_image]}
 
     (Note the difference in cropping behavior.)
 

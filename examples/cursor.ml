@@ -2,7 +2,6 @@
    See LICENSE.md. *)
 
 open Notty
-open Notty_unix
 open Common
 
 let rec main t (x, y as pos) =
@@ -24,6 +23,4 @@ let rec main t (x, y as pos) =
       | `Right -> (x + 1, y) )
   | _ -> main t pos
 
-let () =
-  let t = Term.create () in
-  main t (0, 1)
+let () = main (Term.create ()) (0, 1)

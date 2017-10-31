@@ -1,9 +1,9 @@
+# Notty — Declaring terminals
+
 <a href="https://asciinema.org/a/ZIXzn2ZmIxK39qoT3eJla5OyO" alt="dumper"><img src="https://asciinema.org/a/ZIXzn2ZmIxK39qoT3eJla5OyO.png" width="400"/></a>
 <a href="https://asciinema.org/a/TsIhDJv5S00AB2biVmhHRzZ8I" alt="input"><img src="https://asciinema.org/a/TsIhDJv5S00AB2biVmhHRzZ8I.png" width="400"/></a>
 <a href="https://asciinema.org/a/z1Pc0Mppg2JFzteZzdeigLwYc" alt="microdots"><img src="https://asciinema.org/a/z1Pc0Mppg2JFzteZzdeigLwYc.png" width="400"/></a>
 <a href="https://asciinema.org/a/NgpF9Im8qfUICC39GDDAe9Ede" alt="rain"><img src="https://asciinema.org/a/R94gnHTQhCFJAsWpRfVlZWcUB.png" width="400"/></a>
-
-# Notty
 
 Notty is a declarative terminal library for OCaml structured around a notion
 of composable images. It tries to abstract away the basic terminal programming
@@ -44,7 +44,7 @@ let render (w, h) step life : image =
 ```
 
 [documentation]: https://pqwy.github.io/notty/doc
-[examples]: http://pqwy.github.io/notty/Notty.html#examples
+[examples]: http://pqwy.github.io/notty/doc/Notty.html#examples
 [interface]: https://github.com/pqwy/notty/blob/master/src/notty.mli
 [vty]: https://hackage.haskell.org/package/vty
 

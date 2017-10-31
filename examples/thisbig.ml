@@ -2,8 +2,6 @@
    See LICENSE.md. *)
 
 open Notty
-open Notty_unix
-
 open Common
 
 let () =

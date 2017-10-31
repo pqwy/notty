@@ -6,7 +6,6 @@
  *)
 open Notty
 open Common_lwt
-open Lwt.Infix
 
 let img s = I.(
   string A.empty (string_of_int s) <-> hpad 2 0 (Images.sierp A.magenta s)

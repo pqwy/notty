@@ -476,8 +476,6 @@ module Operation = struct
     | Text of A.t * Text.t
     | Skip of int
 
-  type ops = t list list
-
   let (@:) op ops = match (op, ops) with
     | (Skip 0, _) -> ops
     | (Skip _, []) -> []
