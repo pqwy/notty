@@ -1,0 +1,52 @@
+<html><head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Notty" rel="Chapter" href="Notty.html">
+<link title="Notty_unix" rel="Chapter" href="Notty_unix.html">
+<link title="Notty_lwt" rel="Chapter" href="Notty_lwt.html"><title>Notty_lwt</title>
+</head>
+<body>
+<code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">module</span>&nbsp;<span class="constructor">Term</span>&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">sig</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;create&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;?dispose:bool&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;?nosig:bool&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;?mouse:bool&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;?bpaste:bool&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;?input:<span class="constructor">Lwt_unix</span>.file_descr&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;?output:<span class="constructor">Lwt_unix</span>.file_descr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Notty_lwt</span>.<span class="constructor">Term</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;release&nbsp;:&nbsp;<span class="constructor">Notty_lwt</span>.<span class="constructor">Term</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;image&nbsp;:&nbsp;<span class="constructor">Notty_lwt</span>.<span class="constructor">Term</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Notty</span>.image&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;refresh&nbsp;:&nbsp;<span class="constructor">Notty_lwt</span>.<span class="constructor">Term</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;cursor&nbsp;:&nbsp;<span class="constructor">Notty_lwt</span>.<span class="constructor">Term</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(int&nbsp;*&nbsp;int)&nbsp;option&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;events&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Notty_lwt</span>.<span class="constructor">Term</span>.t&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[&nbsp;<span class="keywordsign">`</span><span class="constructor">Key</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Notty</span>.<span class="constructor">Unescape</span>.key<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="keywordsign">`</span><span class="constructor">Mouse</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Notty</span>.<span class="constructor">Unescape</span>.mouse<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="keywordsign">`</span><span class="constructor">Paste</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Notty</span>.<span class="constructor">Unescape</span>.paste<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="keywordsign">`</span><span class="constructor">Resize</span>&nbsp;<span class="keyword">of</span>&nbsp;int&nbsp;*&nbsp;int&nbsp;]&nbsp;<span class="constructor">Lwt_stream</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;size&nbsp;:&nbsp;<span class="constructor">Notty_lwt</span>.<span class="constructor">Term</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;*&nbsp;int<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fds&nbsp;:&nbsp;<span class="constructor">Notty_lwt</span>.<span class="constructor">Term</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Lwt_unix</span>.file_descr&nbsp;*&nbsp;<span class="constructor">Lwt_unix</span>.file_descr<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;winch&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">end</span><br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;winsize&nbsp;:&nbsp;<span class="constructor">Lwt_unix</span>.file_descr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(int&nbsp;*&nbsp;int)&nbsp;option<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eol&nbsp;:&nbsp;<span class="constructor">Notty</span>.image&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Notty</span>.image<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;output_image&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?cap:<span class="constructor">Notty</span>.<span class="constructor">Cap</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?fd:<span class="constructor">Lwt_unix</span>.file_descr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Notty</span>.image&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;output_image_size&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?cap:<span class="constructor">Notty</span>.<span class="constructor">Cap</span>.t&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;?fd:<span class="constructor">Lwt_unix</span>.file_descr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(int&nbsp;*&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Notty</span>.image)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;show_cursor&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?cap:<span class="constructor">Notty</span>.<span class="constructor">Cap</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?fd:<span class="constructor">Lwt_unix</span>.file_descr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;move_cursor&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?cap:<span class="constructor">Notty</span>.<span class="constructor">Cap</span>.t&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;?fd:<span class="constructor">Lwt_unix</span>.file_descr&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;[&nbsp;<span class="keywordsign">`</span><span class="constructor">By</span>&nbsp;<span class="keyword">of</span>&nbsp;int&nbsp;*&nbsp;int&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="keywordsign">`</span><span class="constructor">Home</span>&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="keywordsign">`</span><span class="constructor">To</span>&nbsp;<span class="keyword">of</span>&nbsp;int&nbsp;*&nbsp;int&nbsp;]&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+<span class="keyword">end</span></code></body></html>

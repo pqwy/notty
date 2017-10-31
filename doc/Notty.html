@@ -1,0 +1,520 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="next" href="Notty_unix.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Notty" rel="Chapter" href="Notty.html">
+<link title="Notty_unix" rel="Chapter" href="Notty_unix.html">
+<link title="Notty_lwt" rel="Chapter" href="Notty_lwt.html"><link title="Interface" rel="Section" href="#1_Interface">
+<link title="Low-level interface" rel="Section" href="#1_Lowlevelinterface">
+<link title="Basics" rel="Section" href="#basics">
+<link title="Limitations" rel="Section" href="#limitations">
+<link title="Examples" rel="Section" href="#examples">
+<link title="Performance model" rel="Section" href="#perf">
+<link title="The meaning of images" rel="Subsection" href="#meaning">
+<link title="Display attributes" rel="Subsection" href="#attributes">
+<link title="Control characters" rel="Subsection" href="#ctrls">
+<link title="Unicode vs. Text geometry" rel="Subsection" href="#cwidth">
+<link title="Hello" rel="Subsection" href="#2_Hello">
+<link title="Colors" rel="Subsection" href="#2_Colors">
+<link title="Padding and spacing" rel="Subsection" href="#2_Paddingandspacing">
+<link title="More geometry" rel="Subsection" href="#2_Moregeometry">
+<link title="Pretty-printing" rel="Subsection" href="#2_Prettyprinting">
+<link title="Now with output" rel="Subsection" href="#2_Nowwithoutput">
+<link title="Simple interaction" rel="Subsection" href="#2_Simpleinteraction">
+<title>Notty</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="Notty_unix.html" title="Notty_unix">Next</a>
+</div>
+<h1>Module <a href="type_Notty.html">Notty</a></h1>
+
+<pre><span class="keyword">module</span> Notty: <code class="code"><span class="keyword">sig</span></code> <a href="Notty.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+Declaring terminals.
+<p>
+
+    Notty is a terminal library that revolves around construction and
+    composition of displayable images.
+<p>
+
+    This module provides the core <a href="Notty.I.html"><code class="code">image</code></a> abstraction, standalone
+    <a href="Notty.Render.html">rendering</a>, and escape sequence <a href="Notty.Unescape.html">parsing</a>. It does not
+    depend on any platform code, and does not interact with the environment.
+    Input and output are provided by <a href="Notty_unix.html"><code class="code"><span class="constructor">Notty_unix</span></code></a> and <a href="Notty_lwt.html"><code class="code"><span class="constructor">Notty_lwt</span></code></a>.
+<p>
+
+    Consult the <a href="Notty.html#basics">basics</a>, <a href="Notty.html#examples">examples</a> and
+    <a href="Notty.html#limitations">limitations</a>.
+<p>
+
+    <em>v0.2.0-1-g6f409ed — <a href="https://github.com/pqwy/notty ">homepage</a></em><br>
+</div>
+<hr width="100%">
+<br>
+<h1 id="1_Interface">Interface</h1><br>
+
+<pre><span id="TYPEattr"><span class="keyword">type</span> <code class="type"></code>attr</span> </pre>
+<div class="info ">
+Visual characteristics of displayed text.<br>
+</div>
+
+
+<pre><span id="TYPEimage"><span class="keyword">type</span> <code class="type"></code>image</span> </pre>
+<div class="info ">
+Rectangles of styled characters.<br>
+</div>
+
+
+<pre><span class="keyword">module</span> <a href="Notty.A.html">A</a>: <code class="code"><span class="keyword">sig</span></code> <a href="Notty.A.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info">
+<code class="code"><span class="constructor">A</span></code> is for attribute.
+</div>
+
+<pre><span class="keyword">module</span> <a href="Notty.I.html">I</a>: <code class="code"><span class="keyword">sig</span></code> <a href="Notty.I.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info">
+<code class="code"><span class="constructor">I</span></code> is for image.
+</div>
+
+<pre><span class="keyword">module</span> <a href="Notty.Infix.html">Infix</a>: <code class="code"><span class="keyword">sig</span></code> <a href="Notty.Infix.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info">
+Operators, repeated.
+</div>
+<br>
+<h1 id="1_Lowlevelinterface">Low-level interface</h1>
+<p>
+
+    You can ignore it, unless you are porting <code class="code"><span class="constructor">Notty</span></code> to a new platform not
+    supported by the existing IO backends.<br>
+
+<pre><span class="keyword">module</span> <a href="Notty.Cap.html">Cap</a>: <code class="code"><span class="keyword">sig</span></code> <a href="Notty.Cap.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info">
+Terminal capabilities.
+</div>
+
+<pre><span class="keyword">module</span> <a href="Notty.Render.html">Render</a>: <code class="code"><span class="keyword">sig</span></code> <a href="Notty.Render.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info">
+Convert images to <code class="code">string</code>.
+</div>
+
+<pre><span class="keyword">module</span> <a href="Notty.Unescape.html">Unescape</a>: <code class="code"><span class="keyword">sig</span></code> <a href="Notty.Unescape.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info">
+Parse and decode escape sequences in character streams.
+</div>
+<br>
+<h1 id="basics">Basics</h1>
+<p>
+
+    Print a red <code class="code"><span class="string">"Wow!"</span></code> above its right-shifted copy:
+<p>
+
+<pre class="codepre"><code class="code"><span class="keyword">let</span> wow = <span class="constructor">I</span>.string <span class="constructor">A</span>.(fg lightred) <span class="string">"Wow!"</span> <span class="keyword">in</span>
+<span class="constructor">I</span>.(wow &lt;-&gt; (void 2 0 &lt;|&gt; wow)) |&gt; <span class="constructor">Notty_unix</span>.output_image
+</code></pre>
+<p>
+
+    <h2 id="meaning">The meaning of images</h2>
+<p>
+
+    An <a href="Notty.html#TYPEimage"><code class="code">image</code></a> value is a rectangle of styled character cells. It has a
+    width and height, but is not anchored to an origin. A single character with
+    associated display attributes, or a short fragment of text, are simple
+    examples of images.
+<p>
+
+    Images are created by combining text fragments with <a href="Notty.html#attributes">display
+    attributes</a>, and composed by placing them <a href="Notty.I.html#VAL(<|>)">beside</a> each other,
+    <a href="Notty.I.html#VAL(<->)">above</a> each other, and <a href="Notty.I.html#VAL(</>)">over</a> each other.
+<p>
+
+    Once constructed, an image can be rendered and only at
+    that point it obtains absolute placement.
+<p>
+
+    Consult <a href="Notty.I.html"><code class="code"><span class="constructor">I</span></code></a> for more details.
+<p>
+
+    <h2 id="attributes">Display attributes</h2>
+<p>
+
+    <a href="Notty.html#TYPEattr"><code class="code">attr</code></a> values describe the styling characteristics of fragments of
+    text.
+<p>
+
+    They combine a foreground and a background <a href="Notty.A.html#TYPEcolor"><code class="code">color</code></a> with a
+    set of <a href="Notty.A.html#TYPEstyle"><code class="code">styles</code></a>. Either color can be <em>unset</em>, which corresponds to
+    the terminal's default foreground (resp. background) color.
+<p>
+
+    Attributes are used to construct primitive images.
+<p>
+
+    Consult <a href="Notty.A.html"><code class="code"><span class="constructor">A</span></code></a> for more details.
+<p>
+
+    <h2 id="ctrls">Control characters</h2>
+<p>
+
+    These are taken to be characters in the ranges <code class="code">0x00-0x1f</code> (<b>C0</b>) and
+    <code class="code">0x80-0x9f</code> (<b>C1</b>), and <code class="code">0x7f</code> (BACKSPACE). This is the
+    <a href=" http://unicode.org/reports/tr44/#General_Category_Values">Unicode
+    general category</a> <b>Cc</b>.
+<p>
+
+    As control characters directly influence the cursor positioning, they
+    cannot be used to create images.
+<p>
+
+    This, in particular, means that images cannot contain <code class="code"><span class="constructor">U</span>+000a</code> (NEWLINE).
+<p>
+
+    <h1 id="limitations">Limitations</h1>
+<p>
+
+    <code class="code"><span class="constructor">Notty</span></code> does not use Terminfo. If your terminal is particularly
+    idiosyncratic, things might fail to work. Get in touch with the author to
+    expand support.
+<p>
+
+    <code class="code"><span class="constructor">Notty</span></code> assumes that the terminal is using UTF-8 for input and output.
+    Things might break arbitrarily if this is not the case.
+<p>
+
+    For performance considerations, consult the <a href="Notty.html#perf">performance model</a>.
+<p>
+
+    <h2 id="cwidth">Unicode vs. Text geometry</h2>
+<p>
+
+    <code class="code"><span class="constructor">Notty</span></code> uses <code class="code"><span class="constructor">Uucp</span>.<span class="constructor">Break</span>.tty_width_hint</code> to guess the width of text
+    fragments when computing geometry, and it suffers from the same
+    shortcomings:
+<p>
+
+    <ul>
+<li>Geometry in general works for alphabets and east Asian scripts, mostly
+        works for abjad scripts, and is a matter of luck for abugidas.</li>
+<li>East Asian scripts work better when in
+        <a href="http://unicode.org/glossary/#normalization_form_c">NFC</a>.</li>
+<li>For proper emoji display, <code class="code"><span class="constructor">Uucp</span></code> and the terminal have to agree on the
+       Unicode version.</li>
+</ul>
+
+<p>
+
+    When in doubt, see
+    <a href=" http://erratique.ch/software/uucp/doc/Uucp.Break.html#VALtty_width_hint">
+    <code class="code"><span class="constructor">Uucp</span>.<span class="constructor">Break</span>.tty_width_hint</code></a>.
+<p>
+
+    Unicode has special interaction with <a href="Notty.I.html#VALhcrop">horizontal cropping</a>:
+    <ul>
+<li>Strings within images are cropped at <a href="
+        http://unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries">grapheme
+        cluster</a> boundaries. This means that scalar value sequences that are
+        rendered combined, or overlaid, stay unbroken.</li>
+<li>When a crop splits a wide character in two, the remaining half is
+        replaced by <code class="code"><span class="constructor">U</span>+0020</code> (SPACE). Hence, character-cell-accurate cropping is
+        possible even in the presence of characters that horizontally occupy
+        more than one cell.</li>
+</ul>
+
+<p>
+
+    <h1 id="examples">Examples</h1>
+<p>
+
+    We assume a toplevel with <code class="code"><span class="constructor">Notty</span></code> support (<code class="code"><span class="keywordsign">#</span>require&nbsp;<span class="string">"notty.top"</span></code>).
+<p>
+
+    <h2 id="2_Hello">Hello</h2>
+<p>
+
+    <code class="code"><span class="string">"Rad!"</span></code> with default foreground and background:
+<p>
+
+    <pre class="codepre"><code class="code"><span class="constructor">I</span>.string <span class="constructor">A</span>.empty <span class="string">"Rad!"</span></code></pre>
+<p>
+
+    Everything has to start somewhere.
+<p>
+
+    <h2 id="2_Colors">Colors</h2>
+<p>
+
+    <code class="code"><span class="string">"Rad!"</span></code> in rad letters:
+<p>
+
+    <pre class="codepre"><code class="code"><span class="constructor">I</span>.string <span class="constructor">A</span>.(fg lightred) <span class="string">"Rad!"</span></code></pre>
+<p>
+
+    <h2 id="2_Paddingandspacing">Padding and spacing</h2>
+<p>
+
+<pre class="codepre"><code class="code"><span class="keyword">let</span> a1 = <span class="constructor">A</span>.(fg lightwhite ++ bg red)
+<span class="keyword">and</span> a2 = <span class="constructor">A</span>.(fg red)
+</code></pre>
+<p>
+
+    <code class="code"><span class="string">"Rad"</span></code> and <code class="code"><span class="string">"&nbsp;stuff!"</span></code> in different colors:
+<p>
+
+    <pre class="codepre"><code class="code"><span class="constructor">I</span>.(string a1 <span class="string">"Rad"</span> &lt;|&gt; string a2 <span class="string">" stuff!"</span>)</code></pre>
+<p>
+
+    The second word hanging on a line below:
+<p>
+
+    <pre class="codepre"><code class="code"><span class="constructor">I</span>.(string a1 <span class="string">"Rad"</span> &lt;|&gt; (string a2 <span class="string">"stuff!"</span> |&gt; vpad 1 0))</code></pre>
+<p>
+
+    <h2 id="2_Moregeometry">More geometry</h2>
+<p>
+
+    Sierpinski triangle:
+<p>
+
+<pre class="codepre"><code class="code"><span class="keyword">let</span> square = <span class="string">"\xe2\x96\xaa"</span>
+
+<span class="keyword">let</span> <span class="keyword">rec</span> sierp n =
+  <span class="keyword">if</span> n &gt; 1 <span class="keyword">then</span>
+    <span class="keyword">let</span> ss = sierp (pred n) <span class="keyword">in</span> <span class="constructor">I</span>.(ss &lt;-&gt; (ss &lt;|&gt; ss))
+  <span class="keyword">else</span> <span class="constructor">I</span>.(string <span class="constructor">A</span>.(fg magenta) square |&gt; hpad 1 0)
+</code></pre>
+<p>
+
+    <pre class="codepre"><code class="code">sierp 8</code></pre>
+<p>
+
+    A triangle overlaid over its shifted copy:
+<p>
+
+    <pre class="codepre"><code class="code"><span class="keyword">let</span> s = sierp 6 <span class="keyword">in</span> <span class="constructor">I</span>.(s &lt;/&gt; vpad 1 0 s)</code></pre>
+<p>
+
+    Blinkenlights:
+<p>
+
+<pre class="codepre"><code class="code"><span class="keyword">let</span> rad n color =
+  <span class="keyword">let</span> a1 = <span class="constructor">A</span>.fg color <span class="keyword">in</span>
+  <span class="keyword">let</span> a2 = <span class="constructor">A</span>.(st blink ++ a1) <span class="keyword">in</span>
+  <span class="constructor">I</span>.((string a2 <span class="string">"Rad"</span> |&gt; hpad n 0) &lt;-&gt;
+     (string a1 <span class="string">"(⌐■_■)"</span> |&gt; hpad (n + 7) 0))
+
+<span class="keyword">let</span> colors = <span class="constructor">A</span>.[red; green; yellow; blue; magenta; cyan]
+</code></pre>
+<p>
+
+<pre class="codepre"><code class="code">colors |&gt; <span class="constructor">List</span>.mapi <span class="constructor">I</span>.(<span class="keyword">fun</span> i c <span class="keywordsign">-&gt;</span> rad i c |&gt; pad ~t:i ~l:(2 * i))
+       |&gt; <span class="constructor">I</span>.zcat
+</code></pre>
+<p>
+
+    <b>Note</b> Usage of <a href="Notty.A.html#VALblink"><code class="code">blink</code></a> might be regulated by law in some
+    jurisdictions.
+<p>
+
+    <h2 id="2_Prettyprinting">Pretty-printing</h2>
+<p>
+
+    Images can be pretty-printed into:
+<p>
+
+    <pre class="codepre"><code class="code"><span class="constructor">I</span>.strf <span class="string">"(%d)"</span> 42</code></pre>
+<p>
+
+    Attributes can be applied to the entire format string, or by decorating
+    <em>user-defined printers</em> that are supplied with <code class="code">%a</code> conversions:
+<p>
+
+    <pre class="codepre"><code class="code"><span class="keyword">let</span> pp = <span class="constructor">Format</span>.pp_print_int</code></pre>
+<p>
+
+    <pre class="codepre"><code class="code"><span class="constructor">I</span>.strf ~attr:<span class="constructor">A</span>.(fg lightwhite) <span class="string">"(%a)"</span> (<span class="constructor">I</span>.pp_attr <span class="constructor">A</span>.(fg green) pp) 42</code></pre>
+<p>
+
+    <h2 id="2_Nowwithoutput">Now with output</h2>
+<p>
+
+    The core module has no real IO. Examples above are simple <code class="code">image</code>-valued
+    expressions, displayed by the pretty-printer that is installed by the
+    toplevel support. Self-contained programs need a separate IO module:
+<p>
+
+    <pre class="codepre"><code class="code"><span class="keywordsign">#</span>require <span class="string">"notty.unix"</span></code></pre>
+<p>
+
+    <pre class="codepre"><code class="code">sierp 8 |&gt; <span class="constructor">Notty_unix</span>.output_image</code></pre>
+<p>
+
+    (Note the difference in cropping behavior.)
+<p>
+
+    Computations can be adapted to the current terminal size. A line can stretch
+    end-to-end:
+<p>
+
+<pre class="codepre"><code class="code"><span class="constructor">Notty_unix</span>.output_image_size @@ <span class="keyword">fun</span> (w, _) <span class="keywordsign">-&gt;</span>
+  <span class="keyword">let</span> i1 = <span class="constructor">I</span>.string <span class="constructor">A</span>.(fg green) <span class="string">"very"</span>
+  <span class="keyword">and</span> i2 = <span class="constructor">I</span>.string <span class="constructor">A</span>.(fg yellow) <span class="string">"melon"</span> <span class="keyword">in</span>
+  <span class="constructor">I</span>.(i1 &lt;|&gt; void (w - width i1 - width i2) 1 &lt;|&gt; i2)
+</code></pre>
+<p>
+
+    The largest triangle that horizontally fits into the terminal:
+<p>
+
+<pre class="codepre"><code class="code"><span class="constructor">Notty_unix</span>.output_image_size @@ <span class="keyword">fun</span> (w, _) <span class="keywordsign">-&gt;</span>
+  <span class="keyword">let</span> steps = int_of_float ((log (float w)) /. log 2.) <span class="keyword">in</span>
+  sierp steps |&gt; <span class="constructor">I</span>.vpad 0 1
+</code></pre>
+<p>
+
+    <h2 id="2_Simpleinteraction">Simple interaction</h2>
+<p>
+
+    Interactive Sierpinski:
+<p>
+
+    <pre class="codepre"><code class="code"><span class="keyword">open</span> <span class="constructor">Notty_unix</span></code></pre>
+<p>
+
+<pre class="codepre"><code class="code"><span class="keyword">let</span> img (double, n) =
+  <span class="keyword">let</span> s = sierp n <span class="keyword">in</span>
+  <span class="keyword">if</span> double <span class="keyword">then</span> <span class="constructor">I</span>.(s &lt;/&gt; vpad 1 0 s) <span class="keyword">else</span> s
+<span class="keyword">in</span>
+<span class="keyword">let</span> <span class="keyword">rec</span> update t state = <span class="constructor">Term</span>.image t (img state); loop t state
+<span class="keyword">and</span> loop t (double, n <span class="keyword">as</span> state) =
+  <span class="keyword">match</span> <span class="constructor">Term</span>.event t <span class="keyword">with</span>
+  <span class="keywordsign">|</span> <span class="keywordsign">`</span><span class="constructor">Key</span> (<span class="keywordsign">`</span><span class="constructor">Enter</span>,_)        <span class="keywordsign">-&gt;</span> ()
+  <span class="keywordsign">|</span> <span class="keywordsign">`</span><span class="constructor">Key</span> (<span class="keywordsign">`</span><span class="constructor">Arrow</span> <span class="keywordsign">`</span><span class="constructor">Left</span>,_)  <span class="keywordsign">-&gt;</span> update t (double, max 1 (n - 1))
+  <span class="keywordsign">|</span> <span class="keywordsign">`</span><span class="constructor">Key</span> (<span class="keywordsign">`</span><span class="constructor">Arrow</span> <span class="keywordsign">`</span><span class="constructor">Right</span>,_) <span class="keywordsign">-&gt;</span> update t (double, min 8 (n + 1))
+  <span class="keywordsign">|</span> <span class="keywordsign">`</span><span class="constructor">Key</span> (<span class="keywordsign">`</span><span class="constructor">ASCII</span> <span class="string">' '</span>, _)   <span class="keywordsign">-&gt;</span> update t (not double, n)
+  <span class="keywordsign">|</span> <span class="keywordsign">`</span><span class="constructor">Resize</span> _              <span class="keywordsign">-&gt;</span> update t state
+  <span class="keywordsign">|</span> _                      <span class="keywordsign">-&gt;</span> loop t state
+<span class="keyword">in</span>
+<span class="keyword">let</span> t = <span class="constructor">Term</span>.create ()
+<span class="keyword">in</span>
+update t (<span class="keyword">false</span>, 1); <span class="constructor">Term</span>.release t
+</code></pre>
+<p>
+
+    The program uses a fullscreen <a href="Notty_unix.Term.html">terminal</a> and loops reading
+    the <a href="Notty_unix.Term.html#VALevent">input</a>. LEFT and RIGHT control the iteration
+    count, and SPACE toggles double-drawing. Resizing the window causes a
+    redraw. When the loop exits on ENTER, the terminal is
+    <a href="Notty_unix.Term.html#VALrelease">cleaned up</a>.
+<p>
+
+    <h1 id="perf">Performance model</h1>
+<p>
+
+    This section is only relevant if using <code class="code"><span class="constructor">Notty</span></code> becomes your bottleneck.
+<p>
+
+    <b>TL;DR</b> Shared sub-expressions do not share work, so operators stick with
+    you.
+<p>
+
+    The main performance parameter is <em>image complexity</em>. This roughly
+    corresponds to the number of image <a href="Notty.I.html#imgcomp">composition</a> and
+    <a href="Notty.I.html#imgcrop">cropping</a> operators in the fully expanded <code class="code">image</code> term,
+    <b>ignoring all sharing</b>.
+<p>
+
+    Outline numbers:
+<p>
+
+    <ul>
+<li>Highly complex images can be rendered and pushed out to a full-screen
+       terminal more than 1000 times per second.</li>
+<li>With more realistic images, this number is closer to 30,000.</li>
+<li>Input processing is somewhere around 50MB/s.</li>
+</ul>
+
+<p>
+
+    Image complexity <code class="code">cplx</code> of an image <code class="code">i</code> is:
+    <ul>
+<li>For a <a href="Notty.I.html#imgprims">primitive</a> <code class="code">i</code>, <code class="code">cplx&nbsp;i&nbsp;=&nbsp;1</code>.</li>
+<li>For a <a href="Notty.I.html#imgcomp">composition</a> operator <code class="code">op</code>,
+       <code class="code">cplx&nbsp;(op&nbsp;i1&nbsp;i2)&nbsp;=&nbsp;1&nbsp;+&nbsp;cplx&nbsp;i1&nbsp;+&nbsp;cplx&nbsp;i2</code>.</li>
+<li>For a <a href="Notty.I.html#imgcomp">crop</a> <code class="code">cr</code>,
+       <code class="code">cplx&nbsp;(cr&nbsp;i1)&nbsp;=&nbsp;1&nbsp;+&nbsp;cplx&nbsp;i1&nbsp;-&nbsp;k</code>, where <code class="code">k</code> is the combined complexity of
+       all the <em>maximal</em> sub-terms that do not contribute to the output.</li>
+</ul>
+
+<p>
+
+    For example (assuming an image <code class="code">i</code>):
+<p>
+
+<pre class="codepre"><code class="code">  <span class="keyword">let</span> img1 = <span class="constructor">I</span>.((i &lt;|&gt; i) &lt;-&gt; (i &lt;|&gt; i))
+  <span class="keyword">let</span> img2 = <span class="constructor">I</span>.(<span class="keyword">let</span> x = i &lt;|&gt; i <span class="keyword">in</span> x &lt;-&gt; x)
+  <span class="keyword">let</span> img3 = <span class="constructor">I</span>.(((i &lt;|&gt; i) &lt;|&gt; i) &lt;|&gt; i)
+</code></pre>
+<p>
+
+    Complexity of each of these is <code class="code">4&nbsp;*&nbsp;cplx&nbsp;i&nbsp;+&nbsp;3</code>. This might be surprising
+    for <code class="code">img2</code>.
+<p>
+
+    If <code class="code">width&nbsp;i&nbsp;=&nbsp;1</code>, <code class="code">cplx&nbsp;(hcrop&nbsp;1&nbsp;0&nbsp;img1)&nbsp;=&nbsp;3&nbsp;+&nbsp;2&nbsp;*&nbsp;cplx&nbsp;i</code>, and
+    <code class="code">cplx&nbsp;(hcrop&nbsp;2&nbsp;0&nbsp;img3)&nbsp;=&nbsp;2&nbsp;+&nbsp;2&nbsp;*&nbsp;cplx&nbsp;i</code>.
+<p>
+
+    While <code class="code"><span class="constructor">Notty</span></code> strives to be accommodating to all usage scenarios, these are
+    the things to keep in mind if the rendering becomes slow:
+<p>
+
+    <OL>
+<li>Image composition is cheap.
+<p>
+
+       Combining images performs a negligible amount of computation.
+<p>
+
+       Constructing primitive images that contain scalar values outside of the
+       ASCII range does a little more work upfront and is worth holding onto.
+<p>
+
+       </li>
+<li><a href="Notty.Render.html">Rendering</a> depends on image complexity.
+<p>
+
+       As a consequence, this real-world example of wrapping renders in time
+       O(n<sup class="superscript">2</sup>) in the number of lines:
+<p>
+
+<pre class="codepre"><code class="code"><span class="keyword">let</span> wrap1 width img =
+  <span class="keyword">let</span> <span class="keyword">rec</span> go img = img ::
+    <span class="keyword">if</span> <span class="constructor">I</span>.width img &gt; width <span class="keyword">then</span> go (<span class="constructor">I</span>.hcrop width 0 img) <span class="keyword">else</span> []
+  <span class="keyword">in</span> go img |&gt; <span class="constructor">I</span>.vcat |&gt; <span class="constructor">I</span>.hsnap ~align:<span class="keywordsign">`</span><span class="constructor">Left</span> width
+</code></pre>
+<p>
+
+       Although <code class="code">crop</code> is applied only <code class="code">lines</code> times, the image complexity of
+       each line depends on the number of preceding lines.
+<p>
+
+       An O(n) version does not iterate <code class="code">crop</code>:
+<p>
+
+<pre class="codepre"><code class="code"><span class="keyword">let</span> wrap2 width img =
+  <span class="keyword">let</span> <span class="keyword">rec</span> go off = <span class="constructor">I</span>.hcrop off 0 img ::
+    <span class="keyword">if</span> <span class="constructor">I</span>.width img - off &gt; width <span class="keyword">then</span> go (off + width) <span class="keyword">else</span> []
+  <span class="keyword">in</span> go 0 |&gt; <span class="constructor">I</span>.vcat |&gt; <span class="constructor">I</span>.hsnap ~align:<span class="keywordsign">`</span><span class="constructor">Left</span> width
+</code></pre>
+       </li>
+<li>Rendering depends on the <em>output</em> dimensions, but not on the <em>image</em>
+       dimensions.
+<p>
+
+       Rendering an image to <code class="code">w&nbsp;*&nbsp;h</code> implicitly crops it to its leftmost <code class="code">w</code>
+       columns and topmost <code class="code">h</code> rows. While <code class="code">w</code> and <code class="code">h</code> will have an impact on
+       the rendering performance, the complexity of the (cropped) image tends to
+       be more important.</li>
+</OL>
+<br>
+</body></html>

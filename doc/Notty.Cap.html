@@ -1,0 +1,52 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Notty.Infix.html">
+<link rel="next" href="Notty.Render.html">
+<link rel="Up" href="Notty.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Notty" rel="Chapter" href="Notty.html">
+<link title="Notty_unix" rel="Chapter" href="Notty_unix.html">
+<link title="Notty_lwt" rel="Chapter" href="Notty_lwt.html"><title>Notty.Cap</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Notty.Infix.html" title="Notty.Infix">Previous</a>
+&nbsp;<a class="up" href="Notty.html" title="Notty">Up</a>
+&nbsp;<a class="post" href="Notty.Render.html" title="Notty.Render">Next</a>
+</div>
+<h1>Module <a href="type_Notty.Cap.html">Notty.Cap</a></h1>
+
+<pre><span class="keyword">module</span> Cap: <code class="code"><span class="keyword">sig</span></code> <a href="Notty.Cap.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+Terminal capabilities.
+<p>
+
+    This module describes how to output things so that a terminal understands
+    them.<br>
+</div>
+<hr width="100%">
+
+<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
+<div class="info ">
+A set of capabilities that distinguish terminals from one another.
+<p>
+
+      A bundle of magic strings, really.<br>
+</div>
+
+
+<pre><span id="VALansi"><span class="keyword">val</span> ansi</span> : <code class="type"><a href="Notty.Cap.html#TYPEt">t</a></code></pre><div class="info ">
+The usual ANSI terminal, with colors, text styles and cursor
+      positioning.<br>
+</div>
+
+<pre><span id="VALdumb"><span class="keyword">val</span> dumb</span> : <code class="type"><a href="Notty.Cap.html#TYPEt">t</a></code></pre><div class="info ">
+Pure text output. Text attributes are stripped and positioning is done
+      with the character <code class="code"><span class="constructor">U</span>+0020</code>, SPACE.<br>
+</div>
+</body></html>
