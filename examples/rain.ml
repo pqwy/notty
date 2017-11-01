@@ -82,8 +82,7 @@ let loop t ~frame st =
   let rec go st deadline =
     let now = Unix.gettimeofday () in
     if deadline <= now then
-      ( Term.image t (show st);
-        go (step st) (frame +. deadline) )
+      ( Term.image t (show st); go (step st) (frame +. deadline) )
     else match event ~delay:(deadline -. now) t with
       | `End | `Key (`Escape, _) | `Key (`ASCII 'C', [`Ctrl]) -> ()
       | `Resize _ | `Key (`ASCII ' ', _) -> go (gen (Term.size t)) deadline

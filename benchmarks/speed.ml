@@ -2,8 +2,6 @@
    See LICENSE.md. *)
 
 open Notty
-open Notty_unix
-
 open Common
 open Common.Images
 
@@ -91,14 +89,26 @@ let b_input () =
 let b_construct () =
   let measure = `Cputime_ns in
 
-  let s1 = String.repeat 10 "☭"
-  and s2 = String.repeat 1024 "☭" in
-  Unmark.time ~tag:"construct small string" ~measure ~n:1000
-    (fun () -> I.string A.empty s1);
-  Unmark.time ~tag:"construct big string" ~measure ~n:1000
-    (fun () -> I.string A.empty s2);
+  let strings = [
+      "s1", "a"
+    ; "s2", "abcdefghij"
+    ; "s3", String.repeat 100 "abcdefghij"
+    ; "u1", "☭"
+    ; "u2", String.repeat 10 "☭"
+    ; "u3", String.repeat 1000 "☭" ] in
 
-  ()
+  strings |> List.iter (fun (n, s) ->
+    Unmark.time ~tag:("make " ^ n) ~measure ~n:1000
+      (fun () -> I.string A.empty s));
+
+  [0x40; 0x262d] |> List.iter (fun x ->
+    let u = Uchar.of_int x in
+    for i = 0 to 2 do
+      let n = 10. ** float i |> truncate in
+      let tag = Format.sprintf "repeat U+%04X x %d" x n in
+      Unmark.time ~tag ~measure ~n:1000
+        (fun () -> I.uchar A.empty u n 1)
+    done)
 
 let () =
   List.iter (fun f -> f ()) [

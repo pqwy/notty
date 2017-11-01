@@ -1,12 +1,20 @@
 (* Copyright (c) 2016-2017 David Kaloper Meršinjak. All rights reserved.
    See LICENSE.md. *)
 
+let invalid_arg fmt = Format.kasprintf invalid_arg fmt
+
 let (&.) f g x = f (g x)
 
 let btw (x : int) a b = a <= x && x <= b
 let bit n b = b land (1 lsl n) > 0
 
-let invalid_arg fmt = Format.kasprintf invalid_arg fmt
+let max (a : int) b = if a > b then a else b
+let min (a : int) b = if a < b then a else b
+
+let is_C0 x = x < 0x20 || x = 0x7f
+and is_C1 x = 0x80 <= x && x < 0xa0
+let is_ctrl x = is_C0 x || is_C1 x
+and is_ascii x = x < 0x80
 
 let rec concatm z (@) xs =
   let rec accum (@) = function
@@ -40,38 +48,9 @@ module Buffer = struct
   let add_byte b n = add_char b (n land 0xff |> Char.unsafe_chr)
 end
 
-module Int = struct
-  type t = int
-  let is_ctrl  x = btw x 0x00 0x1f || btw x 0x7f 0x9f
-  let is_ascii x = x = x land 0x7f
-end
-let max (a : int) b = if a > b then a else b
-let min (a : int) b = if a < b then a else b
-
-module Char = struct
-  include Char
-  let (is_ctrl, is_ascii) = Int.(is_ctrl &. code, is_ascii &. code)
-end
-
-module Uchar = struct
-  include Uchar
-  let (is_ctrl, is_ascii) = Int.(is_ctrl &. to_int, is_ascii &. to_int)
-end
-
 module String = struct
   include String
-
   let sub0cp s i len = if i > 0 || len < length s then sub s i len else s
-
-  let for_all f s =
-    let rec go f s i = i < 0 || f s.[i] && go f s (i - 1) in
-    go f s (length s - 1)
-
-  let find f s =
-    let rec go f s i = function
-      | 0 -> None | _ when f s.[i] -> Some i | n -> go f s (i + 1) (n - 1)
-    in go f s 0 (length s)
-
   let of_chars_rev = function
     | []  -> ""
     | [c] -> String.make 1 c
@@ -94,9 +73,8 @@ end
 
 module Text = struct
 
-  let err_ctrl u =
-    invalid_arg "Notty: control char: U+%04X from: %S" (Uchar.to_int u)
-  let err_malformed = invalid_arg "Notty: malformed UTF-8: %s (in: %S)"
+  let err_ctrl u = invalid_arg "Notty: control char: U+%02X, %S" (Char.code u)
+  let err_malformed = invalid_arg "Notty: malformed UTF-8: %s, %S"
 
   type t =
     | Ascii of string * int * int
@@ -122,12 +100,11 @@ module Text = struct
       | `Boundary     ->
           let is = match w with 0 -> is | 1 -> i::is | _ -> i::(-1)::is in
           f (is, 0) i `Await in
-    let g acc i = function
-      | `Malformed err                -> err_malformed err str
-      | `Uchar u when Uchar.is_ctrl u -> err_ctrl u str
-      | `Uchar _ as x                 -> f acc i x in
-    f (Uutf.String.fold_utf_8 g ([0], 0) str) (String.length str) `End
-      |> fst |> List.rev |> Array.of_list (* XXX *)
+    let acc = Uutf.String.fold_utf_8 (fun acc i -> function
+      | `Malformed err -> err_malformed err str
+      | `Uchar _ as u  -> f acc i u
+      ) ([0], 0) str in
+    f acc (String.length str) `End |> fst |> List.rev |> Array.of_list (*XXX*)
 
   let dead = ' '
 
@@ -149,31 +126,38 @@ module Text = struct
       | Ascii (s, off, _) -> Ascii (s, off + x, w)
       | Utf8 (s, ix, off, _) -> Utf8 (s, ix, off + x, w)
 
-  let of_ascii str =
-    match String.find Char.is_ctrl str with
-    | Some i -> err_ctrl (Uchar.of_char str.[i]) str
-    | None   -> Ascii (str, 0, String.length str)
+  let is_ascii_or_raise_ctrl s =
+    let (@!) s i = String.unsafe_get s i |> Char.code in
+    let rec go s acc i n =
+      if n = 0 then acc else
+        let x = s @! i in
+        if is_C0 x then
+          err_ctrl s.[i] s
+        else if x = 0xc2 && n > 1 && is_C1 (s @! (i + 1)) then
+          err_ctrl s.[i + 1] s
+        else go s (acc && is_ascii x) (i + 1) (n - 1) in
+    go s true 0 (String.length s)
 
-  let of_unicode str =
-    let is = graphemes str in Utf8 (str, is, 0, Array.length is - 1)
+  let of_ascii s = Ascii (s, 0, String.length s)
+  and of_unicode s = let x = graphemes s in Utf8 (s, x, 0, Array.length x - 1)
 
   let of_string = function
     | "" -> empty
-    | str when String.for_all Char.is_ascii str -> of_ascii str
-    | str -> of_unicode str
+    | s  -> if is_ascii_or_raise_ctrl s then of_ascii s else of_unicode s
 
   let of_uchars ucs = of_string @@ Buffer.mkstring @@ fun buf ->
     Array.iter (Uutf.Buffer.add_utf_8 buf) ucs
 
-  let replicatec w c =
-    if Char.is_ctrl c then err_ctrl (Uchar.of_char c) "<NOWHERE>"
-    else if w < 1 then empty else Ascii (String.make w c, 0, w)
-
   let replicateu w u =
-    if Uchar.is_ascii u then replicatec w (Uchar.unsafe_to_char u)
+    if is_ctrl (Uchar.to_int u) then
+      err_ctrl (Uchar.unsafe_to_char u) "<repeated character>"
     else if w < 1 then empty
+    else if is_ascii (Uchar.to_int u) then
+      of_ascii (String.make w (Uchar.unsafe_to_char u))
     else of_unicode @@ Buffer.mkstring @@ fun buf ->
       for _ = 1 to w do Uutf.Buffer.add_utf_8 buf u done
+
+  let replicatec w c = replicateu w (Uchar.of_char c)
 end
 
 module A = struct
@@ -704,13 +688,13 @@ module Unescape = struct
   let rec demux =
     let chr = Char.chr in function
     | 0x1b::0x5b::0x4d::a::b::c::xs -> Esc_M (a, b, c) :: demux xs
-    | (0x1b::(0x5b::xs) | 0x9b::xs) ->
+    | 0x1b::0x5b::xs | 0x9b::xs ->
         let (r, xs) = csi xs |> Option.get (C1 '\x5b', xs) in r :: demux xs
-    | (0x1b::0x4f::x::xs | 0x8f::x::xs)
-      when Int.is_ascii x                 -> SS2 (chr x) :: demux xs
-    | 0x1b::x::xs when btw x 0x40 0x5f    -> C1 (chr x) :: demux xs
-    | x::xs when btw x 0x80 0x9f          -> C1 (chr (x - 0x40)) :: demux xs
-    | x::xs when btw x 0 0x1f || x = 0x7f -> C0 (chr x) :: demux xs
+    | 0x1b::0x4f::x::xs | 0x8f::x::xs
+        when is_ascii x                 -> SS2 (chr x) :: demux xs
+    | 0x1b::x::xs when is_C1 (x + 0x40) -> C1 (chr x) :: demux xs
+    | x::xs when is_C1 x                -> C1 (chr (x - 0x40)) :: demux xs
+    | x::xs when is_C0 x                -> C0 (chr x) :: demux xs
     | x::xs -> Uchar (Uchar.unsafe_of_int x) :: demux xs
     | [] -> []
 
@@ -762,7 +746,7 @@ module Unescape = struct
 
   let event_of_control_code =
     let open Option in function
-    | Uchar u when Uchar.is_ascii u ->
+    | Uchar u when Uchar.to_int u |> is_ascii ->
         Some (`Key (`ASCII (Uchar.unsafe_to_char u), []))
     | Uchar u -> Some (`Key (`Uchar u, []))
 
