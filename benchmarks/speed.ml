@@ -92,10 +92,12 @@ let b_construct () =
   let strings = [
       "s1", "a"
     ; "s2", "abcdefghij"
-    ; "s3", String.repeat 100 "abcdefghij"
+    ; "s3", String.repeat 10 "abcdefghij"
+    ; "s4", String.repeat 100 "abcdefghij"
     ; "u1", "☭"
     ; "u2", String.repeat 10 "☭"
-    ; "u3", String.repeat 1000 "☭" ] in
+    ; "u3", String.repeat 100 "☭"
+    ; "u4", String.repeat 1000 "☭" ] in
 
   strings |> List.iter (fun (n, s) ->
     Unmark.time ~tag:("make " ^ n) ~measure ~n:1000

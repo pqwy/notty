@@ -27,6 +27,12 @@ let rec linspcm z (@) x n f = match n with
   | 1 -> f x
   | _ -> let m = n / 2 in linspcm z (@) x m f @ linspcm z (@) (x + m) (n - m) f
 
+let memo (type a) ?(hash=Hashtbl.hash) ?(eq=(=)) ~size f =
+  let module H = Ephemeron.K1.Make
+    (struct type t = a let (hash, equal) = (hash, eq) end) in
+  let t = H.create size in fun x ->
+    try H.find t x with Not_found -> let y = f x in H.add t x y; y
+
 module List = struct
   include List
   let init n f =
@@ -140,6 +146,7 @@ module Text = struct
 
   let of_ascii s = Ascii (s, 0, String.length s)
   and of_unicode s = let x = graphemes s in Utf8 (s, x, 0, Array.length x - 1)
+  let of_unicode = memo ~eq:String.equal ~size:128 of_unicode
 
   let of_string = function
     | "" -> empty
