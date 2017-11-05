@@ -27,8 +27,8 @@ let () =
       let (a1, a2, a3) = A.(fg lightmagenta, fg lightred, fg lightblue) in
       strf "Sizing edge behavior. Dim: (%d, %d)" w h <->
       ( hdistribute ow Images.[
-          outline a1 (ichar a1 0x2022 w h)
-        ; outline a2 (ichar a2 0x2022 300 300 |> take w h)
+          outline a1 (uchar a1 (Uchar.of_int 0x2022) w h)
+        ; outline a2 (uchar a2 (Uchar.of_int 0x2022) 300 300 |> take w h)
         ; outline a3 (void w h)
         ] |> vsnap (oh - 4) )
       <->

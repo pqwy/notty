@@ -7,9 +7,9 @@
 open Notty
 open Common
 
-let lnv = 0x2502
-and lnh = 0x2500
-and crs = 0x253c
+let lnv = Uchar.of_int 0x2502
+and lnh = Uchar.of_int 0x2500
+and crs = Uchar.of_int 0x253c
 
 let clip a b x = min b (max a x)
 
@@ -24,9 +24,9 @@ let () =
     ~imgf:I.(fun (w, h) (st, (x, y), mods, scr) ->
       let cross =
         let a  = match st with `Drag -> A.(fg lightgreen) | `Down -> A.(fg green) in
-        (ichar a lnh x 1 |> vpad y 0) <|>
-        (ichar a lnv 1 y <-> ichar a crs 1 1 <-> ichar a lnv 1 (h - y)) <|>
-        (ichar a lnh (w - x - 1) 1 |> vpad y 0)
+        (uchar a lnh x 1 |> vpad y 0) <|>
+        (uchar a lnv 1 y <-> uchar a crs 1 1 <-> uchar a lnv 1 (h - y)) <|>
+        (uchar a lnh (w - x - 1) 1 |> vpad y 0)
         |> crop ~t:1 ~l:1 ~r:3
         |> hpad 1 1
         |> vsnap ~align:`Top (h - 1)

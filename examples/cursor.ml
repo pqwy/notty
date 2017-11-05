@@ -6,7 +6,7 @@ open Common
 
 let rec main t (x, y as pos) =
   let img =
-    let dot = I.(ichar A.(bg lightred ++ fg black) 0x2713 1 1 |> pad ~l:x ~t:y)
+    let dot = I.string A.(bg lightred ++ fg black) "✓" |> I.pad ~l:x ~t:y
     and txt = I.strf ~attr:A.(fg lightblack) "@(%d, %d)" x y in
     I.(txt </> dot) in
   Term.image t img;

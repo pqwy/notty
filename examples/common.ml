@@ -122,9 +122,9 @@ module Images = struct
 
   let outline attr i =
     let (w, h) = I.(width i, height i) in
-    let chr x = I.ichar attr x 1 1
-    and hbar  = I.ichar attr 0x2500 w 1
-    and vbar  = I.ichar attr 0x2502 1 h in
+    let chr x = I.uchar attr (Uchar.of_int x) 1 1
+    and hbar  = I.uchar attr (Uchar.of_int 0x2500) w 1
+    and vbar  = I.uchar attr (Uchar.of_int 0x2502) 1 h in
     let (a, b, c, d) = (chr 0x256d, chr 0x256e, chr 0x256f, chr 0x2570) in
     grid [ [a; hbar; b]; [vbar; i; vbar]; [d; hbar; c] ]
 end

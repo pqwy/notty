@@ -382,7 +382,6 @@ module I = struct
 
   let char  = chars Text.replicatec
   let uchar = chars Text.replicateu
-  let ichar = chars (fun w x -> Text.replicateu w (Uchar.of_int x))
 
   let hsnap ?(align=`Middle) w img =
     let off = width img - w in match align with

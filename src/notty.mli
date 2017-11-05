@@ -223,9 +223,6 @@ module I : sig
 
       @raise Invalid_argument if [u] is a {{!ctrls}control character}. *)
 
-  val ichar : attr -> int -> int -> int -> image
-  (** [ichar attr x w h] is [uchar attr (Uchar.of_int x) w h]. *)
-
   val void  : int -> int -> image
   (** [void w h] is a [w * h] rectangle of transparent cells.
 
