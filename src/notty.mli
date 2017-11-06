@@ -28,10 +28,7 @@ type image
 
     Construction and composition of styling characteristics of text.
 
-    Consult the {{!basics}basics} for an overview.
-
-    {b TL;DR:} [A.(fg red ++ bg black ++ st bold)].
-    *)
+    Consult the {{!basics}basics} for an overview. *)
 module A : sig
 
   (** {1 Colors} *)
@@ -161,7 +158,7 @@ module A : sig
       [a2]'s foreground (resp. background), unless {e unset}, in which case it
       is [a1]'s, and the union of both style sets.
 
-      [++] and [empty] form a monoid. [++] is left-associative. *)
+      [++] is left-associative, and forms a monoid with [empty]. *)
 
   val fg : color -> attr
   (** [fg c] is [empty] with foreground [c]. *)
@@ -177,13 +174,7 @@ end
 
     Construction and composition of images.
 
-    Consult the {{!basics}basics} for an overview.
-
-    {b TL;DR:} {[
-I.((string a1 "Left" <|> string a2 "Right") <->
-   string a3 "below" <|> char a4 '!' 1 1)
-]}
-    *)
+    Consult the {{!basics}basics} for an overview. *)
 module I : sig
 
   type t = image
@@ -194,7 +185,7 @@ module I : sig
   val equal : t -> t -> bool
   (** [equal t1 t2] is [true] iff [t1] and [t2] are constructed by the same term.
 
-      {b Note} This is a weaker form of equality. Images that are not [equal]
+      {b Note} This is a weak form of equality. Images that are not [equal]
       could still render the same. *)
 
   (** {1:imgprims Primitives} *)
@@ -231,58 +222,62 @@ module I : sig
       as a cell filled with the background color. This means that [void]
       interacts specially with {{!(</>)}overlays}.
 
-      A negative size is treated as [0]. [void 0 0] is [empty]. Void with only
-      one dimension [0] acts as a spacing element in the other dimension. *)
-
+      [void 0 0 = empty].
+      [void] with only one dimension [0] acts as a spacing element in the other
+      dimension. Negative size is treated as [0]. *)
 
   (** {1:imgcomp Image composition}
 
       Three basic composition modes allow construction of more complex images
-      from simpler ones. *)
+      from simpler ones.
+
+      Composition operators are left-associative and form a monoid with [void].
+      *)
 
   val (<|>) : image -> image -> image
-  (**  [i1 <|> i2] is an image with [i1] to the left of [i2].
+  (**  [i1 <|> i2] is the horizontal combination of [i1] and [i2].
 
-      Its [width] = [width i1 + width i2] and [height] = [max (height i1)
-      (height i2)]. Images are top-aligned. The missing region is implicitly
-      filled with {{!void}[void]}.
+      [width (i1 <|> i2) = width i1 + width i2]
+      [height (i1 <|> i2) = max (height i1) (height i2)]
+
+      Images are top-aligned. The missing region is implicitly filled with
+      {{!void}[void]}.
 
 {v
 [x] <|> [y] = [xy]
         [y]   [.y]
 v}
 
-      (Where [.] denotes {{!void}[void]}.)
-
-      [<|>] and [void] form a monoid. [<|>] is left-associative. *)
+      where [.] denotes {{!void}[void]}. *)
 
   val (<->) : image -> image -> image
-  (** [i1 <-> i2] is an image with [i1] above [i2].
+  (** [i1 <-> i2] is the vertical combination of [i1] and [i2].
 
-      Its [width] = [max (width i1) (width i2)] and [height] = [height i1 +
-      height i2]. Images are left-aligned. The missing region is implicitly
-      filled with {{!void}[void]}.
+      [width (i1 <-> i2) = max (width i1) (width i2)]
+      [height (i1 <-> i2) = height i1 + height i2]
+
+      Images are left-aligned. The missing region is implicitly filled with
+      {{!void}[void]}.
 
 {v
 [xx] <-> [y] = [xx]
                [y.]
 v}
-
-      [<->] and [void] form a monoid. [<->] is left-associative. *)
+      *)
 
   val (</>) : image -> image -> image
-  (** [i1 </> i2] is an image with [i1] overlaid over [i2].
+  (** [i1 </> i2] is [i1] overlaid over [i2].
 
-      Its [width] = [max (width i1) (width i2)] and [height] = [max (height i1)
-      (height i2)]. Images are top-left-aligned. In the region of their overlap,
-      only the {{!void}[void]} cells of [i1] show fragments of [i2].
+      [width (i1 </> i2) = max (width i1) (width i2)]
+      [height (i1 </> i2) = max (height i1) (height i2)]
+
+      Images are top-left-aligned. In the region of their overlap, only the
+      {{!void}[void]} cells of [i1] show fragments of [i2].
 
 {v
 [x.x] </> [yyyy] = [xyxy]
 v}
-
-      [</>] and [void] form a monoid. [</>] is left-associative. *)
-
+      *)
 
   (** {1:imgcrop Cropping and padding} *)
 
@@ -418,23 +413,22 @@ module Cap : sig
       with the character [U+0020], SPACE. *)
 end
 
-(** Convert images to [string].
-
-    For use when you conclude that the output facilities are inadequate and that
-    you want to take your business elsewhere. *)
+(** Dump images to string buffers. *)
 module Render : sig
 
-  val to_buffer : Buffer.t -> Cap.t -> (int * int) -> int * int -> image -> unit
+  val to_buffer : Buffer.t -> Cap.t -> int * int -> int * int -> image -> unit
   (** [to_buffer buf cap (x, y) (w, h) i] writes the string representation of
-      [i], as interpreted by [cap], to [buf]. Only the [w * h] rectangle of [i]
-      offset by [(x, y)] from top left is rendered. *)
+      [i] to [buf], as interpreted by [cap].
+
+      It renders the [w * h] rectangle of [i], offset by [(x, y)] from the top
+      left. *)
 
   val pp : Cap.t -> Format.formatter -> image -> unit
-  (** [pp cap ppf i] pretty-prints [i] to [ppf], as interpreted by
-      {{!Cap}[cap]}.
+  (** [pp cap ppf i] renders [i] to the pretty-printer [ppf].
 
-      [pp] is meant for development and debugging. It tries to be reasonable,
-      but dedicated IO modules handle the actual output better. *)
+      {b Note} [pp] is generally meant for development and debugging. It tries
+      to be reasonable, but dedicated IO modules handle the actual output
+      better. *)
 end
 
 (** Parse and decode escape sequences in character streams. *)
@@ -633,10 +627,9 @@ end
 
 (** {1:basics Basics}
 
-    Print a red ["Wow!"] above its right-shifted copy:
-
+    Print a red-on-black ["Wow!"] above its right-shifted copy:
 {[
-let wow = I.string A.(fg lightred) "Wow!" in
+let wow = I.string A.(fg red ++ bg black) "Wow!" in
 I.(wow <-> (void 2 0 <|> wow)) |> Notty_unix.output_image
 ]}
 
@@ -651,8 +644,8 @@ I.(wow <-> (void 2 0 <|> wow)) |> Notty_unix.output_image
     attributes}, and composed by placing them {{!I.(<|>)}beside} each other,
     {{!I.(<->)}above} each other, and {{!I.(</>)}over} each other.
 
-    Once constructed, an image can be {{!Render.to_string}rendered} and only at
-    that point it obtains absolute placement.
+    Once constructed, an image can be rendered, and only at that point it obtains
+    absolute placement.
 
     Consult {{!I}[I]} for more details.
 
@@ -671,8 +664,8 @@ I.(wow <-> (void 2 0 <|> wow)) |> Notty_unix.output_image
 
     {2:ctrls Control characters}
 
-    These are taken to be characters in the ranges [0x00-0x1f] ({b C0}) and
-    [0x80-0x9f] ({b C1}), and [0x7f] (BACKSPACE). This is the
+    These are taken to be characters in the ranges [0x00-0x1f] ({b C0}), [0x7f]
+    (BACKSPACE), [0x80-0x9f] ({b C1}). This is the
     {{: http://unicode.org/reports/tr44/#General_Category_Values}Unicode
     general category} {b Cc}.
 
