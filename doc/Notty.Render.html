@@ -23,26 +23,25 @@
 <h1>Module <a href="type_Notty.Render.html">Notty.Render</a></h1>
 
 <pre><span class="keyword">module</span> Render: <code class="code"><span class="keyword">sig</span></code> <a href="Notty.Render.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
-Convert images to <code class="code">string</code>.
-<p>
-
-    For use when you conclude that the output facilities are inadequate and that
-    you want to take your business elsewhere.<br>
+Dump images to string buffers.<br>
 </div>
 <hr width="100%">
 
 <pre><span id="VALto_buffer"><span class="keyword">val</span> to_buffer</span> : <code class="type">Buffer.t -> <a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -> int * int -> int * int -> <a href="Notty.html#TYPEimage">Notty.image</a> -> unit</code></pre><div class="info ">
 <code class="code">to_buffer&nbsp;buf&nbsp;cap&nbsp;(x,&nbsp;y)&nbsp;(w,&nbsp;h)&nbsp;i</code> writes the string representation of
-      <code class="code">i</code>, as interpreted by <code class="code">cap</code>, to <code class="code">buf</code>. Only the <code class="code">w&nbsp;*&nbsp;h</code> rectangle of <code class="code">i</code>
-      offset by <code class="code">(x,&nbsp;y)</code> from top left is rendered.<br>
+      <code class="code">i</code> to <code class="code">buf</code>, as interpreted by <code class="code">cap</code>.
+<p>
+
+      It renders the <code class="code">w&nbsp;*&nbsp;h</code> rectangle of <code class="code">i</code>, offset by <code class="code">(x,&nbsp;y)</code> from the top
+      left.<br>
 </div>
 
 <pre><span id="VALpp"><span class="keyword">val</span> pp</span> : <code class="type"><a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -> Format.formatter -> <a href="Notty.html#TYPEimage">Notty.image</a> -> unit</code></pre><div class="info ">
-<code class="code">pp&nbsp;cap&nbsp;ppf&nbsp;i</code> pretty-prints <code class="code">i</code> to <code class="code">ppf</code>, as interpreted by
-      <a href="Notty.Cap.html"><code class="code">cap</code></a>.
+<code class="code">pp&nbsp;cap&nbsp;ppf&nbsp;i</code> renders <code class="code">i</code> to the pretty-printer <code class="code">ppf</code>.
 <p>
 
-      <code class="code">pp</code> is meant for development and debugging. It tries to be reasonable,
-      but dedicated IO modules handle the actual output better.<br>
+      <b>Note</b> <code class="code">pp</code> is generally meant for development and debugging. It tries
+      to be reasonable, but dedicated IO modules handle the actual output
+      better.<br>
 </div>
 </body></html>

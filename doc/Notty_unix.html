@@ -32,7 +32,7 @@
     This is an IO module for <a href="Notty.html"><code class="code"><span class="constructor">Notty</span></code></a>.
 <p>
 
-    <em>v0.2.0-1-g6f409ed — <a href="https://github.com/pqwy/notty ">homepage</a></em><br>
+    <em>v0.2.1 — <a href="https://github.com/pqwy/notty ">homepage</a></em><br>
 </div>
 <hr width="100%">
 <br>
@@ -59,7 +59,7 @@ Terminal IO abstraction for fullscreen, interactive applications.
 <code class="code">eol&nbsp;image</code> is <code class="code">image</code>, producing an extra newline when printed.<br>
 </div>
 
-<pre><span id="VALoutput_image"><span class="keyword">val</span> output_image</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -> ?fd:Pervasives.out_channel -> <a href="Notty.html#TYPEimage">Notty.image</a> -> unit</code></pre><div class="info ">
+<pre><span id="VALoutput_image"><span class="keyword">val</span> output_image</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -> ?fd:out_channel -> <a href="Notty.html#TYPEimage">Notty.image</a> -> unit</code></pre><div class="info ">
 <code class="code">output_image&nbsp;?cap&nbsp;?fd&nbsp;image</code> writes <code class="code">image</code> to <code class="code">fd</code>.
 <p>
 
@@ -73,7 +73,7 @@ Terminal IO abstraction for fullscreen, interactive applications.
     <code class="code">~fd</code> defaults to <code class="code">stdout</code>.<br>
 </div>
 
-<pre><span id="VALoutput_image_size"><span class="keyword">val</span> output_image_size</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -><br>       ?fd:Pervasives.out_channel -> (int * int -> <a href="Notty.html#TYPEimage">Notty.image</a>) -> unit</code></pre><div class="info ">
+<pre><span id="VALoutput_image_size"><span class="keyword">val</span> output_image_size</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -><br>       ?fd:out_channel -> (int * int -> <a href="Notty.html#TYPEimage">Notty.image</a>) -> unit</code></pre><div class="info ">
 <code class="code">output_image_size&nbsp;?cap&nbsp;?fd&nbsp;f</code> is
     <code class="code">output_image&nbsp;?cap&nbsp;?fd&nbsp;(f&nbsp;size)</code> where <code class="code">size</code> are <code class="code">fd</code>'s current
     <a href="Notty_unix.html#VALwinsize">output dimensions</a>.
@@ -84,11 +84,11 @@ Terminal IO abstraction for fullscreen, interactive applications.
     the output has a well-defined size.<br>
 </div>
 
-<pre><span id="VALshow_cursor"><span class="keyword">val</span> show_cursor</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -> ?fd:Pervasives.out_channel -> bool -> unit</code></pre><div class="info ">
+<pre><span id="VALshow_cursor"><span class="keyword">val</span> show_cursor</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -> ?fd:out_channel -> bool -> unit</code></pre><div class="info ">
 <code class="code">show_cursor&nbsp;?cap&nbsp;?fd&nbsp;visible</code> toggles the cursor visibility on <code class="code">fd</code>.<br>
 </div>
 
-<pre><span id="VALmove_cursor"><span class="keyword">val</span> move_cursor</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -><br>       ?fd:Pervasives.out_channel -><br>       [ `By of int * int | `Home | `To of int * int ] -> unit</code></pre><div class="info ">
+<pre><span id="VALmove_cursor"><span class="keyword">val</span> move_cursor</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -><br>       ?fd:out_channel -><br>       [ `By of int * int | `Home | `To of int * int ] -> unit</code></pre><div class="info ">
 <code class="code">move_cursor&nbsp;?cap&nbsp;?fd&nbsp;motion</code> moves the cursor on <code class="code">fd</code>.
 <p>
 

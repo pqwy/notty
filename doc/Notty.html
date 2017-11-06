@@ -55,7 +55,7 @@ Declaring terminals.
     <a href="Notty.html#limitations">limitations</a>.
 <p>
 
-    <em>v0.2.0-1-g6f409ed — <a href="https://github.com/pqwy/notty ">homepage</a></em><br>
+    <em>v0.2.1 — <a href="https://github.com/pqwy/notty ">homepage</a></em><br>
 </div>
 <hr width="100%">
 <br>
@@ -96,7 +96,7 @@ Terminal capabilities.
 </div>
 
 <pre><span class="keyword">module</span> <a href="Notty.Render.html">Render</a>: <code class="code"><span class="keyword">sig</span></code> <a href="Notty.Render.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info">
-Convert images to <code class="code">string</code>.
+Dump images to string buffers.
 </div>
 
 <pre><span class="keyword">module</span> <a href="Notty.Unescape.html">Unescape</a>: <code class="code"><span class="keyword">sig</span></code> <a href="Notty.Unescape.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info">
@@ -106,10 +106,8 @@ Parse and decode escape sequences in character streams.
 <h1 id="basics">Basics</h1>
 <p>
 
-    Print a red <code class="code"><span class="string">"Wow!"</span></code> above its right-shifted copy:
-<p>
-
-<pre class="codepre"><code class="code"><span class="keyword">let</span> wow = <span class="constructor">I</span>.string <span class="constructor">A</span>.(fg lightred) <span class="string">"Wow!"</span> <span class="keyword">in</span>
+    Print a red-on-black <code class="code"><span class="string">"Wow!"</span></code> above its right-shifted copy:
+<pre class="codepre"><code class="code"><span class="keyword">let</span> wow = <span class="constructor">I</span>.string <span class="constructor">A</span>.(fg red ++ bg black) <span class="string">"Wow!"</span> <span class="keyword">in</span>
 <span class="constructor">I</span>.(wow &lt;-&gt; (void 2 0 &lt;|&gt; wow)) |&gt; <span class="constructor">Notty_unix</span>.output_image
 </code></pre>
 <p>
@@ -128,8 +126,8 @@ Parse and decode escape sequences in character streams.
     <a href="Notty.I.html#VAL(<->)">above</a> each other, and <a href="Notty.I.html#VAL(</>)">over</a> each other.
 <p>
 
-    Once constructed, an image can be rendered and only at
-    that point it obtains absolute placement.
+    Once constructed, an image can be rendered, and only at that point it obtains
+    absolute placement.
 <p>
 
     Consult <a href="Notty.I.html"><code class="code"><span class="constructor">I</span></code></a> for more details.
@@ -156,8 +154,8 @@ Parse and decode escape sequences in character streams.
     <h2 id="ctrls">Control characters</h2>
 <p>
 
-    These are taken to be characters in the ranges <code class="code">0x00-0x1f</code> (<b>C0</b>) and
-    <code class="code">0x80-0x9f</code> (<b>C1</b>), and <code class="code">0x7f</code> (BACKSPACE). This is the
+    These are taken to be characters in the ranges <code class="code">0x00-0x1f</code> (<b>C0</b>), <code class="code">0x7f</code>
+    (BACKSPACE), <code class="code">0x80-0x9f</code> (<b>C1</b>). This is the
     <a href=" http://unicode.org/reports/tr44/#General_Category_Values">Unicode
     general category</a> <b>Cc</b>.
 <p>

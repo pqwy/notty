@@ -29,21 +29,21 @@
 <td></td></tr>
 <tr><td><a href="Notty.I.html#VAL(<->)">(&lt;-&gt;)</a> [<a href="Notty.I.html">Notty.I</a>]</td>
 <td><div class="info">
-<code class="code">i1&nbsp;&lt;-&gt;&nbsp;i2</code> is an image with <code class="code">i1</code> above <code class="code">i2</code>.
+<code class="code">i1&nbsp;&lt;-&gt;&nbsp;i2</code> is the vertical combination of <code class="code">i1</code> and <code class="code">i2</code>.
 </div>
 </td></tr>
 <tr><td><a href="Notty.Infix.html#VAL(</>)">(&lt;/&gt;)</a> [<a href="Notty.Infix.html">Notty.Infix</a>]</td>
 <td></td></tr>
 <tr><td><a href="Notty.I.html#VAL(</>)">(&lt;/&gt;)</a> [<a href="Notty.I.html">Notty.I</a>]</td>
 <td><div class="info">
-<code class="code">i1&nbsp;&lt;/&gt;&nbsp;i2</code> is an image with <code class="code">i1</code> overlaid over <code class="code">i2</code>.
+<code class="code">i1&nbsp;&lt;/&gt;&nbsp;i2</code> is <code class="code">i1</code> overlaid over <code class="code">i2</code>.
 </div>
 </td></tr>
 <tr><td><a href="Notty.Infix.html#VAL(<|>)">(&lt;|&gt;)</a> [<a href="Notty.Infix.html">Notty.Infix</a>]</td>
 <td></td></tr>
 <tr><td><a href="Notty.I.html#VAL(<|>)">(&lt;|&gt;)</a> [<a href="Notty.I.html">Notty.I</a>]</td>
 <td><div class="info">
-<code class="code">i1&nbsp;&lt;|&gt;&nbsp;i2</code> is an image with <code class="code">i1</code> to the left of <code class="code">i2</code>.
+<code class="code">i1&nbsp;&lt;|&gt;&nbsp;i2</code> is the horizontal combination of <code class="code">i1</code> and <code class="code">i2</code>.
 </div>
 </td></tr>
 <tr><td align="left"><br>A</td></tr>
@@ -205,11 +205,6 @@ Wait for a new event.
 </div>
 </td></tr>
 <tr><td align="left"><br>I</td></tr>
-<tr><td><a href="Notty.I.html#VALichar">ichar</a> [<a href="Notty.I.html">Notty.I</a>]</td>
-<td><div class="info">
-<code class="code">ichar&nbsp;attr&nbsp;x&nbsp;w&nbsp;h</code> is <code class="code">uchar&nbsp;attr&nbsp;(<span class="constructor">Uchar</span>.of_int&nbsp;x)&nbsp;w&nbsp;h</code>.
-</div>
-</td></tr>
 <tr><td><a href="Notty_lwt.Term.html#VALimage">image</a> [<a href="Notty_lwt.Term.html">Notty_lwt.Term</a>]</td>
 <td></td></tr>
 <tr><td><a href="Notty_unix.Term.html#VALimage">image</a> [<a href="Notty_unix.Term.html">Notty_unix.Term</a>]</td>
@@ -301,8 +296,7 @@ Wait for a new event.
 </td></tr>
 <tr><td><a href="Notty.Render.html#VALpp">pp</a> [<a href="Notty.Render.html">Notty.Render</a>]</td>
 <td><div class="info">
-<code class="code">pp&nbsp;cap&nbsp;ppf&nbsp;i</code> pretty-prints <code class="code">i</code> to <code class="code">ppf</code>, as interpreted by
-      <a href="Notty.Cap.html"><code class="code">cap</code></a>.
+<code class="code">pp&nbsp;cap&nbsp;ppf&nbsp;i</code> renders <code class="code">i</code> to the pretty-printer <code class="code">ppf</code>.
 </div>
 </td></tr>
 <tr><td><a href="Notty.I.html#VALpp_attr">pp_attr</a> [<a href="Notty.I.html">Notty.I</a>]</td>
@@ -386,7 +380,7 @@ Dispose of this terminal.
 <tr><td><a href="Notty.Render.html#VALto_buffer">to_buffer</a> [<a href="Notty.Render.html">Notty.Render</a>]</td>
 <td><div class="info">
 <code class="code">to_buffer&nbsp;buf&nbsp;cap&nbsp;(x,&nbsp;y)&nbsp;(w,&nbsp;h)&nbsp;i</code> writes the string representation of
-      <code class="code">i</code>, as interpreted by <code class="code">cap</code>, to <code class="code">buf</code>.
+      <code class="code">i</code> to <code class="code">buf</code>, as interpreted by <code class="code">cap</code>.
 </div>
 </td></tr>
 <tr><td align="left"><br>U</td></tr>

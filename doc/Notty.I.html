@@ -34,12 +34,7 @@
     Construction and composition of images.
 <p>
 
-    Consult the <a href="Notty.html#basics">basics</a> for an overview.
-<p>
-
-    <b>TL;DR:</b> <pre class="codepre"><code class="code"><span class="constructor">I</span>.((string a1 <span class="string">"Left"</span> &lt;|&gt; string a2 <span class="string">"Right"</span>) &lt;-&gt;
-   string a3 <span class="string">"below"</span> &lt;|&gt; char a4 <span class="string">'!'</span> 1 1)
-</code></pre><br>
+    Consult the <a href="Notty.html#basics">basics</a> for an overview.<br>
 </div>
 <hr width="100%">
 
@@ -52,7 +47,7 @@
 <code class="code">equal&nbsp;t1&nbsp;t2</code> is <code class="code"><span class="keyword">true</span></code> iff <code class="code">t1</code> and <code class="code">t2</code> are constructed by the same term.
 <p>
 
-      <b>Note</b> This is a weaker form of equality. Images that are not <code class="code">equal</code>
+      <b>Note</b> This is a weak form of equality. Images that are not <code class="code">equal</code>
       could still render the same.<br>
 </div>
 <br>
@@ -83,10 +78,6 @@
 <b>Raises</b> <code>Invalid_argument</code> if <code class="code">u</code> is a <a href="Notty.html#ctrls">control character</a>.<br>
 </div>
 
-<pre><span id="VALichar"><span class="keyword">val</span> ichar</span> : <code class="type"><a href="Notty.html#TYPEattr">Notty.attr</a> -> int -> int -> int -> <a href="Notty.html#TYPEimage">Notty.image</a></code></pre><div class="info ">
-<code class="code">ichar&nbsp;attr&nbsp;x&nbsp;w&nbsp;h</code> is <code class="code">uchar&nbsp;attr&nbsp;(<span class="constructor">Uchar</span>.of_int&nbsp;x)&nbsp;w&nbsp;h</code>.<br>
-</div>
-
 <pre><span id="VALvoid"><span class="keyword">val</span> void</span> : <code class="type">int -> int -> <a href="Notty.html#TYPEimage">Notty.image</a></code></pre><div class="info ">
 <code class="code">void&nbsp;w&nbsp;h</code> is a <code class="code">w&nbsp;*&nbsp;h</code> rectangle of transparent cells.
 <p>
@@ -97,64 +88,68 @@
       interacts specially with <a href="Notty.I.html#VAL(</>)">overlays</a>.
 <p>
 
-      A negative size is treated as <code class="code">0</code>. <code class="code">void&nbsp;0&nbsp;0</code> is <code class="code">empty</code>. Void with only
-      one dimension <code class="code">0</code> acts as a spacing element in the other dimension.<br>
+      <code class="code">void&nbsp;0&nbsp;0&nbsp;=&nbsp;empty</code>.
+      <code class="code">void</code> with only one dimension <code class="code">0</code> acts as a spacing element in the other
+      dimension. Negative size is treated as <code class="code">0</code>.<br>
 </div>
 <br>
 <h1 id="imgcomp">Image composition</h1>
 <p>
 
       Three basic composition modes allow construction of more complex images
-      from simpler ones.<br>
-
-<pre><span id="VAL(<|>)"><span class="keyword">val</span> (&lt;|&gt;)</span> : <code class="type"><a href="Notty.html#TYPEimage">Notty.image</a> -> <a href="Notty.html#TYPEimage">Notty.image</a> -> <a href="Notty.html#TYPEimage">Notty.image</a></code></pre><div class="info ">
-<code class="code">i1&nbsp;&lt;|&gt;&nbsp;i2</code> is an image with <code class="code">i1</code> to the left of <code class="code">i2</code>.
+      from simpler ones.
 <p>
 
-      Its <code class="code">width</code> = <code class="code">width&nbsp;i1&nbsp;+&nbsp;width&nbsp;i2</code> and <code class="code">height</code> = <code class="code">max&nbsp;(height&nbsp;i1)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(height&nbsp;i2)</code>. Images are top-aligned. The missing region is implicitly
-      filled with <a href="Notty.I.html#VALvoid"><code class="code">void</code></a>.
+      Composition operators are left-associative and form a monoid with <code class="code">void</code>.<br>
+
+<pre><span id="VAL(<|>)"><span class="keyword">val</span> (&lt;|&gt;)</span> : <code class="type"><a href="Notty.html#TYPEimage">Notty.image</a> -> <a href="Notty.html#TYPEimage">Notty.image</a> -> <a href="Notty.html#TYPEimage">Notty.image</a></code></pre><div class="info ">
+<code class="code">i1&nbsp;&lt;|&gt;&nbsp;i2</code> is the horizontal combination of <code class="code">i1</code> and <code class="code">i2</code>.
+<p>
+
+      <code class="code">width&nbsp;(i1&nbsp;&lt;|&gt;&nbsp;i2)&nbsp;=&nbsp;width&nbsp;i1&nbsp;+&nbsp;width&nbsp;i2</code>
+      <code class="code">height&nbsp;(i1&nbsp;&lt;|&gt;&nbsp;i2)&nbsp;=&nbsp;max&nbsp;(height&nbsp;i1)&nbsp;(height&nbsp;i2)</code>
+<p>
+
+      Images are top-aligned. The missing region is implicitly filled with
+      <a href="Notty.I.html#VALvoid"><code class="code">void</code></a>.
 <p>
 
 <pre class="verbatim">[x] &lt;|&gt; [y] = [xy]
         [y]   [.y]</pre>
 <p>
 
-      (Where <code class="code">.</code> denotes <a href="Notty.I.html#VALvoid"><code class="code">void</code></a>.)
-<p>
-
-      <code class="code">&lt;|&gt;</code> and <code class="code">void</code> form a monoid. <code class="code">&lt;|&gt;</code> is left-associative.<br>
+      where <code class="code">.</code> denotes <a href="Notty.I.html#VALvoid"><code class="code">void</code></a>.<br>
 </div>
 
 <pre><span id="VAL(<->)"><span class="keyword">val</span> (&lt;-&gt;)</span> : <code class="type"><a href="Notty.html#TYPEimage">Notty.image</a> -> <a href="Notty.html#TYPEimage">Notty.image</a> -> <a href="Notty.html#TYPEimage">Notty.image</a></code></pre><div class="info ">
-<code class="code">i1&nbsp;&lt;-&gt;&nbsp;i2</code> is an image with <code class="code">i1</code> above <code class="code">i2</code>.
+<code class="code">i1&nbsp;&lt;-&gt;&nbsp;i2</code> is the vertical combination of <code class="code">i1</code> and <code class="code">i2</code>.
 <p>
 
-      Its <code class="code">width</code> = <code class="code">max&nbsp;(width&nbsp;i1)&nbsp;(width&nbsp;i2)</code> and <code class="code">height</code> = <code class="code">height&nbsp;i1&nbsp;+<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;height&nbsp;i2</code>. Images are left-aligned. The missing region is implicitly
-      filled with <a href="Notty.I.html#VALvoid"><code class="code">void</code></a>.
+      <code class="code">width&nbsp;(i1&nbsp;&lt;-&gt;&nbsp;i2)&nbsp;=&nbsp;max&nbsp;(width&nbsp;i1)&nbsp;(width&nbsp;i2)</code>
+      <code class="code">height&nbsp;(i1&nbsp;&lt;-&gt;&nbsp;i2)&nbsp;=&nbsp;height&nbsp;i1&nbsp;+&nbsp;height&nbsp;i2</code>
+<p>
+
+      Images are left-aligned. The missing region is implicitly filled with
+      <a href="Notty.I.html#VALvoid"><code class="code">void</code></a>.
 <p>
 
 <pre class="verbatim">[xx] &lt;-&gt; [y] = [xx]
-               [y.]</pre>
-<p>
-
-      <code class="code">&lt;-&gt;</code> and <code class="code">void</code> form a monoid. <code class="code">&lt;-&gt;</code> is left-associative.<br>
+               [y.]</pre><br>
 </div>
 
 <pre><span id="VAL(</>)"><span class="keyword">val</span> (&lt;/&gt;)</span> : <code class="type"><a href="Notty.html#TYPEimage">Notty.image</a> -> <a href="Notty.html#TYPEimage">Notty.image</a> -> <a href="Notty.html#TYPEimage">Notty.image</a></code></pre><div class="info ">
-<code class="code">i1&nbsp;&lt;/&gt;&nbsp;i2</code> is an image with <code class="code">i1</code> overlaid over <code class="code">i2</code>.
+<code class="code">i1&nbsp;&lt;/&gt;&nbsp;i2</code> is <code class="code">i1</code> overlaid over <code class="code">i2</code>.
 <p>
 
-      Its <code class="code">width</code> = <code class="code">max&nbsp;(width&nbsp;i1)&nbsp;(width&nbsp;i2)</code> and <code class="code">height</code> = <code class="code">max&nbsp;(height&nbsp;i1)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(height&nbsp;i2)</code>. Images are top-left-aligned. In the region of their overlap,
-      only the <a href="Notty.I.html#VALvoid"><code class="code">void</code></a> cells of <code class="code">i1</code> show fragments of <code class="code">i2</code>.
+      <code class="code">width&nbsp;(i1&nbsp;&lt;/&gt;&nbsp;i2)&nbsp;=&nbsp;max&nbsp;(width&nbsp;i1)&nbsp;(width&nbsp;i2)</code>
+      <code class="code">height&nbsp;(i1&nbsp;&lt;/&gt;&nbsp;i2)&nbsp;=&nbsp;max&nbsp;(height&nbsp;i1)&nbsp;(height&nbsp;i2)</code>
 <p>
 
-<pre class="verbatim">[x.x] &lt;/&gt; [yyyy] = [xyxy]</pre>
+      Images are top-left-aligned. In the region of their overlap, only the
+      <a href="Notty.I.html#VALvoid"><code class="code">void</code></a> cells of <code class="code">i1</code> show fragments of <code class="code">i2</code>.
 <p>
 
-      <code class="code">&lt;/&gt;</code> and <code class="code">void</code> form a monoid. <code class="code">&lt;/&gt;</code> is left-associative.<br>
+<pre class="verbatim">[x.x] &lt;/&gt; [yyyy] = [xyxy]</pre><br>
 </div>
 <br>
 <h1 id="imgcrop">Cropping and padding</h1><br>
@@ -247,7 +242,7 @@
 <br>
 <h1 id="1_Formatinteroperability"><code class="code"><span class="constructor">Format</span></code> interoperability</h1><br>
 
-<pre><span id="VALstrf"><span class="keyword">val</span> strf</span> : <code class="type">?attr:<a href="Notty.html#TYPEattr">Notty.attr</a> -><br>       ?w:int -> ('a, Format.formatter, unit, <a href="Notty.html#TYPEimage">Notty.image</a>) Pervasives.format4 -> 'a</code></pre><div class="info ">
+<pre><span id="VALstrf"><span class="keyword">val</span> strf</span> : <code class="type">?attr:<a href="Notty.html#TYPEattr">Notty.attr</a> -><br>       ?w:int -> ('a, Format.formatter, unit, <a href="Notty.html#TYPEimage">Notty.image</a>) format4 -> 'a</code></pre><div class="info ">
 <code class="code">strf&nbsp;?attr&nbsp;?w:width&nbsp;format&nbsp;...</code> pretty-prints like
       <code class="code"><span class="constructor">Format</span>.asprintf&nbsp;format&nbsp;...</code>, but returns an <code class="code">image</code>.
 <p>
@@ -262,7 +257,7 @@
       number.<br>
 </div>
 
-<pre><span id="VALkstrf"><span class="keyword">val</span> kstrf</span> : <code class="type">?attr:<a href="Notty.html#TYPEattr">Notty.attr</a> -><br>       ?w:int -><br>       (<a href="Notty.html#TYPEimage">Notty.image</a> -> 'a) -><br>       ('b, Format.formatter, unit, 'a) Pervasives.format4 -> 'b</code></pre><div class="info ">
+<pre><span id="VALkstrf"><span class="keyword">val</span> kstrf</span> : <code class="type">?attr:<a href="Notty.html#TYPEattr">Notty.attr</a> -><br>       ?w:int -><br>       (<a href="Notty.html#TYPEimage">Notty.image</a> -> 'a) -><br>       ('b, Format.formatter, unit, 'a) format4 -> 'b</code></pre><div class="info ">
 <code class="code">kstrf&nbsp;?attr&nbsp;?w&nbsp;k&nbsp;format&nbsp;...</code> is continuation-based <code class="code">strf&nbsp;?attr&nbsp;?w&nbsp;format&nbsp;...</code>.<br>
 </div>
 
