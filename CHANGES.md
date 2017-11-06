@@ -1,3 +1,9 @@
+## v0.2.1 (2017-11-06)
+
+* OCaml 4.06 compatible.
+* Cache the internal representation of Unicode strings.
+* Remove `I.ichar`. **breaking**
+
 ## v0.2.0 (2017-10-31)
 
 * All-around speed and memory improvements.

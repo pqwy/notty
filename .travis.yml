@@ -6,9 +6,12 @@ env:
   global:
     - DEPOPTS="lwt"
     - PACKAGE="notty"
+    - FORK_USER=yallop
+    - FORK_BRANCH=4.06
   matrix:
     - OCAML_VERSION=4.03
     - OCAML_VERSION=4.04
     - OCAML_VERSION=4.05
+    - OCAML_VERSION=4.06
 notifications:
   email: false
