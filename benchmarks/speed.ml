@@ -103,14 +103,20 @@ let b_construct () =
     Unmark.time ~tag:("make " ^ n) ~measure ~n:1000
       (fun () -> I.string A.empty s));
 
-  [0x40; 0x262d] |> List.iter (fun x ->
+  List.iter (fun x ->
     let u = Uchar.of_int x in
     for i = 0 to 2 do
       let n = 10. ** float i |> truncate in
       let tag = Format.sprintf "repeat U+%04X x %d" x n in
       Unmark.time ~tag ~measure ~n:1000
         (fun () -> I.uchar A.empty u n 1)
-    done)
+    done) [0x40; 0x262d];
+
+  Unmark.time ~tag:"pxmatrix" ~measure:`Cputime ~n:100
+    (fun () -> pxmatrix 200 200 @@ fun _ _ -> A.black);
+
+  ()
+
 
 let () =
   List.iter (fun f -> f ()) [

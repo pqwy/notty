@@ -129,6 +129,12 @@ module Images = struct
     grid [ [a; hbar; b]; [vbar; i; vbar]; [d; hbar; c] ]
 end
 
+let halfblock = "▄"
+
+let pxmatrix w h f = I.tabulate w h @@ fun x y ->
+  let y = y * 2 in
+  I.string A.(bg (f x y) ++ fg (f x (y + 1))) halfblock
+
 module Term = Notty_unix.Term
 
 let simpleterm ~imgf ~f ~s =

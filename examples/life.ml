@@ -32,7 +32,8 @@ let erem x y = (x mod y + y) mod y
 let square (w, h) (a, b as ab) =
   if a < 0 || a >= w || b < 0 || b >= h then (-1, -1) else ab
 let torus (w, h) (a, b) = (erem a w, erem b h)
-let moebius (w, _) (a, b as ab) = if a < 0 || a >= w then (erem a w, -b) else ab
+let moebius (w, h) (a, b as ab) =
+  if a < 0 || a >= w then (erem a w, h - b - 1) else ab
 
 let neigh topo (a, b) = [
   (a-1, b); (a+1, b); (a-1, b-1); (a-1, b+1)
@@ -91,9 +92,9 @@ let rec loop term (e, t) (dim, n, life as st) =
       Term.image term (render dim n life) >>= fun () ->
         loop term (e, timer ())
           (dim, n + 1, step (torus dim) life)
-  | `Mouse ((`Press _|`Drag), (x, y), _) ->
+  | `Mouse ((`Press `Left|`Drag), (x, y), _) ->
       loop term (event term, t)
-        (dim, n, CSet.add (torus dim (x-1, y-1)) life)
+        (dim, n, CSet.add (torus dim (x, y)) life)
   | `Resize dim ->
       let life = CSet.map (torus dim) life in
       Term.image term (render dim n life) >>= fun () ->
@@ -101,10 +102,7 @@ let rec loop term (e, t) (dim, n, life as st) =
   | _ -> loop term (event term, t) st
 
 let main () =
-  let tc = Unix.(tcgetattr stdin) in
-  Unix.(tcsetattr stdin TCSANOW { tc with c_isig = false });
-  let t    = Term.create () in
-  let size = Term.size t in
-  loop t (event t, timer ()) (size, 0, glider)
+  let t = Term.create () in
+  loop t (event t, timer ()) (Term.size t, 0, glider)
 
 let () = Lwt_main.run @@ main ()

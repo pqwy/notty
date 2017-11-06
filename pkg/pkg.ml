@@ -44,6 +44,7 @@ let () =
          bin ~cond:ex0 "examples/emoji";
          bin ~cond:ex0 "examples/inline";
          bin ~cond:ex0 "examples/rain";
+         bin ~cond:ex0 "examples/almondbread";
          bin ~cond:ex1 "examples/sierpinski_lwt";
          bin ~cond:ex1 "examples/life";
          bin ~cond:ex1 "examples/linear";

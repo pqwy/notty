@@ -20,11 +20,11 @@ let output_subst ~prev i =
   rewind (h - 1); output_image i
 
 let cmyk = function
-  | 0 -> A.rgb_888 ~r:0   ~g:255 ~b:255
-  | 1 -> A.rgb_888 ~r:255 ~g:0   ~b:255
-  | 2 -> A.rgb_888 ~r:255 ~g:255 ~b:0
-  | 3 -> A.rgb_888 ~r:0   ~g:0   ~b:0
-  | _ -> A.rgb_888 ~r:255 ~g:255 ~b:255
+  | 0 -> A.rgb ~r:0 ~g:5 ~b:5
+  | 1 -> A.rgb ~r:5 ~g:0 ~b:5
+  | 2 -> A.rgb ~r:5 ~g:5 ~b:0
+  | 3 -> A.rgb ~r:0 ~g:0 ~b:0
+  | _ -> A.rgb ~r:5 ~g:5 ~b:5
 
 let () =
 
