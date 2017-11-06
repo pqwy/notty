@@ -46,8 +46,8 @@ Terminal IO with concurrency.
 <h1 id="inline">Inline output</h1><br>
 
 <pre><span id="VALwinsize"><span class="keyword">val</span> winsize</span> : <code class="type">Lwt_unix.file_descr -> (int * int) option</code></pre>
-<pre><span id="VALeol"><span class="keyword">val</span> eol</span> : <code class="type"><a href="Notty.html#TYPEimage">Notty.image</a> -> <a href="Notty.html#TYPEimage">Notty.image</a></code></pre>
-<pre><span id="VALoutput_image"><span class="keyword">val</span> output_image</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -> ?fd:Lwt_unix.file_descr -> <a href="Notty.html#TYPEimage">Notty.image</a> -> unit Lwt.t</code></pre>
-<pre><span id="VALoutput_image_size"><span class="keyword">val</span> output_image_size</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -><br>       ?fd:Lwt_unix.file_descr -> (int * int -> <a href="Notty.html#TYPEimage">Notty.image</a>) -> unit Lwt.t</code></pre>
-<pre><span id="VALshow_cursor"><span class="keyword">val</span> show_cursor</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -> ?fd:Lwt_unix.file_descr -> bool -> unit Lwt.t</code></pre>
-<pre><span id="VALmove_cursor"><span class="keyword">val</span> move_cursor</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -><br>       ?fd:Lwt_unix.file_descr -><br>       [ `By of int * int | `Home | `To of int * int ] -> unit Lwt.t</code></pre></body></html>
+<pre><span id="VALeol"><span class="keyword">val</span> eol</span> : <code class="type"><a href="Notty.html#TYPEimage">image</a> -> <a href="Notty.html#TYPEimage">image</a></code></pre>
+<pre><span id="VALoutput_image"><span class="keyword">val</span> output_image</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Cap.t</a> -> ?fd:Lwt_unix.file_descr -> <a href="Notty.html#TYPEimage">image</a> -> unit Lwt.t</code></pre>
+<pre><span id="VALoutput_image_size"><span class="keyword">val</span> output_image_size</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Cap.t</a> -><br>       ?fd:Lwt_unix.file_descr -> (int * int -> <a href="Notty.html#TYPEimage">image</a>) -> unit Lwt.t</code></pre>
+<pre><span id="VALshow_cursor"><span class="keyword">val</span> show_cursor</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Cap.t</a> -> ?fd:Lwt_unix.file_descr -> bool -> unit Lwt.t</code></pre>
+<pre><span id="VALmove_cursor"><span class="keyword">val</span> move_cursor</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Cap.t</a> -><br>       ?fd:Lwt_unix.file_descr -><br>       [ `By of int * int | `Home | `To of int * int ] -> unit Lwt.t</code></pre></body></html>

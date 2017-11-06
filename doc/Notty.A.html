@@ -174,16 +174,16 @@ Additional text properties.<br>
 <pre><span id="VALreverse"><span class="keyword">val</span> reverse</span> : <code class="type"><a href="Notty.A.html#TYPEstyle">style</a></code></pre><br>
 <h1 id="1_Attributeconstructionandcomposition">Attribute construction and composition</h1><br>
 
-<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> = <code class="type"><a href="Notty.html#TYPEattr">Notty.attr</a></code> </pre>
+<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> = <code class="type"><a href="Notty.html#TYPEattr">attr</a></code> </pre>
 
 
 <pre><span id="VALequal"><span class="keyword">val</span> equal</span> : <code class="type"><a href="Notty.A.html#TYPEt">t</a> -> <a href="Notty.A.html#TYPEt">t</a> -> bool</code></pre>
-<pre><span id="VALempty"><span class="keyword">val</span> empty</span> : <code class="type"><a href="Notty.html#TYPEattr">Notty.attr</a></code></pre><div class="info ">
+<pre><span id="VALempty"><span class="keyword">val</span> empty</span> : <code class="type"><a href="Notty.html#TYPEattr">attr</a></code></pre><div class="info ">
 <code class="code">empty</code> is the attribute with the default foreground and background color
       and empty style set.<br>
 </div>
 
-<pre><span id="VAL(++)"><span class="keyword">val</span> (++)</span> : <code class="type"><a href="Notty.html#TYPEattr">Notty.attr</a> -> <a href="Notty.html#TYPEattr">Notty.attr</a> -> <a href="Notty.html#TYPEattr">Notty.attr</a></code></pre><div class="info ">
+<pre><span id="VAL(++)"><span class="keyword">val</span> (++)</span> : <code class="type"><a href="Notty.html#TYPEattr">attr</a> -> <a href="Notty.html#TYPEattr">attr</a> -> <a href="Notty.html#TYPEattr">attr</a></code></pre><div class="info ">
 <code class="code">a1&nbsp;++&nbsp;a2</code> is the concatenation of <code class="code">a1</code> and <code class="code">a2</code>, the attribute that has
       <code class="code">a2</code>'s foreground (resp. background), unless <em>unset</em>, in which case it
       is <code class="code">a1</code>'s, and the union of both style sets.
@@ -192,15 +192,15 @@ Additional text properties.<br>
       <code class="code">++</code> is left-associative, and forms a monoid with <code class="code">empty</code>.<br>
 </div>
 
-<pre><span id="VALfg"><span class="keyword">val</span> fg</span> : <code class="type"><a href="Notty.A.html#TYPEcolor">color</a> -> <a href="Notty.html#TYPEattr">Notty.attr</a></code></pre><div class="info ">
+<pre><span id="VALfg"><span class="keyword">val</span> fg</span> : <code class="type"><a href="Notty.A.html#TYPEcolor">color</a> -> <a href="Notty.html#TYPEattr">attr</a></code></pre><div class="info ">
 <code class="code">fg&nbsp;c</code> is <code class="code">empty</code> with foreground <code class="code">c</code>.<br>
 </div>
 
-<pre><span id="VALbg"><span class="keyword">val</span> bg</span> : <code class="type"><a href="Notty.A.html#TYPEcolor">color</a> -> <a href="Notty.html#TYPEattr">Notty.attr</a></code></pre><div class="info ">
+<pre><span id="VALbg"><span class="keyword">val</span> bg</span> : <code class="type"><a href="Notty.A.html#TYPEcolor">color</a> -> <a href="Notty.html#TYPEattr">attr</a></code></pre><div class="info ">
 <code class="code">bg&nbsp;c</code> is <code class="code">empty</code> with background <code class="code">c</code>.<br>
 </div>
 
-<pre><span id="VALst"><span class="keyword">val</span> st</span> : <code class="type"><a href="Notty.A.html#TYPEstyle">style</a> -> <a href="Notty.html#TYPEattr">Notty.attr</a></code></pre><div class="info ">
+<pre><span id="VALst"><span class="keyword">val</span> st</span> : <code class="type"><a href="Notty.A.html#TYPEstyle">style</a> -> <a href="Notty.html#TYPEattr">attr</a></code></pre><div class="info ">
 <code class="code">st&nbsp;s</code> is <code class="code">empty</code> with style <code class="code">s</code>.<br>
 </div>
 </body></html>

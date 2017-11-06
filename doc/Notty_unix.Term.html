@@ -88,7 +88,7 @@ Dispose of this terminal. Original behavior of input fd is reinstated,
 <br>
 <h1 id="cmds">Commands</h1><br>
 
-<pre><span id="VALimage"><span class="keyword">val</span> image</span> : <code class="type"><a href="Notty_unix.Term.html#TYPEt">t</a> -> <a href="Notty.html#TYPEimage">Notty.image</a> -> unit</code></pre><div class="info ">
+<pre><span id="VALimage"><span class="keyword">val</span> image</span> : <code class="type"><a href="Notty_unix.Term.html#TYPEt">t</a> -> <a href="Notty.html#TYPEimage">image</a> -> unit</code></pre><div class="info ">
 <code class="code">image&nbsp;t&nbsp;i</code> sets <code class="code">i</code> as <code class="code">t</code>'s current image and redraws the terminal.<br>
 </div>
 
@@ -109,7 +109,7 @@ Dispose of this terminal. Original behavior of input fd is reinstated,
 <br>
 <h1 id="1_Events">Events</h1><br>
 
-<pre><span id="VALevent"><span class="keyword">val</span> event</span> : <code class="type"><a href="Notty_unix.Term.html#TYPEt">t</a> -><br>       [ `End<br>       | `Key of <a href="Notty.Unescape.html#TYPEkey">Notty.Unescape.key</a><br>       | `Mouse of <a href="Notty.Unescape.html#TYPEmouse">Notty.Unescape.mouse</a><br>       | `Paste of <a href="Notty.Unescape.html#TYPEpaste">Notty.Unescape.paste</a><br>       | `Resize of int * int ]</code></pre><div class="info ">
+<pre><span id="VALevent"><span class="keyword">val</span> event</span> : <code class="type"><a href="Notty_unix.Term.html#TYPEt">t</a> -><br>       [ `End<br>       | `Key of <a href="Notty.Unescape.html#TYPEkey">Unescape.key</a><br>       | `Mouse of <a href="Notty.Unescape.html#TYPEmouse">Unescape.mouse</a><br>       | `Paste of <a href="Notty.Unescape.html#TYPEpaste">Unescape.paste</a><br>       | `Resize of int * int ]</code></pre><div class="info ">
 Wait for a new event. <code class="code">event&nbsp;t</code> can be:
       <ul>
 <li><code class="code"><span class="keywordsign">#</span><span class="constructor">Unescape</span>.event</code>, an <a href="Notty.Unescape.html#TYPEevent"><code class="code">event</code></a> from the input fd;</li>

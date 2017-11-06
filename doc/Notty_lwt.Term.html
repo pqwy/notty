@@ -51,12 +51,12 @@ Terminal IO with concurrency.
 <pre><span id="VALrelease"><span class="keyword">val</span> release</span> : <code class="type"><a href="Notty_lwt.Term.html#TYPEt">t</a> -> unit Lwt.t</code></pre><br>
 <h1 id="1_Commands">Commands</h1><br>
 
-<pre><span id="VALimage"><span class="keyword">val</span> image</span> : <code class="type"><a href="Notty_lwt.Term.html#TYPEt">t</a> -> <a href="Notty.html#TYPEimage">Notty.image</a> -> unit Lwt.t</code></pre>
+<pre><span id="VALimage"><span class="keyword">val</span> image</span> : <code class="type"><a href="Notty_lwt.Term.html#TYPEt">t</a> -> <a href="Notty.html#TYPEimage">image</a> -> unit Lwt.t</code></pre>
 <pre><span id="VALrefresh"><span class="keyword">val</span> refresh</span> : <code class="type"><a href="Notty_lwt.Term.html#TYPEt">t</a> -> unit Lwt.t</code></pre>
 <pre><span id="VALcursor"><span class="keyword">val</span> cursor</span> : <code class="type"><a href="Notty_lwt.Term.html#TYPEt">t</a> -> (int * int) option -> unit Lwt.t</code></pre><br>
 <h1 id="1_Events">Events</h1><br>
 
-<pre><span id="VALevents"><span class="keyword">val</span> events</span> : <code class="type"><a href="Notty_lwt.Term.html#TYPEt">t</a> -><br>       [ `Key of <a href="Notty.Unescape.html#TYPEkey">Notty.Unescape.key</a><br>       | `Mouse of <a href="Notty.Unescape.html#TYPEmouse">Notty.Unescape.mouse</a><br>       | `Paste of <a href="Notty.Unescape.html#TYPEpaste">Notty.Unescape.paste</a><br>       | `Resize of int * int ] Lwt_stream.t</code></pre><div class="info ">
+<pre><span id="VALevents"><span class="keyword">val</span> events</span> : <code class="type"><a href="Notty_lwt.Term.html#TYPEt">t</a> -><br>       [ `Key of <a href="Notty.Unescape.html#TYPEkey">Unescape.key</a><br>       | `Mouse of <a href="Notty.Unescape.html#TYPEmouse">Unescape.mouse</a><br>       | `Paste of <a href="Notty.Unescape.html#TYPEpaste">Unescape.paste</a><br>       | `Resize of int * int ] Lwt_stream.t</code></pre><div class="info ">
 <code class="code">events&nbsp;t</code> is the stream of incoming events.
 <p>
 
