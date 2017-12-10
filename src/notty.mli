@@ -360,7 +360,13 @@ v}
       and does not guarantee the width of the result. Consult
       {{: http://caml.inria.fr/pub/docs/manual-ocaml/libref/Format.html#VALset_margin}
       [Format.set_margin]} for details. Defaults to an unspecified, large
-      number. *)
+      number.
+
+      @raise Invalid_argument if the printing process attempts to directly
+      output {{!ctrls}control characters}, by embedding them in [format] or a
+      string printed with the [%s] conversion, for example.
+      {{: http://caml.inria.fr/pub/docs/manual-ocaml/libref/Format.html#fpp}
+      Formatted printing} is allowed. *)
 
   val kstrf : ?attr:attr -> ?w:int -> (image -> 'a) -> ('b, Format.formatter, unit, 'a) format4 -> 'b
   (** [kstrf ?attr ?w k format ...] is continuation-based [strf ?attr ?w format ...]. *)
