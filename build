@@ -1,2 +1,7 @@
 #!/bin/sh
-topkg build -- --with-unix true --with-lwt true --benchmarks true --examples true
+benchmarks=true
+if [ ! `ocamlfind ocamldep -package unmark` ] ; then
+    echo "Skipping benchmarks"
+    benchmarks=false
+fi
+topkg build -- --with-unix true --with-lwt true --benchmarks ${benchmarks} --examples true
