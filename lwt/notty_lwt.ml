@@ -65,7 +65,7 @@ module Term = struct
               | Left n  -> Unescape.input flt ibuf 0 n; next ()
               | Right _ -> Lwt.return_none
       in Lwt_stream.from next in
-    Lwt.async (fun () -> Lwt_stream.closed stream >|= fun _ -> f);
+    Lwt.async (fun () -> Lwt_stream.closed stream >|= f);
     stream
 
   type t = {
