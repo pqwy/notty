@@ -120,19 +120,15 @@ module Term : sig
       listeners without conflicting with the rest of the machinery. *)
   module Winch : sig
 
-    type remove
-    (** Removal token. *)
-
-    val add : Unix.file_descr -> ((int * int) -> unit) -> remove
+    val add : Unix.file_descr -> ((int * int) -> unit) -> [`Revert of unit -> unit]
     (** [add fd f] registers a [SIGWINCH] handler. Every time the signal is
         delivered, [f] is called with the current size of the tty backing [fd].
         If [fd] is not a tty, [f] is never called.
 
-        Handlers are called in the order of their registration. *)
+        Return value is a function that removes the handler [f].
 
-    val remove : remove -> unit
-    (** [remove r] removes the handler associated with [r]. Does nothing if the
-        handler has already been removed. *)
+        Handlers are called in an unspecified order. *)
+
   end
 end
 

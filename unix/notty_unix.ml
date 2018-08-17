@@ -6,7 +6,8 @@ open Notty
 external c_winsize : Unix.file_descr -> int = "caml_notty_winsize" [@@noalloc]
 external winch_number : unit -> int = "caml_notty_winch_number" [@@noalloc]
 
-let whenopt f = function Some x -> f x | _ -> ()
+let iter f = function Some x -> f x | _ -> ()
+let value x = function Some a -> a | _ -> x
 
 let winsize fd = match c_winsize fd with
   | 0  -> None
@@ -48,14 +49,14 @@ module Private = struct
     let scratch = lazy (Buffer.create 4096)
 
     let output ?cap ?(fd = O.def) f =
-      let cap = match cap with Some cap -> cap | _ -> cap_for_fd (O.to_fd fd) in
+      let cap = cap |> value (cap_for_fd (O.to_fd fd)) in
       let buf = Lazy.force scratch in
       Buffer.reset buf; f buf cap fd; O.write fd buf
 
     let output_image_size ?cap ?fd f =
       output ?cap ?fd @@ fun buf cap fd ->
         let size = winsize (O.to_fd fd) in
-        let i = f (match size with Some dim -> dim | _ -> (80, 24)) in
+        let i = f (value (80, 24) size) in
         let dim = match size with
           | Some (w, _) -> I.(w, height i)
           | None        -> I.(width i, height i) in
@@ -79,29 +80,14 @@ module Term = struct
 
   module Winch = struct
 
-    module M = Map.Make (struct
-      type t = int let compare (a:t) b = compare a b
-    end)
-
-    type remove = int
-
-    let id = ref 0
-
-    and hs = lazy (
-      let r = ref M.empty in
-      set_winch_handler (fun () -> !r |> M.iter (fun _ f -> f ())) |> ignore;
-      r
-    )
-
-    let mmap f = let m = Lazy.force hs in m := f !m
+    let h  = Hashtbl.create 3
+    and id = ref 0
 
     let add fd f =
-      let x = !id in
-      incr id;
-      M.add x (fun () -> winsize fd |> whenopt f) |> mmap;
-      x
-
-    let remove x = mmap (M.remove x)
+      let n = !id in
+      set_winch_handler (fun () -> Hashtbl.iter (fun _ f -> f ()) h) |> ignore;
+      Hashtbl.add h n (fun () -> winsize fd |> iter f); incr id;
+      `Revert (fun () -> Hashtbl.remove h n)
   end
 
   module Input = struct
@@ -135,7 +121,7 @@ module Term = struct
   ; buf      : Buffer.t
   ; input    : Input.t
   ; fds      : Unix.file_descr * Unix.file_descr
-  ; unwinch  : Winch.remove Lazy.t
+  ; unwinch  : (unit -> unit) Lazy.t
   ; mutable winched : bool
   }
 
@@ -152,7 +138,7 @@ module Term = struct
 
   let release t =
     if Tmachine.release t.trm then
-      ( Winch.remove Lazy.(force t.unwinch);
+      ( Lazy.force t.unwinch ();
         t.input.Input.cleanup ();
         write t )
 
@@ -165,10 +151,11 @@ module Term = struct
       ; input   = Input.create ~nosig input
       ; fds     = (input, output)
       ; winched = false
-      ; unwinch = lazy (Winch.add output @@ fun dim ->
-          Buffer.reset t.buf; t.winched <- true; set_size t dim
-      )} in
-    winsize output |> whenopt (set_size t);
+      ; unwinch = lazy (
+          let `Revert f = Winch.add output @@ fun dim ->
+            Buffer.reset t.buf; t.winched <- true; set_size t dim in f)
+    } in
+    winsize output |> iter (set_size t);
     Lazy.force t.unwinch |> ignore;
     if dispose then at_exit (fun () -> release t);
     write t;
