@@ -3,4 +3,5 @@
  (public_name notty_lwt)
  (synopsis "Notty Lwt+Unix IO")
  (wrapped false)
+ (flags -warn-error -3)
  (libraries notty.unix lwt.unix))
