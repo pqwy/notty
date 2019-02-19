@@ -22,31 +22,37 @@
 </div>
 <h1>Module <a href="type_Notty.Cap.html">Notty.Cap</a></h1>
 
-<pre><span class="keyword">module</span> Cap: <code class="code"><span class="keyword">sig</span></code> <a href="Notty.Cap.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
-Terminal capabilities.
-<p>
+<pre><span id="MODULECap"><span class="keyword">module</span> Cap</span>: <code class="code"><span class="keyword">sig</span></code> <a href="Notty.Cap.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+<div class="info-desc">
+<p>Terminal capabilities.</p>
 
-    This module describes how to output things so that a terminal understands
-    them.<br>
+<p>This module describes how to output things so that a terminal understands
+    them.</p>
+</div>
 </div>
 <hr width="100%">
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
 <div class="info ">
-A set of capabilities that distinguish terminals from one another.
-<p>
+<div class="info-desc">
+<p>A set of capabilities that distinguish terminals from one another.</p>
 
-      A bundle of magic strings, really.<br>
+<p>A bundle of magic strings, really.</p>
+</div>
 </div>
 
 
 <pre><span id="VALansi"><span class="keyword">val</span> ansi</span> : <code class="type"><a href="Notty.Cap.html#TYPEt">t</a></code></pre><div class="info ">
-The usual ANSI terminal, with colors, text styles and cursor
-      positioning.<br>
+<div class="info-desc">
+<p>The usual ANSI terminal, with colors, text styles and cursor
+      positioning.</p>
+</div>
 </div>
 
 <pre><span id="VALdumb"><span class="keyword">val</span> dumb</span> : <code class="type"><a href="Notty.Cap.html#TYPEt">t</a></code></pre><div class="info ">
-Pure text output. Text attributes are stripped and positioning is done
-      with the character <code class="code"><span class="constructor">U</span>+0020</code>, SPACE.<br>
+<div class="info-desc">
+<p>Pure text output. Text attributes are stripped and positioning is done
+      with the character <code class="code"><span class="constructor">U</span>+0020</code>, SPACE.</p>
+</div>
 </div>
 </body></html>

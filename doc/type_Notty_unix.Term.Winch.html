@@ -12,8 +12,6 @@
 </head>
 <body>
 <code class="code"><span class="keyword">sig</span><br>
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;remove<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add&nbsp;:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Unix</span>.file_descr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(int&nbsp;*&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Notty_unix</span>.<span class="constructor">Term</span>.<span class="constructor">Winch</span>.remove<br>
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;remove&nbsp;:&nbsp;<span class="constructor">Notty_unix</span>.<span class="constructor">Term</span>.<span class="constructor">Winch</span>.remove&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Unix</span>.file_descr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(int&nbsp;*&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;[&nbsp;<span class="keywordsign">`</span><span class="constructor">Revert</span>&nbsp;<span class="keyword">of</span>&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;]<br>
 <span class="keyword">end</span></code></body></html>

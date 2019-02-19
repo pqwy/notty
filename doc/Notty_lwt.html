@@ -22,32 +22,29 @@
 &nbsp;</div>
 <h1>Module <a href="type_Notty_lwt.html">Notty_lwt</a></h1>
 
-<pre><span class="keyword">module</span> Notty_lwt: <code class="code"><span class="keyword">sig</span></code> <a href="Notty_lwt.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
-<code class="code"><span class="constructor">Notty</span></code> IO <code class="code"><span class="constructor">Lwt</span></code> on <code class="code"><span class="constructor">Unix</span></code>.
-<p>
+<pre><span id="MODULENotty_lwt"><span class="keyword">module</span> Notty_lwt</span>: <code class="code"><span class="keyword">sig</span></code> <a href="Notty_lwt.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+<div class="info-desc">
+<p><code class="code"><span class="constructor">Notty</span></code> IO <code class="code"><span class="constructor">Lwt</span></code> on <code class="code"><span class="constructor">Unix</span></code>.</p>
 
-    This is an IO module for <a href="Notty.html"><code class="code"><span class="constructor">Notty</span></code></a>.
-<p>
+<p>This is an IO module for <a href="Notty.html"><code class="code"><span class="constructor">Notty</span></code></a>.</p>
 
-    It mirrors <a href="Notty_unix.html"><code class="code"><span class="constructor">Notty_unix</span></code></a> and the corresponding operations behave
-    analogously. Consult its documentation for more info.
-<p>
+<p>It mirrors <a href="Notty_unix.html"><code class="code"><span class="constructor">Notty_unix</span></code></a> and the corresponding operations behave
+    analogously. Consult its documentation for more info.</p>
 
-    <em>v0.2.1 — <a href="https://github.com/pqwy/notty ">homepage</a></em><br>
+<p><em>v0.2.2 — <a href="https://github.com/pqwy/notty ">homepage</a></em></p>
+</div>
 </div>
 <hr width="100%">
-<br>
-<h1 id="fullscreen">Fullscreen input and output</h1>.<br>
+<h2 id="fullscreen">Fullscreen input and output</h2><p>.</p>
 
-<pre><span class="keyword">module</span> <a href="Notty_lwt.Term.html">Term</a>: <code class="code"><span class="keyword">sig</span></code> <a href="Notty_lwt.Term.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info">
-Terminal IO with concurrency.
+<pre><span id="MODULETerm"><span class="keyword">module</span> <a href="Notty_lwt.Term.html">Term</a></span>: <code class="code"><span class="keyword">sig</span></code> <a href="Notty_lwt.Term.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info">
+<p>Terminal IO with concurrency.</p>
+
 </div>
-<br>
-<h1 id="inline">Inline output</h1><br>
-
+<h2 id="inline">Inline output</h2>
 <pre><span id="VALwinsize"><span class="keyword">val</span> winsize</span> : <code class="type">Lwt_unix.file_descr -> (int * int) option</code></pre>
-<pre><span id="VALeol"><span class="keyword">val</span> eol</span> : <code class="type"><a href="Notty.html#TYPEimage">image</a> -> <a href="Notty.html#TYPEimage">image</a></code></pre>
-<pre><span id="VALoutput_image"><span class="keyword">val</span> output_image</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Cap.t</a> -> ?fd:Lwt_unix.file_descr -> <a href="Notty.html#TYPEimage">image</a> -> unit Lwt.t</code></pre>
-<pre><span id="VALoutput_image_size"><span class="keyword">val</span> output_image_size</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Cap.t</a> -><br>       ?fd:Lwt_unix.file_descr -> (int * int -> <a href="Notty.html#TYPEimage">image</a>) -> unit Lwt.t</code></pre>
-<pre><span id="VALshow_cursor"><span class="keyword">val</span> show_cursor</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Cap.t</a> -> ?fd:Lwt_unix.file_descr -> bool -> unit Lwt.t</code></pre>
-<pre><span id="VALmove_cursor"><span class="keyword">val</span> move_cursor</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Cap.t</a> -><br>       ?fd:Lwt_unix.file_descr -><br>       [ `By of int * int | `Home | `To of int * int ] -> unit Lwt.t</code></pre></body></html>
+<pre><span id="VALeol"><span class="keyword">val</span> eol</span> : <code class="type"><a href="Notty.html#TYPEimage">Notty.image</a> -> <a href="Notty.html#TYPEimage">Notty.image</a></code></pre>
+<pre><span id="VALoutput_image"><span class="keyword">val</span> output_image</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -> ?fd:Lwt_unix.file_descr -> <a href="Notty.html#TYPEimage">Notty.image</a> -> unit Lwt.t</code></pre>
+<pre><span id="VALoutput_image_size"><span class="keyword">val</span> output_image_size</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -><br>       ?fd:Lwt_unix.file_descr -> (int * int -> <a href="Notty.html#TYPEimage">Notty.image</a>) -> unit Lwt.t</code></pre>
+<pre><span id="VALshow_cursor"><span class="keyword">val</span> show_cursor</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -> ?fd:Lwt_unix.file_descr -> bool -> unit Lwt.t</code></pre>
+<pre><span id="VALmove_cursor"><span class="keyword">val</span> move_cursor</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -><br>       ?fd:Lwt_unix.file_descr -><br>       [ `By of int * int | `Home | `To of int * int ] -> unit Lwt.t</code></pre></body></html>

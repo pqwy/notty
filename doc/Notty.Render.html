@@ -22,26 +22,30 @@
 </div>
 <h1>Module <a href="type_Notty.Render.html">Notty.Render</a></h1>
 
-<pre><span class="keyword">module</span> Render: <code class="code"><span class="keyword">sig</span></code> <a href="Notty.Render.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
-Dump images to string buffers.<br>
+<pre><span id="MODULERender"><span class="keyword">module</span> Render</span>: <code class="code"><span class="keyword">sig</span></code> <a href="Notty.Render.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+<div class="info-desc">
+<p>Dump images to string buffers.</p>
+</div>
 </div>
 <hr width="100%">
 
-<pre><span id="VALto_buffer"><span class="keyword">val</span> to_buffer</span> : <code class="type">Buffer.t -> <a href="Notty.Cap.html#TYPEt">Cap.t</a> -> int * int -> int * int -> <a href="Notty.html#TYPEimage">image</a> -> unit</code></pre><div class="info ">
-<code class="code">to_buffer&nbsp;buf&nbsp;cap&nbsp;(x,&nbsp;y)&nbsp;(w,&nbsp;h)&nbsp;i</code> writes the string representation of
-      <code class="code">i</code> to <code class="code">buf</code>, as interpreted by <code class="code">cap</code>.
-<p>
+<pre><span id="VALto_buffer"><span class="keyword">val</span> to_buffer</span> : <code class="type">Stdlib.Buffer.t -><br>       <a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -> int * int -> int * int -> <a href="Notty.html#TYPEimage">Notty.image</a> -> unit</code></pre><div class="info ">
+<div class="info-desc">
+<p><code class="code">to_buffer&nbsp;buf&nbsp;cap&nbsp;(x,&nbsp;y)&nbsp;(w,&nbsp;h)&nbsp;i</code> writes the string representation of
+      <code class="code">i</code> to <code class="code">buf</code>, as interpreted by <code class="code">cap</code>.</p>
 
-      It renders the <code class="code">w&nbsp;*&nbsp;h</code> rectangle of <code class="code">i</code>, offset by <code class="code">(x,&nbsp;y)</code> from the top
-      left.<br>
+<p>It renders the <code class="code">w&nbsp;*&nbsp;h</code> rectangle of <code class="code">i</code>, offset by <code class="code">(x,&nbsp;y)</code> from the top
+      left.</p>
+</div>
 </div>
 
-<pre><span id="VALpp"><span class="keyword">val</span> pp</span> : <code class="type"><a href="Notty.Cap.html#TYPEt">Cap.t</a> -> Format.formatter -> <a href="Notty.html#TYPEimage">image</a> -> unit</code></pre><div class="info ">
-<code class="code">pp&nbsp;cap&nbsp;ppf&nbsp;i</code> renders <code class="code">i</code> to the pretty-printer <code class="code">ppf</code>.
-<p>
+<pre><span id="VALpp"><span class="keyword">val</span> pp</span> : <code class="type"><a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -> Stdlib.Format.formatter -> <a href="Notty.html#TYPEimage">Notty.image</a> -> unit</code></pre><div class="info ">
+<div class="info-desc">
+<p><code class="code">pp&nbsp;cap&nbsp;ppf&nbsp;i</code> renders <code class="code">i</code> to the pretty-printer <code class="code">ppf</code>.</p>
 
-      <b>Note</b> <code class="code">pp</code> is generally meant for development and debugging. It tries
+<p><b>Note</b> <code class="code">pp</code> is generally meant for development and debugging. It tries
       to be reasonable, but dedicated IO modules handle the actual output
-      better.<br>
+      better.</p>
+</div>
 </div>
 </body></html>

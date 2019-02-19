@@ -25,97 +25,95 @@
 </div>
 <h1>Module <a href="type_Notty_unix.html">Notty_unix</a></h1>
 
-<pre><span class="keyword">module</span> Notty_unix: <code class="code"><span class="keyword">sig</span></code> <a href="Notty_unix.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
-<code class="code"><span class="constructor">Notty</span></code> IO for pure <code class="code"><span class="constructor">Unix</span></code>.
-<p>
+<pre><span id="MODULENotty_unix"><span class="keyword">module</span> Notty_unix</span>: <code class="code"><span class="keyword">sig</span></code> <a href="Notty_unix.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+<div class="info-desc">
+<p><code class="code"><span class="constructor">Notty</span></code> IO for pure <code class="code"><span class="constructor">Unix</span></code>.</p>
 
-    This is an IO module for <a href="Notty.html"><code class="code"><span class="constructor">Notty</span></code></a>.
-<p>
+<p>This is an IO module for <a href="Notty.html"><code class="code"><span class="constructor">Notty</span></code></a>.</p>
 
-    <em>v0.2.1 — <a href="https://github.com/pqwy/notty ">homepage</a></em><br>
+<p><em>v0.2.2 — <a href="https://github.com/pqwy/notty ">homepage</a></em></p>
+</div>
 </div>
 <hr width="100%">
-<br>
-<h1 id="fullscreen">Fullscreen input and output</h1>.<br>
+<h2 id="fullscreen">Fullscreen input and output</h2><p>.</p>
 
-<pre><span class="keyword">module</span> <a href="Notty_unix.Term.html">Term</a>: <code class="code"><span class="keyword">sig</span></code> <a href="Notty_unix.Term.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info">
-Terminal IO abstraction for fullscreen, interactive applications.
+<pre><span id="MODULETerm"><span class="keyword">module</span> <a href="Notty_unix.Term.html">Term</a></span>: <code class="code"><span class="keyword">sig</span></code> <a href="Notty_unix.Term.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info">
+<p>Terminal IO abstraction for fullscreen, interactive applications.</p>
+
 </div>
-<br>
-<h1 id="inline">Inline output</h1>
-<p>
-
-    These operations do not assume exclusive access to the output. This means
+<h2 id="inline">Inline output</h2>
+<p>These operations do not assume exclusive access to the output. This means
     that they can be combined with other means of producing output. At the same
     time, it means that they are affected by the current terminal state, and
-    that this state is not tracked.<br>
+    that this state is not tracked.</p>
 
 <pre><span id="VALwinsize"><span class="keyword">val</span> winsize</span> : <code class="type">Unix.file_descr -> (int * int) option</code></pre><div class="info ">
-<code class="code">winsize&nbsp;fd</code> is <code class="code"><span class="constructor">Some</span>&nbsp;(columns,&nbsp;rows)</code>, the current dimensions of <code class="code">fd</code>'s
-    backing tty, or <code class="code"><span class="constructor">None</span></code>, when <code class="code">fd</code> is not backed by a tty.<br>
+<div class="info-desc">
+<p><code class="code">winsize&nbsp;fd</code> is <code class="code"><span class="constructor">Some</span>&nbsp;(columns,&nbsp;rows)</code>, the current dimensions of <code class="code">fd</code>'s
+    backing tty, or <code class="code"><span class="constructor">None</span></code>, when <code class="code">fd</code> is not backed by a tty.</p>
+</div>
 </div>
 
-<pre><span id="VALeol"><span class="keyword">val</span> eol</span> : <code class="type"><a href="Notty.html#TYPEimage">image</a> -> <a href="Notty.html#TYPEimage">image</a></code></pre><div class="info ">
-<code class="code">eol&nbsp;image</code> is <code class="code">image</code>, producing an extra newline when printed.<br>
+<pre><span id="VALeol"><span class="keyword">val</span> eol</span> : <code class="type"><a href="Notty.html#TYPEimage">Notty.image</a> -> <a href="Notty.html#TYPEimage">Notty.image</a></code></pre><div class="info ">
+<div class="info-desc">
+<p><code class="code">eol&nbsp;image</code> is <code class="code">image</code>, producing an extra newline when printed.</p>
+</div>
 </div>
 
-<pre><span id="VALoutput_image"><span class="keyword">val</span> output_image</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Cap.t</a> -> ?fd:out_channel -> <a href="Notty.html#TYPEimage">image</a> -> unit</code></pre><div class="info ">
-<code class="code">output_image&nbsp;?cap&nbsp;?fd&nbsp;image</code> writes <code class="code">image</code> to <code class="code">fd</code>.
-<p>
+<pre><span id="VALoutput_image"><span class="keyword">val</span> output_image</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -> ?fd:Stdlib.out_channel -> <a href="Notty.html#TYPEimage">Notty.image</a> -> unit</code></pre><div class="info ">
+<div class="info-desc">
+<p><code class="code">output_image&nbsp;?cap&nbsp;?fd&nbsp;image</code> writes <code class="code">image</code> to <code class="code">fd</code>.</p>
 
-    The image is displayed in its full height. If the output is a tty, image
-    width is clipped to the output width. Otherwise, full width is used.
-<p>
+<p>The image is displayed in its full height. If the output is a tty, image
+    width is clipped to the output width. Otherwise, full width is used.</p>
 
-    <code class="code">~cap</code> is the <a href="Notty_unix.html#caps">optional</a> terminal capability set.
-<p>
+<p><code class="code">~cap</code> is the <a href="Notty_unix.html#caps">optional</a> terminal capability set.</p>
 
-    <code class="code">~fd</code> defaults to <code class="code">stdout</code>.<br>
+<p><code class="code">~fd</code> defaults to <code class="code">stdout</code>.</p>
+</div>
 </div>
 
-<pre><span id="VALoutput_image_size"><span class="keyword">val</span> output_image_size</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Cap.t</a> -><br>       ?fd:out_channel -> (int * int -> <a href="Notty.html#TYPEimage">image</a>) -> unit</code></pre><div class="info ">
-<code class="code">output_image_size&nbsp;?cap&nbsp;?fd&nbsp;f</code> is
+<pre><span id="VALoutput_image_size"><span class="keyword">val</span> output_image_size</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -><br>       ?fd:Stdlib.out_channel -> (int * int -> <a href="Notty.html#TYPEimage">Notty.image</a>) -> unit</code></pre><div class="info ">
+<div class="info-desc">
+<p><code class="code">output_image_size&nbsp;?cap&nbsp;?fd&nbsp;f</code> is
     <code class="code">output_image&nbsp;?cap&nbsp;?fd&nbsp;(f&nbsp;size)</code> where <code class="code">size</code> are <code class="code">fd</code>'s current
-    <a href="Notty_unix.html#VALwinsize">output dimensions</a>.
-<p>
+    <a href="Notty_unix.html#VALwinsize">output dimensions</a>.</p>
 
-    If <code class="code">fd</code> is not backed by a tty, as a matter of convenience, <code class="code">f</code> is applied
+<p>If <code class="code">fd</code> is not backed by a tty, as a matter of convenience, <code class="code">f</code> is applied
     to <code class="code">(80,&nbsp;24)</code>. Use <code class="code"><span class="constructor">Unix</span>.isatty</code> or <a href="Notty_unix.html#VALwinsize"><code class="code">winsize</code></a> to detect whether
-    the output has a well-defined size.<br>
+    the output has a well-defined size.</p>
+</div>
 </div>
 
-<pre><span id="VALshow_cursor"><span class="keyword">val</span> show_cursor</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Cap.t</a> -> ?fd:out_channel -> bool -> unit</code></pre><div class="info ">
-<code class="code">show_cursor&nbsp;?cap&nbsp;?fd&nbsp;visible</code> toggles the cursor visibility on <code class="code">fd</code>.<br>
+<pre><span id="VALshow_cursor"><span class="keyword">val</span> show_cursor</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -> ?fd:Stdlib.out_channel -> bool -> unit</code></pre><div class="info ">
+<div class="info-desc">
+<p><code class="code">show_cursor&nbsp;?cap&nbsp;?fd&nbsp;visible</code> toggles the cursor visibility on <code class="code">fd</code>.</p>
+</div>
 </div>
 
-<pre><span id="VALmove_cursor"><span class="keyword">val</span> move_cursor</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Cap.t</a> -><br>       ?fd:out_channel -><br>       [ `By of int * int | `Home | `To of int * int ] -> unit</code></pre><div class="info ">
-<code class="code">move_cursor&nbsp;?cap&nbsp;?fd&nbsp;motion</code> moves the cursor on <code class="code">fd</code>.
-<p>
+<pre><span id="VALmove_cursor"><span class="keyword">val</span> move_cursor</span> : <code class="type">?cap:<a href="Notty.Cap.html#TYPEt">Notty.Cap.t</a> -><br>       ?fd:Stdlib.out_channel -><br>       [ `By of int * int | `Home | `To of int * int ] -> unit</code></pre><div class="info ">
+<div class="info-desc">
+<p><code class="code">move_cursor&nbsp;?cap&nbsp;?fd&nbsp;motion</code> moves the cursor on <code class="code">fd</code>.</p>
 
-    <code class="code">motion</code> is one of:
-    <ul>
+<p><code class="code">motion</code> is one of:</p>
+<ul>
 <li><code class="code"><span class="keywordsign">`</span><span class="constructor">To</span>&nbsp;(column,&nbsp;line)</code>, positioning the cursor to <code class="code">(column,&nbsp;line)</code>. Origin
        is <code class="code">(0,&nbsp;0)</code>, the upper-left corner of the screen.</li>
 <li><code class="code"><span class="keywordsign">`</span><span class="constructor">Home</span></code>, moving the cursor the beginning of line.</li>
 <li><code class="code"><span class="keywordsign">`</span><span class="constructor">By</span>&nbsp;(columns,&nbsp;lines)</code>, moving the cursor <code class="code">columns</code> to the right (left if
        negative) and <code class="code">lines</code> down (up if negative).
-<p>
 
        <b>Note</b> Behavior is terminal dependent if the movement overshoots the
        output size.</li>
 </ul>
-<br>
 </div>
-<br>
-<h1 id="caps">Capability detection</h1>
-<p>
+</div>
+<h2 id="caps">Capability detection</h2>
+<p>All <code class="code">image</code> output requires <a href="Notty.Cap.html#TYPEt">terminal capabilities</a>.</p>
 
-    All <code class="code">image</code> output requires <a href="Notty.Cap.html#TYPEt">terminal capabilities</a>.
-<p>
-
-    When not provided, capabilities are auto-detected, by checking that the
+<p>When not provided, capabilities are auto-detected, by checking that the
     output is a tty, that the environment variable <code class="code">$<span class="constructor">TERM</span></code> is set, and that it
     is not set to either <code class="code"><span class="string">""</span></code> or <code class="code"><span class="string">"dumb"</span></code>. If these conditions hold,
     <a href="Notty.Cap.html#VALansi">ANSI</a> escapes are used. Otherwise, <a href="Notty.Cap.html#VALdumb">no</a>
-    escapes are used.<br>
+    escapes are used.</p>
 </body></html>

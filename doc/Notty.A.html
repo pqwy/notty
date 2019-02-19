@@ -26,28 +26,25 @@
 </div>
 <h1>Module <a href="type_Notty.A.html">Notty.A</a></h1>
 
-<pre><span class="keyword">module</span> A: <code class="code"><span class="keyword">sig</span></code> <a href="Notty.A.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
-<code class="code"><span class="constructor">A</span></code> is for attribute.
-<p>
+<pre><span id="MODULEA"><span class="keyword">module</span> A</span>: <code class="code"><span class="keyword">sig</span></code> <a href="Notty.A.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+<div class="info-desc">
+<p><code class="code"><span class="constructor">A</span></code> is for attribute.</p>
 
-    Construction and composition of styling characteristics of text.
-<p>
+<p>Construction and composition of styling characteristics of text.</p>
 
-    Consult the <a href="Notty.html#basics">basics</a> for an overview.<br>
+<p>Consult the <a href="Notty.html#basics">basics</a> for an overview.</p>
+</div>
 </div>
 <hr width="100%">
-<br>
-<h1 id="1_Colors">Colors</h1><br>
-
+<h2 id="1_Colors">Colors</h2>
 <pre><span id="TYPEcolor"><span class="keyword">type</span> <code class="type"></code>color</span> </pre>
 <div class="info ">
-An ineffable quality of light.
-<p>
+<div class="info-desc">
+<p>An ineffable quality of light.</p>
 
-      There are three kinds of colors:
-      <ul>
+<p>There are three kinds of colors:</p>
+<ul>
 <li><em>Core 16 colors.</em>
-<p>
 
          ANSI defines 8 color <em>names</em>, with the actual display colors
          considered an implementation detail. Historically, this palette was
@@ -55,15 +52,12 @@ An ineffable quality of light.
          counterparts. Their presentation is undefined too, but typically
          produces a brighter shade. These colors - often called the <em>ANSI
          colors</em> - tend to be unpredictable, but ubiquitously supported.
-<p>
 
          </li>
 <li><em>Extended 256-color palette.</em>
-<p>
 
          This common feature extends the palette by further 240 colors. They
          come in two groups:
-<p>
 
          <ul>
 <li>The <em>color cube</em>, a 6*6*6 approximation to the usual 24-bit RGB
@@ -71,22 +65,18 @@ An ineffable quality of light.
 <li>the <em>grayscale ramp</em>, containing (merely) 24 shades of gray.</li>
 </ul>
 
-<p>
 
          XTerm was the first to support this extension. Many terminals have
          since cloned it, so the support is wide, but not universal.
-<p>
 
          As the extended colors are still palette-driven they do not have a
          fixed presentation, and the presentation can be changed in some
          terminals. Default palette tends to match <a href="
          https://upload.wikimedia.org/wikipedia/commons/1/15/Xterm_256color_chart.svg">
          XTerm's</a>.
-<p>
 
          </li>
 <li><em>True color</em>
-<p>
 
          A recently established convention allows directly sending 24-bit colors
          to the terminal. This has been adopted by a growing minority of
@@ -94,23 +84,18 @@ An ineffable quality of light.
          community can be found <a href="https://gist.github.com/XVilka/8346728">here</a>.</li>
 </ul>
 
-<p>
-
-      Some of the technical and historical background can be found in <a href="
+<p>Some of the technical and historical background can be found in <a href="
       http://invisible-island.net/xterm/xterm.faq.html#problems_colors">
-      XTerm's FAQ</a>.
-<p>
+      XTerm's FAQ</a>.</p>
 
-      <b>Note</b> No attempt is made to remap colors depending on the terminal.
+<p><b>Note</b> No attempt is made to remap colors depending on the terminal.
       Terminals might ignore, remap, or completely misinterpret unsupported
-      colors.<br>
+      colors.</p>
+</div>
 </div>
 
-<br>
-<h2 id="corecolors">Core 16 colors</h2>
-<p>
-
-      The first 8 have their standard ANSI names.<br>
+<h3 id="corecolors">Core 16 colors</h3>
+<p>The first 8 have their standard ANSI names.</p>
 
 <pre><span id="VALblack"><span class="keyword">val</span> black</span> : <code class="type"><a href="Notty.A.html#TYPEcolor">color</a></code></pre>
 <pre><span id="VALred"><span class="keyword">val</span> red</span> : <code class="type"><a href="Notty.A.html#TYPEcolor">color</a></code></pre>
@@ -127,43 +112,48 @@ An ineffable quality of light.
 <pre><span id="VALlightblue"><span class="keyword">val</span> lightblue</span> : <code class="type"><a href="Notty.A.html#TYPEcolor">color</a></code></pre>
 <pre><span id="VALlightmagenta"><span class="keyword">val</span> lightmagenta</span> : <code class="type"><a href="Notty.A.html#TYPEcolor">color</a></code></pre>
 <pre><span id="VALlightcyan"><span class="keyword">val</span> lightcyan</span> : <code class="type"><a href="Notty.A.html#TYPEcolor">color</a></code></pre>
-<pre><span id="VALlightwhite"><span class="keyword">val</span> lightwhite</span> : <code class="type"><a href="Notty.A.html#TYPEcolor">color</a></code></pre><br>
-<h2 id="2_Extended256colorpalette">Extended 256-color palette</h2><br>
-
+<pre><span id="VALlightwhite"><span class="keyword">val</span> lightwhite</span> : <code class="type"><a href="Notty.A.html#TYPEcolor">color</a></code></pre><h3 id="2_Extended256colorpalette">Extended 256-color palette</h3>
 <pre><span id="VALrgb"><span class="keyword">val</span> rgb</span> : <code class="type">r:int -> g:int -> b:int -> <a href="Notty.A.html#TYPEcolor">color</a></code></pre><div class="info ">
-<code class="code">rgb&nbsp;~r:red&nbsp;~g:green&nbsp;~b:blue</code> is an extended-palette color from the color cube.
-<p>
+<div class="info-desc">
+<p><code class="code">rgb&nbsp;~r:red&nbsp;~g:green&nbsp;~b:blue</code> is an extended-palette color from the color cube.</p>
 
-      All three channels must be in the range <code class="code">0&nbsp;-&nbsp;5</code>. XTerm default palette maps
+<p>All three channels must be in the range <code class="code">0&nbsp;-&nbsp;5</code>. XTerm default palette maps
       this to <code class="code">0x00</code>, <code class="code">0x5f</code>, <code class="code">0x87</code>, <code class="code">0xaf</code>, <code class="code">0xd7</code>, and <code class="code">0xff</code> independently
-      per channel.<br>
-<b>Raises</b> <code>Invalid_argument</code> if a channel is outside the range.<br>
+      per channel.</p>
+</div>
+<ul class="info-attributes">
+<li><b>Raises</b> <code>Invalid_argument</code> if a channel is outside the range.</li>
+</ul>
 </div>
 
 <pre><span id="VALgray"><span class="keyword">val</span> gray</span> : <code class="type">int -> <a href="Notty.A.html#TYPEcolor">color</a></code></pre><div class="info ">
-<code class="code">gray&nbsp;level</code> is an extended-palette color from the grayscale ramp.
-<p>
+<div class="info-desc">
+<p><code class="code">gray&nbsp;level</code> is an extended-palette color from the grayscale ramp.</p>
 
-      <code class="code">level</code> must be in the range <code class="code">0&nbsp;-&nbsp;23</code>. XTerm default palette maps this to
-      <code class="code">8&nbsp;+&nbsp;level&nbsp;*&nbsp;10</code> on all three channels.<br>
-<b>Raises</b> <code>Invalid_argument</code> if the <code class="code">level</code> is outside the range.<br>
+<p><code class="code">level</code> must be in the range <code class="code">0&nbsp;-&nbsp;23</code>. XTerm default palette maps this to
+      <code class="code">8&nbsp;+&nbsp;level&nbsp;*&nbsp;10</code> on all three channels.</p>
 </div>
-<br>
-<h2 id="2_TrueColor">True Color</h2><br>
-
+<ul class="info-attributes">
+<li><b>Raises</b> <code>Invalid_argument</code> if the <code class="code">level</code> is outside the range.</li>
+</ul>
+</div>
+<h3 id="2_TrueColor">True Color</h3>
 <pre><span id="VALrgb_888"><span class="keyword">val</span> rgb_888</span> : <code class="type">r:int -> g:int -> b:int -> <a href="Notty.A.html#TYPEcolor">color</a></code></pre><div class="info ">
-<code class="code">rgb_888&nbsp;~r:red&nbsp;~g:green&nbsp;~b:blue</code> is a 24-bit color.
-<p>
+<div class="info-desc">
+<p><code class="code">rgb_888&nbsp;~r:red&nbsp;~g:green&nbsp;~b:blue</code> is a 24-bit color.</p>
 
-      All three channels must be in the range <code class="code">0&nbsp;-&nbsp;255</code>.<br>
-<b>Raises</b> <code>Invalid_argument</code> if a channel is outside the range.<br>
+<p>All three channels must be in the range <code class="code">0&nbsp;-&nbsp;255</code>.</p>
 </div>
-<br>
-<h1 id="1_Textstyles">Text styles</h1><br>
-
+<ul class="info-attributes">
+<li><b>Raises</b> <code>Invalid_argument</code> if a channel is outside the range.</li>
+</ul>
+</div>
+<h2 id="1_Textstyles">Text styles</h2>
 <pre><span id="TYPEstyle"><span class="keyword">type</span> <code class="type"></code>style</span> </pre>
 <div class="info ">
-Additional text properties.<br>
+<div class="info-desc">
+<p>Additional text properties.</p>
+</div>
 </div>
 
 
@@ -171,36 +161,43 @@ Additional text properties.<br>
 <pre><span id="VALitalic"><span class="keyword">val</span> italic</span> : <code class="type"><a href="Notty.A.html#TYPEstyle">style</a></code></pre>
 <pre><span id="VALunderline"><span class="keyword">val</span> underline</span> : <code class="type"><a href="Notty.A.html#TYPEstyle">style</a></code></pre>
 <pre><span id="VALblink"><span class="keyword">val</span> blink</span> : <code class="type"><a href="Notty.A.html#TYPEstyle">style</a></code></pre>
-<pre><span id="VALreverse"><span class="keyword">val</span> reverse</span> : <code class="type"><a href="Notty.A.html#TYPEstyle">style</a></code></pre><br>
-<h1 id="1_Attributeconstructionandcomposition">Attribute construction and composition</h1><br>
-
-<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> = <code class="type"><a href="Notty.html#TYPEattr">attr</a></code> </pre>
+<pre><span id="VALreverse"><span class="keyword">val</span> reverse</span> : <code class="type"><a href="Notty.A.html#TYPEstyle">style</a></code></pre><h2 id="1_Attributeconstructionandcomposition">Attribute construction and composition</h2>
+<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> = <code class="type"><a href="Notty.html#TYPEattr">Notty.attr</a></code> </pre>
 
 
 <pre><span id="VALequal"><span class="keyword">val</span> equal</span> : <code class="type"><a href="Notty.A.html#TYPEt">t</a> -> <a href="Notty.A.html#TYPEt">t</a> -> bool</code></pre>
-<pre><span id="VALempty"><span class="keyword">val</span> empty</span> : <code class="type"><a href="Notty.html#TYPEattr">attr</a></code></pre><div class="info ">
-<code class="code">empty</code> is the attribute with the default foreground and background color
-      and empty style set.<br>
+<pre><span id="VALempty"><span class="keyword">val</span> empty</span> : <code class="type"><a href="Notty.html#TYPEattr">Notty.attr</a></code></pre><div class="info ">
+<div class="info-desc">
+<p><code class="code">empty</code> is the attribute with the default foreground and background color
+      and empty style set.</p>
+</div>
 </div>
 
-<pre><span id="VAL(++)"><span class="keyword">val</span> (++)</span> : <code class="type"><a href="Notty.html#TYPEattr">attr</a> -> <a href="Notty.html#TYPEattr">attr</a> -> <a href="Notty.html#TYPEattr">attr</a></code></pre><div class="info ">
-<code class="code">a1&nbsp;++&nbsp;a2</code> is the concatenation of <code class="code">a1</code> and <code class="code">a2</code>, the attribute that has
+<pre><span id="VAL(++)"><span class="keyword">val</span> (++)</span> : <code class="type"><a href="Notty.html#TYPEattr">Notty.attr</a> -> <a href="Notty.html#TYPEattr">Notty.attr</a> -> <a href="Notty.html#TYPEattr">Notty.attr</a></code></pre><div class="info ">
+<div class="info-desc">
+<p><code class="code">a1&nbsp;++&nbsp;a2</code> is the concatenation of <code class="code">a1</code> and <code class="code">a2</code>, the attribute that has
       <code class="code">a2</code>'s foreground (resp. background), unless <em>unset</em>, in which case it
-      is <code class="code">a1</code>'s, and the union of both style sets.
-<p>
+      is <code class="code">a1</code>'s, and the union of both style sets.</p>
 
-      <code class="code">++</code> is left-associative, and forms a monoid with <code class="code">empty</code>.<br>
+<p><code class="code">++</code> is left-associative, and forms a monoid with <code class="code">empty</code>.</p>
+</div>
 </div>
 
-<pre><span id="VALfg"><span class="keyword">val</span> fg</span> : <code class="type"><a href="Notty.A.html#TYPEcolor">color</a> -> <a href="Notty.html#TYPEattr">attr</a></code></pre><div class="info ">
-<code class="code">fg&nbsp;c</code> is <code class="code">empty</code> with foreground <code class="code">c</code>.<br>
+<pre><span id="VALfg"><span class="keyword">val</span> fg</span> : <code class="type"><a href="Notty.A.html#TYPEcolor">color</a> -> <a href="Notty.html#TYPEattr">Notty.attr</a></code></pre><div class="info ">
+<div class="info-desc">
+<p><code class="code">fg&nbsp;c</code> is <code class="code">empty</code> with foreground <code class="code">c</code>.</p>
+</div>
 </div>
 
-<pre><span id="VALbg"><span class="keyword">val</span> bg</span> : <code class="type"><a href="Notty.A.html#TYPEcolor">color</a> -> <a href="Notty.html#TYPEattr">attr</a></code></pre><div class="info ">
-<code class="code">bg&nbsp;c</code> is <code class="code">empty</code> with background <code class="code">c</code>.<br>
+<pre><span id="VALbg"><span class="keyword">val</span> bg</span> : <code class="type"><a href="Notty.A.html#TYPEcolor">color</a> -> <a href="Notty.html#TYPEattr">Notty.attr</a></code></pre><div class="info ">
+<div class="info-desc">
+<p><code class="code">bg&nbsp;c</code> is <code class="code">empty</code> with background <code class="code">c</code>.</p>
+</div>
 </div>
 
-<pre><span id="VALst"><span class="keyword">val</span> st</span> : <code class="type"><a href="Notty.A.html#TYPEstyle">style</a> -> <a href="Notty.html#TYPEattr">attr</a></code></pre><div class="info ">
-<code class="code">st&nbsp;s</code> is <code class="code">empty</code> with style <code class="code">s</code>.<br>
+<pre><span id="VALst"><span class="keyword">val</span> st</span> : <code class="type"><a href="Notty.A.html#TYPEstyle">style</a> -> <a href="Notty.html#TYPEattr">Notty.attr</a></code></pre><div class="info ">
+<div class="info-desc">
+<p><code class="code">st&nbsp;s</code> is <code class="code">empty</code> with style <code class="code">s</code>.</p>
+</div>
 </div>
 </body></html>
