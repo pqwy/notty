@@ -12,10 +12,11 @@ and ex    = Conf.(key ~doc:"Build examples" "examples" bool ~absent:false)
 let bin ?cond name = Pkg.test ~run:false ?cond name
   (* Pkg.bin ?cond ~dst:Fpath.("bin" // "notty." ^ basename name) name *)
 
+let opams = [ Pkg.opam_file "opam" ~lint_deps_excluding:(Some ["ocb-stubblr"]) ]
 let build = Pkg.build ~cmd:Ocb_stubblr_topkg.cmd ()
 
 let () =
-  Pkg.describe "notty" ~build @@ fun c ->
+  Pkg.describe "notty" ~build ~opams @@ fun c ->
     let unix = Conf.value c unix in
     let lwt = unix && Conf.value c lwt
     and speed = unix && Conf.value c speed

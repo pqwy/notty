@@ -15,8 +15,6 @@ true: package(uchar uucp uuseg uutf)
 <lwt>: include
 <lwt/*.ml{,i}>: package(lwt lwt.unix)
 
-<benchmarks/*>: use_notty_unix, package(unmark)
-
 <examples/*>: use_notty_unix, package(unix)
 <examples/{*_lwt,life,linear}*>: use_notty_lwt, package(lwt.unix)
 

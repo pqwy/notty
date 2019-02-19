@@ -1,3 +1,7 @@
+## v0.2.2 (2019-02-19)
+
+* Fix a long-standing terminal cleanup bug. Reported by @ttamttam, fix by @cfcs.
+
 ## v0.2.1 (2017-11-06)
 
 * OCaml 4.06 compatible.

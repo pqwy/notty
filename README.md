@@ -7,7 +7,7 @@
 
 Notty is a declarative terminal library for OCaml structured around a notion
 of composable images. It tries to abstract away the basic terminal programming
-model, providing a simpler and a more expressive one.
+model, providing something simpler and more expressive.
 
 The core layout engine and IO codecs are pure platform-independent OCaml.
 Distribution includes modules with input and output facilities for Unix, and Lwt
