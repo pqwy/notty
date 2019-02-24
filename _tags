@@ -18,5 +18,6 @@ true: package(uchar uucp uuseg uutf)
 <examples/*>: use_notty_unix, package(unix)
 <examples/{*_lwt,life,linear}*>: use_notty_lwt, package(lwt.unix)
 
+<benchmarks/*>: use_notty_unix, package(unmark unmark.cli)
 
 <rondom>: -traverse

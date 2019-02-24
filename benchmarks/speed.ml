@@ -1,4 +1,4 @@
-(* Copyright (c) 2016-2017 David Kaloper Meršinjak. All rights reserved.
+(* Copyright (c) 2016-2019 David Kaloper Meršinjak. All rights reserved.
    See LICENSE.md. *)
 
 open Notty
@@ -38,56 +38,53 @@ let buf = Buffer.create 1024
 let buf_render off dim image =
   Buffer.clear buf; Render.to_buffer buf Cap.ansi off dim image
 
-let b_render () =
-  let measure = `Cputime_ns in
 
-  let ops image () = Operation.of_image (0, 0) (200, 200) image in
-  Unmark.time ~tag:"rasterize i2" ~measure ~n:1000 (ops i2);
-  Unmark.time ~tag:"rasterize i3" ~measure ~n:1000 (ops i3);
-  Unmark.time ~tag:"rasterize i4" ~measure ~n:1000 (ops i4);
-  Unmark.time ~tag:"rasterize i5" ~measure ~n:1000 (ops i5);
+open Unmark
 
-  let render image () = buf_render (0, 0) (200, 200) image in
-  Unmark.time ~tag:"render i2" ~measure ~n:1000 (render i2);
-  Unmark.time ~tag:"render i3" ~measure ~n:1000 (render i3);
-  Unmark.time ~tag:"render i4" ~measure ~n:1000 (render i4);
-  Unmark.time ~tag:"render i5" ~measure ~n:1000 (render i5);
+let strf = Format.asprintf
+let group_of name xs f = group name (List.map f xs)
+let bench_fmt fmt = Format.kasprintf bench fmt
+let group_fmt fmt = Format.kasprintf group fmt
 
-  Term.(Unmark.time_ex ~tag:"draw i3" ~n:1000
-    ~measure ~init:create ~fini:release (fun t -> image t i3));
-  Term.(Unmark.time_ex ~tag:"draw i5" ~n:1000
-    ~measure ~init:create ~fini:release (fun t -> image t i5));
+let render =
 
-  (* let ops3 = Operation.of_image (200, 200) i3 *)
-  (* and ops5 = Operation.of_image (200, 200) i5 in *)
-  (* Unmark.time ~tag:"eq i3/1" ~measure ~n:300 (fun () -> ops3 = ops3); *)
-  (* Unmark.time ~tag:"eq i5/1" ~measure ~n:300 (fun () -> ops5 = ops5); *)
-  (* Unmark.time ~tag:"eq i3/2" ~measure ~n:300 (fun () -> eqop ops3 ops3); *)
-  (* Unmark.time ~tag:"eq i5/2" ~measure ~n:300 (fun () -> eqop ops5 ops5); *)
+  let clip i = I.(width i |> min 200, height i |> min 200) in
+  let ops i = Operation.of_image (0, 0) (clip i) i
+  and render i = buf_render (0, 0) (clip i) i in
 
-  ()
+  group "render" [
+    group "rasterize" [
+      bench "i2" (fun () -> ops i2)
+    ; bench "i3" (fun () -> ops i3)
+    ; bench "i4" (fun () -> ops i4)
+    ; bench "i5" (fun () -> ops i5)
+    ];
+    group "render" [
+      bench "i2" (fun () -> render i2)
+    ; bench "i3" (fun () -> render i3)
+    ; bench "i4" (fun () -> render i4)
+    ; bench "i5" (fun () -> render i5)
+    ];
+    group_f "draw" (fun t -> [
+      bench "i3" (fun () -> Term.image t i3)
+    ; bench "i5" (fun () -> Term.image t i5)
+    ]) ~init:Term.create ~fini:Term.release
+]
 
-let b_input () =
-  let measure = `Cputime in
+let input = group "input" [
+  group "decode" [
+    bench "escapes"     (fun () -> decode ~n:100 escapes);
+    bench "CSI escapes" (fun () -> decode ~n:100 escapes_m);
+    bench "chars"       (fun () -> decode ~n:100 chars);
+  ];
+  group "input" [
+    bench "escapes"     (fun () -> input ~n:100 escapes);
+    bench "CSI escapes" (fun () -> input ~n:100 escapes_m);
+    bench "chars"       (fun () -> input ~n:100 chars);
+  ]
+]
 
-  Unmark.time ~tag:"decode escapes" ~measure ~n:100
-    (fun () -> decode ~n:1000 escapes);
-  Unmark.time ~tag:"decode CSI escapes" ~measure ~n:100
-    (fun () -> decode ~n:1000 escapes_m);
-  Unmark.time ~tag:"decode chars" ~measure ~n:100
-    (fun () -> decode ~n:1000 chars);
-
-  Unmark.time ~tag:"input escapes" ~measure ~n:100
-    (fun () -> input ~n:1000 escapes);
-  Unmark.time ~tag:"input CSI escapes" ~measure ~n:100
-    (fun () -> input ~n:1000 escapes_m);
-  Unmark.time ~tag:"input chars" ~measure ~n:100
-    (fun () -> input ~n:1000 chars);
-
-  ()
-
-let b_construct () =
-  let measure = `Cputime_ns in
+let construct =
 
   let strings = [
       "s1", "a"
@@ -99,29 +96,18 @@ let b_construct () =
     ; "u3", String.repeat 100 "☭"
     ; "u4", String.repeat 1000 "☭" ] in
 
-  strings |> List.iter (fun (n, s) ->
-    Unmark.time ~tag:("make " ^ n) ~measure ~n:1000
-      (fun () -> I.string A.empty s));
+  group "construct" [
 
-  List.iter (fun x ->
-    let u = Uchar.of_int x in
-    for i = 0 to 2 do
-      let n = 10. ** float i |> truncate in
-      let tag = Format.sprintf "repeat U+%04X x %d" x n in
-      Unmark.time ~tag ~measure ~n:1000
-        (fun () -> I.uchar A.empty u n 1)
-    done) [0x40; 0x262d];
+    group "make" (strings |> List.map @@ fun (n, s) ->
+      bench n (fun () -> I.string A.empty s))
 
-  Unmark.time ~tag:"pxmatrix" ~measure:`Cputime ~n:100
-    (fun () -> pxmatrix 200 200 @@ fun _ _ -> A.black);
+  ; group "repeat" ([0x40; 0x262d] |> List.map @@ fun x ->
+      let u = Uchar.of_int x in
+      group_fmt "U+%04x" x ([1; 10; 100] |> List.map @@ fun n ->
+        bench_fmt "%dx" n (fun () -> I.uchar A.empty u n 1)))
 
-  ()
-
-
-let () =
-  List.iter (fun f -> f ()) [
-    Unmark.warmup
-  ; b_render
-  ; b_input
-  ; b_construct
+  ; bench "pxmatrix" (fun () -> pxmatrix 200 200 @@ fun _ _ -> A.black)
   ]
+
+
+let _ = Unmark_cli.main "Notty" [ render; input; construct ]
