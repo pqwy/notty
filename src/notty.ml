@@ -128,8 +128,8 @@ module Text = struct
     let w1 = width t in
     if w = 0 || x >= w1 then empty else
       let w = min w (w1 - x) in
-      match t with
-      | Ascii (s, off, _) -> Ascii (s, off + x, w)
+      if w = w1 then t else match t with
+        Ascii (s, off, _) -> Ascii (s, off + x, w)
       | Utf8 (s, ix, off, _) -> Utf8 (s, ix, off + x, w)
 
   let is_ascii_or_raise_ctrl s =
@@ -273,7 +273,7 @@ module I = struct
     | Zcompose (_, (w, _)) -> w
     | Hcrop    (_, (w, _)) -> w
     | Vcrop    (_, (w, _)) -> w
-    | Void         (w, _)  -> w
+    | Void         (w, _)  -> w [@@inline]
 
   let height = function
     | Empty -> 0
@@ -283,7 +283,7 @@ module I = struct
     | Zcompose (_, (_, h)) -> h
     | Hcrop    (_, (_, h)) -> h
     | Vcrop    (_, (_, h)) -> h
-    | Void         (_, h)  -> h
+    | Void         (_, h)  -> h [@@inline]
 
   let equal t1 t2 =
     let rec eq t1 t2 = match (t1, t2) with
@@ -464,31 +464,31 @@ end
 module Operation = struct
 
   type t =
-    | Text of A.t * Text.t
-    | Skip of int
+    End
+  | Skip of int * t
+  | Text of A.t * Text.t * t
 
-  let (@:) op ops = match (op, ops) with
-    | (Skip 0, _) -> ops
-    | (Skip _, []) -> []
-    | (Skip m, Skip n :: ops) -> Skip (m + n) :: ops
-    | _ -> op :: ops
+  let skip n k = if n = 0 then k else match k with
+      End         -> End
+    | Skip (m, k) -> Skip (m + n, k)
+    | _           -> Skip (n, k) [@@inline]
 
   let rec scan x w row i k =
     let open I in match i with
 
-    | Empty | Void _ -> Skip w @: k
+    | Empty | Void _ -> skip w k
 
-    | Segment _ when row > 0 -> Skip w @: k
+    | Segment _ when row > 0 -> skip w k
     | Segment (attr, text) ->
         let t  = Text.sub text x w in
         let w1 = Text.width t in
-        let p  = if w > w1 then Skip (w - w1) @: k else k in
-        if w1 > 0 then Text (attr, t) @: p else p
+        let p  = if w > w1 then skip (w - w1) k else k in
+        if w1 > 0 then Text (attr, t, p) else p
 
     | Hcompose ((i1, i2), _) ->
         let w1 = width i1
         and w2 = width i2 in
-        if x >= w1 + w2 then Skip w @: k else
+        if x >= w1 + w2 then skip w k else
         if x >= w1 then scan (x - w1) w row i2 k else
         if x + w <= w1 then scan x w row i1 k else
           scan x (w1 - x) row i1 @@ scan 0 (w - w1 + x) row i2 @@ k
@@ -496,30 +496,31 @@ module Operation = struct
     | Vcompose ((i1, i2), _) ->
         let h1 = height i1
         and h2 = height i2 in
-        if row >= h1 + h2 then Skip w @: k else
+        if row >= h1 + h2 then skip w k else
         if row >= h1 then scan x w (row - h1) i2 k else scan x w row i1 k
 
     | Zcompose ((i1, i2), _) ->
-        let rec stitch x w i = function
-          | [] -> scan x w row i []
-          | (Text (_, t) as op)::ops as opss ->
+        let rec stitch x w row i = function
+          | End -> scan x w row i End
+          | Text (a, t, ops) as opss ->
               let w1 = Text.width t in
-              if w1 >= w then opss else op :: stitch (x + w1) (w - w1) i ops
-          | Skip w1::ops ->
+              if w1 >= w then opss else
+                Text (a, t, stitch (x + w1) (w - w1) row i ops)
+          | Skip (w1, ops) ->
               scan x w1 row i @@
-                if w1 >= w then ops else stitch (x + w1) (w - w1) i ops
-        in stitch x w i2 @@ scan x w row i1 @@ k
+                if w1 >= w then ops else stitch (x + w1) (w - w1) row i ops
+        in stitch x w row i2 @@ scan x w row i1 @@ k
 
     | Hcrop ((i, left, _), (w1, _)) ->
-        if x >= w1 then Skip w @: k else
+        if x >= w1 then skip w k else
         if x + w <= w1 then scan (x + left) w row i k else
-          scan (x + left) (w1 - x) row i @@ Skip (w - w1 + x) @: k
+          scan (x + left) (w1 - x) row i @@ skip (w - w1 + x) k
 
     | Vcrop ((i, top, _), (_, h1)) ->
-        if row < h1 then scan x w (top + row) i k else Skip w @: k
+        if row < h1 then scan x w (top + row) i k else skip w k
 
   let of_image (x, y) (w, h) i =
-    List.init h (fun off -> scan x (x + w) (y + off) i [])
+    List.init h (fun off -> scan x (x + w) (y + off) i End)
 end
 
 module Cap = struct
@@ -604,28 +605,32 @@ module Cap = struct
     ; bpaste  = no1
     }
 
-  let erase cap = cap.sgr A.empty & cap.clreol
+  let erase cap buf = cap.sgr A.empty buf; cap.clreol buf (* KEEP ETA-LONG. *)
   let cursat0 cap w h = cap.cursat (max w 0 + 1) (max h 0 + 1)
 end
 
 module Render = struct
 
+  open Cap
+  open Operation
+
+  let skip_op cap buf n = cap.skip n buf
+  let text_op cap buf a x = cap.sgr a buf; Text.to_buffer buf x
+
+  let rec line cap buf = function
+    End              -> erase cap buf
+  | Skip (n,    End) -> erase cap buf; skip_op cap buf n
+  | Text (a, x, End) -> erase cap buf; text_op cap buf a x
+  | Skip (n,    ops) -> skip_op cap buf n; line cap buf ops
+  | Text (a, x, ops) -> text_op cap buf a x; line cap buf ops
+
+  let rec lines cap buf = function
+    []      -> ()
+  | [ln]    -> line cap buf ln; cap.sgr A.empty buf
+  | ln::lns -> line cap buf ln; cap.newline buf; lines cap buf lns
+
   let to_buffer buf cap off dim img =
-    let open Cap in
-    let render_op = Operation.(function
-      | Skip n      -> cap.skip n buf
-      | Text (a, x) -> cap.sgr a buf; Text.to_buffer buf x
-    ) in
-    let rec render_line = function
-      | []      -> erase cap buf
-      | [op]    -> erase cap buf; render_op op
-      | op::ops -> render_op op; render_line ops in
-    let rec lines = function
-      | []      -> ()
-      | [ln]    -> render_line ln; cap.sgr A.empty buf
-      | ln::lns -> render_line ln; cap.newline buf; lines lns
-    in
-    lines (Operation.of_image off dim img)
+    Operation.of_image off dim img |> lines cap buf
 
   let pp cap ppf img =
     let open Format in
