@@ -51,7 +51,6 @@ module Buffer = struct
         0x30 + d3 |> Char.unsafe_chr |> add_char b
     | x -> string_of_int x |> add_string b
   let add_chars b c n = for _ = 1 to n do add_char b c done
-  let add_byte b n = add_char b (n land 0xff |> Char.unsafe_chr)
 end
 
 module String = struct
@@ -169,49 +168,48 @@ end
 
 module A = struct
 
-  type color = Default | Index of int | Rgb of int
+  type color = int
   type style = int
   type t = { fg : color; bg : color; st : style }
 
-  let equal t1 t2 =
-    let f c1 c2 = match (c1, c2) with
-    | (Index a, Index b) | (Rgb a, Rgb b) -> a = b
-    | (Default, Default) -> true | _ -> false in
-    f t1.fg t2.fg && f t1.bg t2.bg && t1.st = t2.st
+  let equal t1 t2 = t1.fg = t2.fg && t1.bg = t2.bg && t1.st = t2.st
 
-  let black        = Index 0
-  and red          = Index 1
-  and green        = Index 2
-  and yellow       = Index 3
-  and blue         = Index 4
-  and magenta      = Index 5
-  and cyan         = Index 6
-  and white        = Index 7
-  and lightblack   = Index 8
-  and lightred     = Index 9
-  and lightgreen   = Index 10
-  and lightyellow  = Index 11
-  and lightblue    = Index 12
-  and lightmagenta = Index 13
-  and lightcyan    = Index 14
-  and lightwhite   = Index 15
+  let black        = 0x01000000
+  and red          = 0x01000001
+  and green        = 0x01000002
+  and yellow       = 0x01000003
+  and blue         = 0x01000004
+  and magenta      = 0x01000005
+  and cyan         = 0x01000006
+  and white        = 0x01000007
+  and lightblack   = 0x01000008
+  and lightred     = 0x01000009
+  and lightgreen   = 0x0100000a
+  and lightyellow  = 0x0100000b
+  and lightblue    = 0x0100000c
+  and lightmagenta = 0x0100000d
+  and lightcyan    = 0x0100000e
+  and lightwhite   = 0x0100000f
+
+  let tag c = (c land 0x03000000) lsr 24
 
   let rgb ~r ~g ~b =
     if r < 0 || g < 0 || b < 0 || r > 5 || g > 5 || b > 5 then
       invalid_arg "Notty.A.rgb %d %d %d: channel out of range" r g b
-    else Index (r * 36 + g * 6 + b + 16)
+    else 0x01000000 lor (r * 36 + g * 6 + b + 16)
 
   let gray level =
     if level < 0 || level > 23 then
       invalid_arg "Notty.A.gray %d: level out of range" level
-    else Index (level + 232)
+    else 0x01000000 lor (level + 232)
 
   let rgb_888 ~r ~g ~b =
     if r < 0 || g < 0 || b < 0 || r > 255 || g > 255 || b > 255 then
       invalid_arg "Notty.A.rgb_888 %d %d %d: channel out of range" r g b
-    else Rgb ((r lsl 16) lor (g lsl 8) lor b)
+    else 0x02000000 lor ((r lsl 16) lor (g lsl 8) lor b)
 
-  let r x = x lsr 16 land 0xff
+  let i x = x land 0xff
+  and r x = x lsr 16 land 0xff
   and g x = x lsr 8 land 0xff
   and b x = x land 0xff
 
@@ -221,34 +219,35 @@ module A = struct
   and blink     = 8
   and reverse   = 16
 
-  let empty = { fg = Default; bg = Default; st = 0 }
+  let empty = { fg = 0; bg = 0; st = 0 }
 
-  let (++) a1 a2 = {
-    fg = (match a2.fg with Default -> a1.fg | x -> x)
-  ; bg = (match a2.bg with Default -> a1.bg | x -> x)
-  ; st = a1.st lor a2.st
-  }
+ let (++) a1 a2 =
+   if a1 == empty then a2 else if a2 == empty then a1 else
+     { fg = (match a2.fg with 0 -> a1.fg | x -> x)
+     ; bg = (match a2.bg with 0 -> a1.bg | x -> x)
+     ; st = a1.st lor a2.st }
 
   let fg fg = { empty with fg }
   let bg bg = { empty with bg }
   let st st = { empty with st }
 
+  external unsafe_set32 : bytes -> int -> int32 -> unit = "%caml_string_set32u"
+  external unsafe_get32 : string -> int -> int32 = "%caml_string_get32u"
+
   let to_tag { fg; bg; st } =
-    let open Buffer in
-    let (<<) = add_byte in
-    let enc buf = function
-      | Default -> add_char buf '\x00'
-      | Index x -> add_char buf '\x01'; buf << x
-      | Rgb x   -> add_char buf '\x02'; buf << r x; buf << g x; buf << b x in
-    mkstring (fun buf -> buf << st; enc buf fg; enc buf bg)
+    let open Bytes in
+    let bs = create 9 in
+    unsafe_set32 bs 0 (Int32.of_int fg);
+    unsafe_set32 bs 4 (Int32.of_int bg);
+    unsafe_set bs 8 (Char.unsafe_chr st);
+    unsafe_to_string bs
 
   let of_tag s =
-    let b8 i shift = Char.code s.[i] lsl shift in
-    let dec i = match s.[i] with
-      | '\x00' -> (Default, i + 1)
-      | '\x01' -> (Index (b8 (i + 1) 0), i + 2)
-      | _      -> (Rgb (b8 (i + 1) 16 lor b8 (i + 2) 8 lor b8 (i + 3) 0), i + 4)
-    in let (fg, i) = dec 1 in Some { st = b8 0 0; fg; bg = fst (dec i) }
+    let open String in
+    if length s <> 9 then None else
+      Some { fg = unsafe_get32 s 0 |> Int32.to_int
+           ; bg = unsafe_get32 s 4 |> Int32.to_int
+           ; st = unsafe_get s 8 |> Char.code }
 end
 
 module I = struct
@@ -548,6 +547,31 @@ module Cap = struct
 
   let sts = [ ";1"; ";3"; ";4"; ";5"; ";7" ]
 
+  let sgr { A.fg; bg; st } buf =
+    buf <| "\x1b[0";
+    let rgb888 buf x =
+      buf <! A.r x; buf <. ';'; buf <! A.g x; buf <. ';'; buf <! A.b x in
+    ( match A.tag fg with
+        0 -> ()
+      | 1 -> let c = A.i fg in
+             if c < 8  then ( buf <. ';'; buf <! (c + 30) )
+             else if c < 16 then ( buf <. ';'; buf <! (c + 82) )
+             else ( buf <| ";38;5;"; buf <! c )
+      | _ -> buf <| ";38;2;"; rgb888 buf fg );
+    ( match A.tag bg with
+        0 -> ()
+      | 1 -> let c = A.i bg in
+             if c < 8  then ( buf <. ';'; buf <! (c + 40) )
+             else if c < 16 then ( buf <. ';'; buf <! (c + 92) )
+             else ( buf <| ";48;5;"; buf <! c )
+      | _ -> buf <| ";48;2;"; rgb888 buf bg );
+    if st <> 0 then
+      ( let rec go f xs = match (f, xs) with
+          | (0, _) | (_, []) -> ()
+          | (_, x::xs) -> if f land 1 > 0 then buf <| x; go (f lsr 1) xs in
+        go st sts );
+    buf <. 'm'
+
   let ansi = {
       skip    = (fun n b -> b <| "\x1b[0m"; Buffer.add_chars b ' ' n)
     ; newline = (fun b -> b <| "\x1bE")
@@ -561,30 +585,7 @@ module Cap = struct
     ; mouse   = (fun x b -> b <| if x then "\x1b[?1000;1002;1005;1015;1006h"
                                       else "\x1b[?1000;1002;1005;1015;1006l")
     ; bpaste  = (fun x b -> b <| if x then "\x1b[?2004h" else "\x1b[?2004l")
-    ; sgr     =
-      fun attr buf ->
-        buf <| "\x1b[0";
-        let rgb888 buf x =
-          buf <! A.r x; buf <. ';'; buf <! A.g x; buf <. ';'; buf <! A.b x in
-        A.( match attr.fg with
-          | Index c when c < 8  -> buf <. ';'; buf <! (c + 30)
-          | Index c when c < 16 -> buf <. ';'; buf <! (c + 82)
-          | Index c             -> buf <| ";38;5;"; buf <! c
-          | Rgb c               -> buf <| ";38;2;"; rgb888 buf c
-          | Default             -> () );
-        A.( match attr.bg with
-          | Index c when c < 8  -> buf <. ';'; buf <! (c + 40)
-          | Index c when c < 16 -> buf <. ';'; buf <! (c + 92)
-          | Index c             -> buf <| ";48;5;"; buf <! c
-          | Rgb c               -> buf <| ";48;2;"; rgb888 buf c
-          | Default             -> () );
-        if attr.A.st <> 0 then
-          ( let rec go f xs = match (f, xs) with
-              | (0, _) | (_, []) -> ()
-              | (_, x::xs) -> if f land 1 > 0 then buf <| x; go (f lsr 1) xs in
-            go attr.A.st sts );
-        buf <. 'm'
-    }
+    ; sgr }
 
   let no0 _     = ()
   and no1 _ _   = ()
