@@ -604,7 +604,7 @@ end
 
 module Operation : sig
   type t
-  val of_image : (int * int) -> int * int -> image -> t list list
+  val of_image : (int * int) -> int * int -> image -> t list
 end
 
 module Tmachine : sig
