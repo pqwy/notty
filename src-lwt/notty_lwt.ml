@@ -125,7 +125,8 @@ module Term = struct
     winsize fd |> whenopt (set_size t);
     Lwt.async (fun () -> write t); (* XXX async? *)
     if dispose then
-      Lwt_sequence.add_r (fun () -> release t) Lwt_main.exit_hooks |> ignore;
+      Lwt_sequence.add_r (fun () -> release t)
+        Lwt_main.exit_hooks [@warning "-3"] |> ignore;
     t
 
   let events t = t.events

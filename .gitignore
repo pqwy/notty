@@ -2,6 +2,7 @@ _build
 *.install
 *.native
 *.byte
+.merlin
 
 tmp
 *~

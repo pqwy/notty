@@ -1,0 +1,3 @@
+(executable
+  (name speed)
+  (libraries notty notty.unix common unmark unmark.cli))

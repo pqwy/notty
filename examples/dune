@@ -1,0 +1,26 @@
+(library
+  (name common)
+  (modules common)
+  (libraries notty notty.unix))
+
+(library
+  (name common_lwt)
+  (modules common_lwt)
+  (libraries common notty.lwt))
+
+(executables
+  (names testpatterns colors almondbread crops cursor cuts emoji inline keys
+         letters mouse thisbig runes sierpinski rain sierpinski_lwt linear
+         life)
+  (modules testpatterns colors almondbread crops cursor cuts emoji inline keys
+           letters mouse thisbig runes sierpinski rain sierpinski_lwt linear
+           life)
+  (libraries common common_lwt))
+
+(alias
+  (name ex)
+  (package notty)
+  (deps testpatterns.exe colors.exe almondbread.exe crops.exe cursor.exe
+        cuts.exe emoji.exe inline.exe keys.exe letters.exe mouse.exe
+        thisbig.exe runes.exe sierpinski.exe rain.exe sierpinski_lwt.exe
+        linear.exe life.exe))
