@@ -1,12 +1,14 @@
 #require "uucp,uuseg,uutf"
-#directory "_build/src"
+
+#directory "_build/default/src"
+#directory "_build/default/src/.notty.objs/byte"
+#directory "_build/default/src-unix"
+#directory "_build/default/src-unix/.notty_unix.objs/byte"
+#directory "_build/default/src-lwt"
+#directory "_build/default/src-lwt/.notty_lwt.objs/byte"
+
 #load "notty.cma"
-#load "notty_top.cma"
-
-#require "unix"
-#directory "_build/unix"
 #load "notty_unix.cma"
-
-#require "lwt,lwt.unix"
-#directory "_build/lwt"
 #load "notty_lwt.cma"
+
+#use "src/notty_top_init.ml"

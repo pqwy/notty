@@ -1,0 +1,11 @@
+(library
+  (public_name notty.unix)
+  (synopsis "Notty Unix IO")
+  (name notty_unix)
+  (wrapped false)
+  (c_names winsize)
+  (c_flags (-Wall -Wextra -O3))
+  (optional)
+  (libraries notty unix))
+
+(include_subdirs unqualified)

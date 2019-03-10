@@ -1,0 +1,18 @@
+(library
+  (public_name notty)
+  (synopsis "Declaring terminals")
+  (libraries uchar uuseg uutf)
+  (wrapped false)
+  (modules notty))
+
+(library
+  (public_name notty.top)
+  (synopsis "Notty toplevel support")
+  (name notty_top)
+  (wrapped false)
+  (modules notty_top)
+  (libraries notty compiler-libs.toplevel))
+
+(install
+  (section lib)
+  (files (notty_top_init.ml as top/notty_top_init.ml)))

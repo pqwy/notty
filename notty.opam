@@ -12,24 +12,15 @@ description:
   of composable images. It tries to abstract away the basic terminal programming
   model, providing something simpler and more expressive."
 
-
-build: [
-  "ocaml" "pkg/pkg.ml" "build" "--dev-pkg" "%{dev}%"
-          "--with-lwt" "%{lwt:installed}%"
-]
+build: [ [ "dune" "subst" ] {pinned}
+         [ "dune" "build" "-p" name "-j" jobs ] ]
 depends: [
-  "ocaml" { >= "4.05.0" }
-  "ocamlbuild" {build}
-  "ocamlfind" {build}
-  "topkg" {build}
-  "ocb-stubblr" {build & >="0.1.0"}
+  "ocaml" {>= "4.05.0"}
+  "dune" {build & >= "1.7"}
   "uchar"
   "uucp" {>= "2.0.0"}
   "uuseg" {>= "1.0.0"}
   "uutf" {>= "1.0.0"}
 ]
 depopts: [ "lwt" ]
-conflicts: [
-  "ocb-stubblr" {<"0.1.0"}
-  "lwt" {<"2.5.2"}
-]
+conflicts: [ "lwt" {<"2.5.2"} ]
