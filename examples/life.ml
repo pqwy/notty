@@ -61,11 +61,12 @@ let glider = CSet.of_list [(2,1); (3,2); (1,3); (2,3); (3,3)]
 open Notty
 open Notty.Infix
 
-let dot = I.string A.(fg lightred) "●"
+let dot   = I.string "●" ~attr:A.(fg lightred)
+and point = I.string "."
 
 let background step (n, m) =
   let k = 24. *. sin (float (step + m + n) /. 10.) |> truncate in
-  if k > 0 then I.string A.(fg (gray k)) "." else I.void 1 1
+  if k > 0 then I.attr A.(gray k |> fg) point else I.void 1 1
 
 let render (w, h) step life =
   I.tabulate w (h - 1) (fun x y ->

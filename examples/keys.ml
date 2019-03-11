@@ -5,6 +5,7 @@
  * Demonstrates input parsing.
  *)
 open Notty
+open Notty.Infix
 open Common
 
 let pps = Format.pp_print_string
@@ -47,27 +48,27 @@ let pp_mouse fmt = function
         | `Scroll `Down -> "Scroll Down"
 
 let pp_u ppf u = Format.fprintf ppf "U+%04X" (Uchar.to_int u)
+let pp_s = Format.pp_print_string
 
 let () =
-  let magenta = A.(fg lightmagenta ++ bg black)
-  and green   = A.(fg lightgreen   ++ bg black)
-  and blue    = A.(fg lightblue    ++ bg black) in
-  let pp_mods  = I.pp_attr green pp_mods
-  and pp_mouse = I.pp_attr blue pp_mouse in
+  let pp_mods = I.pp_attr A.(fg lightcyan) pp_mods in
   simpleterm ~s:[]
     ~f:(fun xs x -> Some (List.take 100 (x::xs)))
     ~imgf:(fun (_, h) xs ->
-      let attr = magenta in
-      let msg = I.string A.empty "Push keys."
+      let msg = I.string "Push keys."
       and ks = List.map (function
         | `Key ((`ASCII _ | `Uchar _) as c, mods) ->
-            let u = Unescape.uchar c in
-            I.(uchar blue u 1 1 <|> strf ~attr " %a %a" pp_u u pp_mods mods)
+            let u    = Unescape.uchar c
+            and attr = A.(fg lightblue ++ bg black) in
+            I.uchar ~attr u 1 1 <|> I.strf " %a %a" pp_u u pp_mods mods
         | `Key (#Unescape.special as k, mods) ->
-            I.strf ~attr "%a %a" pp_special k pp_mods mods
+            let pp = I.pp_attr A.(fg lightgreen) pp_special in
+            I.strf "%a %a" pp k pp_mods mods
         | `Mouse (e, (x, y), mods) ->
-            I.strf ~attr "MOUSE %a (%d, %d) %a" pp_mouse e x y pp_mods mods
+            let pp = I.pp_attr A.(fg lightmagenta) pp_s in
+            I.strf "%a %a (%d, %d) %a" pp "MOUSE" pp_mouse e x y pp_mods mods
         | `Paste e ->
-            I.strf ~attr "PASTE %s" (if e = `Start then "START" else "END")
+            let pp = I.pp_attr A.(fg lightred) pp_s in
+            I.strf "%a %s" pp "PASTE" (if e = `Start then "START" else "END")
         ) xs |> I.vcat in
       I.(vsnap ~align:`Top (h - 3) ks <-> void 0 1 <-> msg |> pad ~l:1 ~t:1))

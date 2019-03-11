@@ -9,6 +9,8 @@
 open Notty
 open Common
 
+let fg = A.(fg magenta)
+
 let () =
   simpleterm ~s:1
     ~f:(fun s -> function
@@ -19,6 +21,6 @@ let () =
           | `Down | `Right -> Some (min 10 (s + 1)) )
       | _ -> Some s)
     ~imgf:I.(fun _ s ->
-      string A.empty (string_of_int s) <->
-      pad ~l:2 ~t:1 (Images.sierp A.magenta s)
+      string (string_of_int s) <->
+      (Images.sierp s |> attr fg |> pad ~l:2 ~t:1)
     )

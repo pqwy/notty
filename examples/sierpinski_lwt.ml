@@ -7,9 +7,7 @@
 open Notty
 open Common_lwt
 
-let img s = I.(
-  string A.empty (string_of_int s) <-> hpad 2 0 (Images.sierp A.magenta s)
-)
+let fg = A.(fg green)
 
 let () =
   simpleterm_lwt ~s:1
@@ -21,6 +19,6 @@ let () =
           | `Down | `Right -> Some (min 10 (s + 1)) )
       | _ -> Some s)
     ~imgf:I.(fun _ s ->
-      string A.empty (string_of_int s) <->
-      pad ~l:2 ~t:1 (Images.sierp A.magenta s)
+      string (string_of_int s) <->
+      (Images.sierp s |> attr fg |> pad ~l:2 ~t:1)
     )
