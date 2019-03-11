@@ -154,9 +154,13 @@ module A : sig
       and empty style set. *)
 
   val (++) : attr -> attr -> attr
-  (** [a1 ++ a2] is the concatenation of [a1] and [a2], the attribute that has
-      [a2]'s foreground (resp. background), unless {e unset}, in which case it
-      is [a1]'s, and the union of both style sets.
+  (** [a1 ++ a2] is the attribute composition of [a1] and [a2].
+
+      The foreground (resp. background) color is right-biased. When the color
+      of [a2] is {{!empty}default}, the color of [a1 ++ a2] is the color of
+      [a1]. Otherwise, the color of [a1 ++ a2] is the color of [a2].
+
+      Styles of [a1 ++ a2] are the union of styles of [a1] and [a2].
 
       [++] is left-associative, and forms a monoid with [empty]. *)
 
@@ -193,28 +197,36 @@ module I : sig
   val empty : image
   (** [empty] is a zero-sized image. *)
 
-  val string : attr -> string -> image
-  (** [string attr s] is an image containing text [s], styled with [attr].
+  val string : ?attr:attr -> string -> image
+  (** [string ?attr s] is an image containing text [s], styled with [attr].
+
+      [attr] defaults to {!A.empty}.
 
       @raise Invalid_argument if [string] is not a valid UTF-8 sequence, or
       contains {{!ctrls}control characters}. *)
 
-  val uchars : attr -> Uchar.t array -> image
-  (** [uchars attr us] is an image containing text [us], styled with [attr].
+  val uchars : ?attr:attr -> Uchar.t array -> image
+  (** [uchars ?attr us] is an image containing text [us], styled with [attr].
+
+      [attr] defaults to {!A.empty}.
 
       @raise Invalid_argument if [us] contains {{!ctrls}control characters}. *)
 
-  val char : attr -> char -> int -> int -> image
-  (** [char attr c w h] is a [w * h] grid of [c].
+  val char : ?attr:attr -> char -> int -> int -> image
+  (** [char ?attr c w h] is a [w * h] grid of [c].
+
+      [attr] defaults to {!A.empty}.
 
       @raise Invalid_argument if [c] is a {{!ctrls}control character}. *)
 
-  val uchar : attr -> Uchar.t -> int -> int -> image
-  (** [uchar attr u w h] is a [w * h] grid of [u].
+  val uchar : ?attr:attr -> Uchar.t -> int -> int -> image
+  (** [uchar ?attr u w h] is a [w * h] grid of [u].
+
+      [attr] defaults to {!A.empty}
 
       @raise Invalid_argument if [u] is a {{!ctrls}control character}. *)
 
-  val void  : int -> int -> image
+  val void : int -> int -> image
   (** [void w h] is a [w * h] rectangle of transparent cells.
 
       [void] is magical: it has geometry, but no displayable content. This is
@@ -222,9 +234,23 @@ module I : sig
       as a cell filled with the background color. This means that [void]
       interacts specially with {{!(</>)}overlays}.
 
-      [void 0 0 = empty].
+      [void 0 0] is [empty].
+
       [void] with only one dimension [0] acts as a spacing element in the other
       dimension. Negative size is treated as [0]. *)
+
+  val attr : attr -> image -> image
+  (** [attr a i] is i, but with [a] composed with [i]'s attributes, such that
+
+      {ul
+      {- [attr a1 (attr a2 i)] is [attr (a1 ++ a2) i];}
+      {- for any image constructor like {{!string}[string]},
+         [string ~attr:a s] is [attr a (string s)]; and}
+      {- for any composition {{!imgcomp}operation} [op],
+         [attr a (op i1 i2)] is [op (attr a i1) (attr a i2)].}}
+
+      See {!A.(++)} for more details about attribute composition. *)
+
 
   (** {1:imgcomp Image composition}
 
@@ -372,8 +398,10 @@ v}
   (** [kstrf ?attr ?w k format ...] is continuation-based [strf ?attr ?w format ...]. *)
 
   val pp_attr : attr -> (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a -> unit
-  (** [pp_attr a f] is a pretty-printer like [f], except its output is styled
-      with [a]. This applies only outside of any styling [f] itself might embed. *)
+  (** [pp_attr a f] is a pretty-printer like [f], except with output styled by [a].
+
+      Nesting [pp_attr] behaves like nesting {!attr}. *)
+
 end
 
 (** Operators, repeated. *)
@@ -670,7 +698,8 @@ I.(wow <-> (void 2 0 <|> wow)) |> Notty_unix.output_image
     set of {{!A.style}[styles]}. Either color can be {e unset}, which corresponds to
     the terminal's default foreground (resp. background) color.
 
-    Attributes are used to construct primitive images.
+    Attributes can be applied to existing images, or provided when constructing
+    primitive images.
 
     Consult {{!A}[A]} for more details.
 
@@ -734,7 +763,7 @@ I.(wow <-> (void 2 0 <|> wow)) |> Notty_unix.output_image
 
     ["Rad!"] with default foreground and background:
 
-    {[I.string A.empty "Rad!"]}
+    {[I.string "Rad!"]}
 
     Everything has to start somewhere.
 
@@ -742,9 +771,13 @@ I.(wow <-> (void 2 0 <|> wow)) |> Notty_unix.output_image
 
     ["Rad!"] in rad letters:
 
-    {[I.string A.(fg lightred) "Rad!"]}
+    {[I.string ~attr:A.(fg lightred) "Rad!"]}
 
-    {2 Padding and spacing}
+    Or the other way around:
+
+    {[I.(string "Rad!" |> attr A.(bg red))]}
+
+    {2 Composing images}
 
 {[
 let a1 = A.(fg lightwhite ++ bg red)
@@ -753,39 +786,42 @@ and a2 = A.(fg red)
 
     ["Rad"] and [" stuff!"] in different colors:
 
-    {[I.(string a1 "Rad" <|> string a2 " stuff!")]}
+    {[I.(string ~attr:a1 "Rad" <|> string ~attr:a2 " stuff!")]}
 
     The second word hanging on a line below:
 
-    {[I.(string a1 "Rad" <|> (string a2 "stuff!" |> vpad 1 0))]}
+    {[I.(string ~attr:a1 "Rad" <|> (string ~attr:a2 "stuff!" |> vpad 1 0))]}
 
     {2 More geometry}
 
     Sierpinski triangle:
 
 {[
-let square = "\xe2\x96\xaa"
+let square = I.string "\xe2\x96\xaa"
 
 let rec sierp n =
   if n > 1 then
     let ss = sierp (pred n) in I.(ss <-> (ss <|> ss))
-  else I.(string A.(fg magenta) square |> hpad 1 0)
+  else I.hpad 1 0 square
 ]}
 
-    {[sierp 8]}
+    {[sierp 8 |> I.attr A.(fg magenta)]}
 
     A triangle overlaid over its shifted copy:
 
-    {[let s = sierp 6 in I.(s </> vpad 1 0 s)]}
+{[
+let s = sierp 6 in
+I.(attr A.(fg magenta) s </> (vpad 1 0 s |> attr A.(fg green)))
+]}
 
     Blinkenlights:
 
 {[
 let rad n color =
-  let a1 = A.fg color in
-  let a2 = A.(st blink ++ a1) in
-  I.((string a2 "Rad" |> hpad n 0) <->
-     (string a1 "(⌐■_■)" |> hpad (n + 7) 0))
+  let blink = A.(st blink) in
+  I.((string ~attr:blink "Rad" |> hpad n 0) <->
+     (string "(⌐■_■)" |> hpad (n + 7) 0)
+      |> attr (A.fg color))
 
 let colors = A.[red; green; yellow; blue; magenta; cyan]
 ]}
@@ -828,8 +864,8 @@ colors |> List.mapi I.(fun i c -> rad i c |> pad ~t:i ~l:(2 * i))
 
 {[
 Notty_unix.output_image_size @@ fun (w, _) ->
-  let i1 = I.string A.(fg green) "very"
-  and i2 = I.string A.(fg yellow) "melon" in
+  let i1 = I.string ~attr:A.(fg green) "very"
+  and i2 = I.string ~attr:A.(fg yellow) "melon" in
   I.(i1 <|> void (w - width i1 - width i2) 1 <|> i2)
 ]}
 
@@ -927,7 +963,6 @@ update t (false, 1); Term.release t
 
        Constructing primitive images that contain scalar values outside of the
        ASCII range does a little more work upfront and is worth holding onto.
-
        }
     {- {{!Render}Rendering} depends on image complexity.
 
