@@ -10,9 +10,9 @@ let es = [
 
 let image =
   es |> List.(map (map @@ fun x ->
-    let i = I.uchar A.(fg lightwhite) (Uchar.of_int x) 1 1 in
+    let i = I.uchar (Uchar.of_int x) 1 1 in
     I.(pad ~r:(3 - width i) i)
-  )) |> Images.grid |> I.pad ~l:1 |> Images.outline A.(fg lightblack)
+  )) |> Images.grid |> I.pad ~l:1 |> Images.outline
 
 let () = Notty_unix.output_image_size @@ fun (w, _) ->
   I.(pad ~l:((w - width image) / 2) ~b:1 image)

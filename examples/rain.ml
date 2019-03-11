@@ -1,21 +1,20 @@
 
+open Notty
+open Notty.Infix
+
 let () = Random.self_init ()
 
 let rec (--) a b = if a > b then [] else a :: succ a -- b
 
-let utf8_of_code_point =
-  let buf = Buffer.create 7 in fun cp ->
-    Buffer.clear buf;
-    Uutf.Buffer.add_utf_8 buf (Uchar.of_int cp);
-    Buffer.contents buf
+let uchar x = I.uchar (Uchar.of_int x)
 
 let nsym = 4096
 let glitch = nsym / 20
 let symbols = Array.(concat [
-  init 58 (fun x -> utf8_of_code_point (0xff66 + x));
-  init 10 (fun x -> utf8_of_code_point (0x30 + x));
-  (* init 26 (fun x -> utf8_of_code_point (0x61 + x)); *)
-  (* init 14 (fun x -> utf8_of_code_point (0x21 + x)); *)
+  init 58 (fun x -> uchar (0xff66 + x) 1 1);
+  init 10 (fun x -> uchar (0x30 + x) 1 1);
+  (* init 26 (fun x -> uchar (0x61 + x) 1 1); *)
+  (* init 14 (fun x -> uchar (0x21 + x) 1 1); *)
 ])
 let sym () = symbols.(Random.int (Array.length symbols))
 let syms = Array.init nsym (fun _ -> sym ())
@@ -37,17 +36,13 @@ let step ((_, h as dim), xs) =
   Random.(for _ = 0 to int glitch do syms.(int nsym) <- sym () done);
   (dim, xs)
 
-open Notty
-open Notty.Infix
-
-let bgc = A.(bg @@ rgb ~r:0 ~g:0 ~b:0)
-
-let color i n =
+let bg = A.(rgb ~r:0 ~g:0 ~b:0 |> bg)
+let fg i n =
   let chan x = x *. 255. |> truncate
   and t  = float i /. float n in
   let t1 = exp (-. t /. 0.02) |> chan
   and t2 = exp (-. t /. 0.45) |> chan in
-  A.rgb_888 ~r:t1 ~b:t1 ~g:t2
+  A.(rgb_888 ~r:t1 ~b:t1 ~g:t2 |> fg)
 
 let show ((w, h), xs) =
   let f = function
@@ -60,11 +55,11 @@ let show ((w, h), xs) =
         if 0 <= min ix w then syms.(sym + ix) :: chars (w - 1) else [] in
       let rec images acc i = function
         | []    -> acc
-        | x::xs -> let img = I.string A.(fg (color i win) ++ bgc) x in
+        | x::xs -> let img = I.attr (fg i win ++ bg) x in
                    images (img :: acc) (i + 1) xs in
-      chars (win - off) |> images [] off
-        |> I.vcat |> I.vpad (max 0 (i - win)) 0 in
-  (List.map f xs |> I.hcat) </> I.char bgc ' ' w h
+      chars (win - off) |> images [] off |>
+        I.vcat |> I.vpad (max 0 (i - win)) 0 in
+  (List.map f xs |> I.hcat) </> I.char ~attr:bg ' ' w h
 
 open Notty_unix
 

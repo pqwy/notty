@@ -23,25 +23,23 @@ let () =
       | _ -> Some s)
     ~imgf:I.(fun (w, h) (st, (x, y), mods, scr) ->
       let cross =
-        let a  = match st with `Drag -> A.(fg lightgreen) | `Down -> A.(fg green) in
-        (uchar a lnh x 1 |> vpad y 0) <|>
-        (uchar a lnv 1 y <-> uchar a crs 1 1 <-> uchar a lnv 1 (h - y)) <|>
-        (uchar a lnh (w - x - 1) 1 |> vpad y 0)
+        (uchar lnh x 1 |> vpad y 0) <|>
+        (uchar lnv 1 y <-> uchar crs 1 1 <-> uchar lnv 1 (h - y)) <|>
+        (uchar lnh (w - x - 1) 1 |> vpad y 0)
+        |> attr (match st with `Drag -> A.(fg lightred) | `Down -> A.(fg red))
         |> crop ~t:1 ~l:1 ~r:3
         |> hpad 1 1
         |> vsnap ~align:`Top (h - 1)
       and scroll =
-        List.(range 0 scr |> rev |> map @@ fun level ->
-          Images.dot A.(gray level)
-        ) |> vcat |> vsnap ~align:`Bottom (h - 1)
+        0 -- scr |> List.rev
+                 |> List.map (fun i -> Images.dot |> attr A.(gray i |> fg))
+                 |> vcat |> vsnap ~align:`Bottom (h - 1)
       and status =
-        let a = A.(fg lightblack ++ bg black) in
-        let fa m = if List.mem m mods then A.(fg lightgreen ++ bg black) else a in
-        string A.empty "Use the mouse." </>
-        (hcat [ string a "["
-              ; string (fa `Ctrl) "C"
-              ; string (fa `Meta) "M"
-              ; strf ~attr:a "] @(%03d, %03d)" x y ]
-         |> hsnap ~align:`Right w)
+        let on m = if List.mem m mods then A.(fg lightgreen) else A.empty in
+        hcat [ string "["
+             ; string ~attr:(on `Ctrl) "C"
+             ; string ~attr:(on `Meta) "M"
+             ; strf "] @(%03d, %03d)" x y ]
+        |> attr A.(fg lightblack ++ bg black) |> hsnap ~align:`Right w
       in (cross <|> scroll) <-> status
     )

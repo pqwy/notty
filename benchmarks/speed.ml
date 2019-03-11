@@ -99,12 +99,12 @@ let construct =
   group "construct" [
 
     group "make" (strings |> List.map @@ fun (n, s) ->
-      bench n (fun () -> I.string A.empty s))
+      bench n (fun () -> I.string s))
 
   ; group "repeat" ([0x40; 0x262d] |> List.map @@ fun x ->
       let u = Uchar.of_int x in
       group_fmt "U+%04x" x ([1; 10; 100] |> List.map @@ fun n ->
-        bench_fmt "%dx" n (fun () -> I.uchar A.empty u n 1)))
+        bench_fmt "%dx" n (fun () -> I.uchar u n 1)))
 
   ; bench "pxmatrix" (fun () -> pxmatrix 200 200 @@ fun _ _ -> A.black)
   ]

@@ -23,7 +23,7 @@ let () =
       let uus = chunks nw (rev us) in
       mapi (fun i us ->
         mapi (fun j u ->
-          I.uchar A.(fg white ++ bg (rgb ~r:0 ~g:i ~b:j)) u 1 1
+          I.uchar u 1 1 ~attr:A.(fg white ++ bg (rgb ~r:0 ~g:i ~b:j))
         ) us |> I.hcat
       ) uus |> I.vcat
       |> I.pad ~t:1 ~l:1

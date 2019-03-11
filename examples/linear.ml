@@ -24,13 +24,12 @@ let step ~rule w arr =
   Array.init w @@ fun i ->
     f ~rule (get (i - 1)) (get i) (get (i + 1))
 
-let dot  = I.char A.(bg lightwhite) ' ' 1 1
-let void = I.void 1 1
+let attr = A.(bg lightwhite)
 
 let render ~rule ~h xss =
   let cons k = function
     | 0 -> I.void k 1
-    | _ -> I.char A.(bg lightwhite) ' ' k 1 in
+    | _ -> I.char ' ' k 1 ~attr in
   let rec rline s k i arr =
     if i >= Array.length arr then
       cons k s

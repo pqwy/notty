@@ -9,27 +9,27 @@ open Notty
 open Notty.Infix
 open Common
 
-let hpad_sp attr l r i =
+let hpad_sp l r i =
   let h = I.height i in
-  I.(char attr ' ' l h <|> i <|> char attr ' ' r h)
+  I.char ' ' l h <|> i <|> I.char ' ' r h
 
-let vpad_sp attr t b i =
+let vpad_sp t b i =
   let w = I.width i in
-  I.(char attr ' ' w t <-> i <-> char attr ' ' w b)
+  I.char ' ' w t <-> i <-> I.char ' ' w b
 
 let grid xxs = xxs |> List.map I.hcat |> I.vcat
 
-let centered attr xs =
-  let lns = List.map I.(string attr) xs in
+let centered xs =
+  let lns = List.map I.string xs in
   let w   = List.fold_left (fun a i -> max a I.(width i)) 0 lns in
-  lns |> List.map I.(fun ln ->
+  lns |> List.map (fun ln ->
     let d = w - I.width ln in
-    char attr ' ' (d / 2) 1 <|> ln <|> char attr ' ' (d - d / 2) 1
+    I.char ' ' (d / 2) 1 <|> ln <|> I.char ' ' (d - d / 2) 1
   ) |> I.vcat
 
 let note xs = I.(
-  string A.(st bold) "Note:" <|>
-  (xs |> List.map (string A.empty) |> vcat |> hpad 1 0)
+  string "Note:" ~attr:A.(st bold) <|>
+  (xs |> List.map string |> vcat |> hpad 1 0)
 )
 
 let text = [
@@ -79,12 +79,11 @@ let text = [
 ]
 
 let () =
-  let attr = A.(fg lightmagenta) in
-  let img = I.(
-    centered attr text
-    |> vpad_sp attr 1 1 |> hpad_sp attr 2 2
-    |> Images.outline attr
-    |> pad ~t:1 ~b:1 ~l:2 ~r:2
+  let img = (
+    centered text
+    |> vpad_sp 1 1 |> hpad_sp 2 2
+    |> Images.outline
+    |> I.pad ~t:1 ~b:1 ~l:2 ~r:2
   ) <->
     note [ "Alignment will usually break on the last few scripts."
          ; "This is at the limit of what terminals can do."

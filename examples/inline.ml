@@ -32,27 +32,28 @@ let () =
     Some dim -> dim | _ -> assert false
   and attr = A.(fg lightwhite ++ bg blue) in
   let img1 =
-    I.(string attr "THE BLUE STRIPE ABOVE" <->
-         tabulate 1 h (fun _ _ -> I.strf "HIDDEN"))
+    I.string ~attr "THE BLUE STRIPE ABOVE" <->
+      I.tabulate 1 h (fun _ _ -> I.strf "HIDDEN")
   and img2 =
-    I.(strf "Top line. There's a %a above. ^^^"
-         (pp_str attr) "blue stripe" |> vpad 0 2) in
+    I.strf "Top line. There's a %a above. ^^^"
+      (pp_str attr) "blue stripe" |> I.vpad 0 2 in
 
   output_image img1; output_subst ~prev:img1 img2;
 
-  output_image I.(string A.(fg white) "[..]" |> eol);
+  output_image I.(string ~attr:A.(fg white) "[..]" |> eol);
   for i = 0 to 5 do
     let a  = A.(bg (rgb ~r:i ~b:(5 - i) ~g:0)) in
     let bg = I.tabulate 1 i (fun _ -> I.strf "HIDDEN [%d]") |> eol
-    and fg = I.char a ' ' 19 (5 - i) <|> I.char a '-' 1 (5 - i) |> eol in
-    output_image bg; output_subst ~prev:bg fg;
+    and fg = I.(char ' ' 19 (5 - i) <|> char '-' 1 (5 - i) |> I.attr a) |> eol
+    in output_image bg; output_subst ~prev:bg fg;
   done;
-  output_image I.(string A.(fg white) "[..]" |> vpad 0 2);
+  output_image I.(string ~attr:A.(fg white) "[..]" |> vpad 0 2);
 
+  let spc = I.char ' ' 1 1 in
   let rec go prev n =
     if n <= w then
       let h = log (float n) |> truncate in
-      let i = prev <|> I.tabulate 1 h (fun _ y -> I.char A.(bg (cmyk y)) ' ' 1 1) in
+      let i = prev <|> I.tabulate 1 h (fun _ y -> I.attr A.(cmyk y |> bg) spc) in
       output_subst ~prev i; sleep 0.01; go i (n + 1)
     else output_subst ~prev I.empty in
   show_cursor false;

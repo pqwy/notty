@@ -6,21 +6,20 @@
  * characters.
  *)
 open Notty
+open Notty.Infix
 open Notty_unix
 open Common
 
 let hpadwith attr c a b i =
-  I.(char attr c a 1 <|> i <|> char attr c b 1)
+  I.char ~attr c a 1 <|> i <|> I.char ~attr c b 1
 
 let cuts i =
   let w = I.width i in
-  List.(
-    range 0 w |> map (fun a ->
-      range 0 (w - a) |> map (fun b ->
-        i |> I.hcrop a b |> hpadwith A.(fg lightblack) '.' a b
-      ) |> I.vcat |> I.hpad 1 1
-    ) |> I.hcat |> I.vpad 1 1
-  )
+  0 -- w |> List.map (fun a ->
+    0 -- (w - a) |> List.map (fun b ->
+      i |> I.hcrop a b |> hpadwith A.(fg lightblack) '.' a b
+    ) |> I.vcat |> I.hpad 1 1
+  ) |> I.hcat |> I.vpad 1 1
 
 let colors = A.[red; green; yellow; blue; magenta; cyan]
 
@@ -47,12 +46,11 @@ let () =
   let open I in
 
   patterns |> List.map (fun s ->
-    cuts (string A.(fg lightmagenta ++ bg lightblack) s)
+    cuts (string ~attr:A.(fg lightmagenta ++ bg lightblack) s)
   ) |> I.vcat |> eol |> output_image ;
 
   colors |> List.mapi (fun i c ->
     pad ~l:i ~t:i (
-      string A.(fg black ++ bg c ++ st blink) "茶" <|>
-      pad ~l:2 ~t:1
-        (string A.(fg c ++ st blink) "PARTY!"))
+      string ~attr:A.(fg black ++ bg c ++ st blink) "茶" <|>
+      pad ~l:2 ~t:1 (string ~attr:A.(fg c ++ st blink) "PARTY!"))
   ) |> zcat |> pad ~l:2 ~t:2 ~b:2 |> output_image

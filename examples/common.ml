@@ -6,13 +6,13 @@ open Notty.Infix
 
 let pow n e = int_of_float (float n ** float e)
 
+let rec (--) a b = if a > b then [] else a :: succ a -- b
+
 module List = struct
 
   include List
 
   let rec replicate n a = if n < 1 then [] else a :: replicate (n - 1) a
-
-  let rec range a b = if a > b then [] else a :: range (a + 1) b
 
   let rec intersperse a = function
     | [] | [_] as t -> t
@@ -54,9 +54,9 @@ let tile w h i = I.tabulate w h (fun _ _ -> i)
 module Images = struct
 
   let i1 =
-    I.(string A.(fg lightblack) "omgbbq" <->
-       string A.(fg white ++ bg red) "@")
-    <|> I.(pad ~t:2 @@ string A.(fg green) "xo")
+    I.(string ~attr:A.(fg lightblack) "omgbbq" <->
+       string ~attr:A.(fg white ++ bg red) "@")
+    <|> I.(string ~attr:A.(fg green) "xo" |> pad ~t:2)
 
   let i2 = I.(hpad 1 1 (hcrop 1 1 @@ tile 3 3 i1) <|> i1)
 
@@ -66,24 +66,25 @@ module Images = struct
     let i = I.(i3 <|> crop ~t:1 i3 <|> i3) in
     I.(crop ~l:1 i <-> crop ~r:1 i <-> crop ~b:2 i)
 
-  let i5 =
-    tile 5 1 List.(
-      range 0 15 |> map (fun i -> I.pad ~t:i ~l:(i*2) i2) |> I.zcat
-    )
+  let i5 = 0 -- 15 |> List.map (fun i -> I.pad ~t:i ~l:(i*2) i2)
+                   |> I.zcat
+                   |> tile 5 1
 
-  let c_gray_ramp =
-    I.tabulate 24 1 (fun g _ -> I.string A.(bg (gray g)) " ")
+  let spc = I.string " "
+
+  let c_gray_ramp = I.tabulate 24 1 @@ fun g _ -> I.attr A.(gray g |> bg) spc
 
   let c_cube_ix =
     I.tabulate 6 1 @@ fun r _ ->
       I.hpad 0 1 @@ I.tabulate 6 6 @@ fun b g ->
-        I.string A.(bg (rgb ~r ~g ~b)) " "
+        I.attr A.(rgb ~r ~g ~b |> bg) spc
 
   let c_cube_rgb =
     let f x = [| 0x00; 0x5f; 0x87; 0xaf; 0xd7; 0xff |].(x) in
     I.tabulate 6 1 @@ fun r _ ->
       I.hpad 0 1 @@ I.tabulate 6 6 @@ fun b g ->
-        I.string A.(bg (rgb_888 ~r:(f r) ~g:(f g) ~b:(f b))) " "
+        let c = A.rgb_888 ~r:(f r) ~g:(f g) ~b:(f b) in
+        I.attr A.(bg c) spc
 
   let c_rainbow w h =
     let pi2     = 2. *. 3.14159 in
@@ -92,55 +93,59 @@ module Images = struct
     let color t = A.rgb_888 ~r:(f t (-.pi2_3)) ~g:(f t 0.) ~b:(f t pi2_3) in
     I.tabulate (w - 1) 1 @@ fun x _ ->
       let t = (pi2 *. float x /. float w) +. 3.7 in
-      I.char A.(bg (color t)) ' ' 1 h
+      I.char ~attr:A.(bg (color t)) ' ' 1 h
 
   (* U+25CF BLACK CIRCLE *)
-  let dot color = I.string (A.fg color) "●"
+  let dot = I.string "●"
   (* U+25AA BLACK SMALL SQUARE *)
-  let square color = I.string (A.fg color) "▪"
+  let square = I.string "▪"
 
   let rec cantor = function
-    | 0 -> square A.lightblue
+    | 0 -> square
     | n ->
         let sub = cantor (pred n) in
-        I.hcat (List.replicate (pow 3 n) (square A.lightblue)) <->
+        I.hcat (List.replicate (pow 3 n) square) <->
         (sub <|> I.void (pow 3 (n - 1)) 0 <|> sub)
 
   let checker n m i =
     let w = I.width i in
     I.(tile (n/2) (m/2) (hpad 0 w i <-> hpad w 0 i))
 
-  let checker1 = checker 20 20 I.(char A.(bg magenta) ' ' 2 1)
+  let checker1 = checker 20 20 (I.char ' ' 2 1) |> I.attr A.(bg magenta)
 
-  let rec sierp c n = I.(
+  let rec sierp n = I.(
     if n > 1 then
-      let ss = sierp c (pred n) in ss <-> (ss <|> ss)
-    else hpad 1 0 (square c)
+      let ss = sierp (pred n) in ss <-> (ss <|> ss)
+    else hpad 1 0 square
   )
 
   let grid xxs = xxs |> List.map I.hcat |> I.vcat
 
-  let outline attr i =
+  let outline i =
     let (w, h) = I.(width i, height i) in
-    let chr x = I.uchar attr (Uchar.of_int x) 1 1
-    and hbar  = I.uchar attr (Uchar.of_int 0x2500) w 1
-    and vbar  = I.uchar attr (Uchar.of_int 0x2502) 1 h in
+    let chr x = I.uchar (Uchar.of_int x) 1 1
+    and hbar  = I.uchar (Uchar.of_int 0x2500) w 1
+    and vbar  = I.uchar (Uchar.of_int 0x2502) 1 h in
     let (a, b, c, d) = (chr 0x256d, chr 0x256e, chr 0x256f, chr 0x2570) in
-    grid [ [a; hbar; b]; [vbar; i; vbar]; [d; hbar; c] ]
+    let frame = (a <|> hbar <|> b) <->
+                (vbar <|> I.void w h <|> vbar) <->
+                (d <|> hbar <|> c) in
+    frame </> I.pad ~t:1 ~l:1 i
 end
 
-let halfblock = "▄"
+let rect = I.string "▄"
 
-let pxmatrix w h f = I.tabulate w h @@ fun x y ->
-  let y = y * 2 in
-  I.string A.(bg (f x y) ++ fg (f x (y + 1))) halfblock
+let pxmatrix w h f =
+  I.tabulate w h @@ fun x y ->
+    let y = y * 2 in
+    I.attr A.((f x y |> bg) ++ (f x (y + 1) |> fg)) rect
 
 module Term = Notty_unix.Term
 
 let simpleterm ~imgf ~f ~s =
   let term = Term.create () in
   let imgf (w, h) s =
-    I.(string A.(fg lightblack) "[ESC quits.]" <-> imgf (w, h - 1) s) in
+    I.(string ~attr:A.(fg lightblack) "[ESC quits.]" <-> imgf (w, h - 1) s) in
   let rec go s =
     Term.image term (imgf (Term.size term) s);
     match Term.event term with

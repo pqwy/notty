@@ -11,7 +11,7 @@ module T = Notty_lwt.Term
 let simpleterm_lwt ~imgf ~f ~s =
   let term = T.create () in
   let imgf (w, h) s =
-    I.(string A.(fg lightblack) "[ESC quits.]" <-> imgf (w, h - 1) s) in
+    I.(string ~attr:A.(fg lightblack) "[ESC quits.]" <-> imgf (w, h - 1) s) in
   let step e s = match e with
     | `Key (`Escape, []) | `Key (`ASCII 'C', [`Ctrl]) ->
         T.release term >|= fun () -> s
