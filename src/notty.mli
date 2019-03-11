@@ -251,7 +251,6 @@ module I : sig
 
       See {!A.(++)} for more details about attribute composition. *)
 
-
   (** {1:imgcomp Image composition}
 
       Three basic composition modes allow construction of more complex images
@@ -400,6 +399,15 @@ v}
   val pp_attr : attr -> (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a -> unit
   (** [pp_attr a f] is a pretty-printer like [f], except its output is styled
       with [a]. This applies only outside of any styling [f] itself might embed. *)
+
+  (** The 0.2 interface, making a cameo appearance. *)
+  module V_0_2: sig
+    val string : attr -> string -> image
+    val uchars : attr -> Uchar.t array -> image
+    val char : attr -> char -> int -> int -> image
+    val uchar : attr -> Uchar.t -> int -> int -> image
+  end [@@ocaml.deprecated "This compatibility interface will soon be removed."]
+
 end
 
 (** Operators, repeated. *)

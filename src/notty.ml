@@ -465,6 +465,13 @@ module I = struct
   end
 
   let (kstrf, strf, pp_attr) = Fmt.(kstrf, strf, attr)
+
+  module V_0_2 = struct
+    let string attr s = string ~attr s
+    and uchars attr a = uchars ~attr a
+    and char attr c = char ~attr c
+    and uchar attr u = uchar ~attr u
+  end
 end
 
 module Operation = struct
