@@ -94,8 +94,6 @@ module Text = struct
 
   let empty = Ascii ("", 0, 0)
 
-  let is_empty t = width t = 0
-
   let graphemes str =
     let seg = Uuseg.create `Grapheme_cluster in
     let rec f (is, w as acc) i evt =
@@ -256,7 +254,8 @@ module I = struct
 
   type t =
     | Empty
-    | Segment  of A.t * Text.t
+    | Segment  of Text.t
+    | Attr     of (t * A.t) * dim
     | Hcompose of (t * t) * dim
     | Vcompose of (t * t) * dim
     | Zcompose of (t * t) * dim
@@ -266,7 +265,8 @@ module I = struct
 
   let width = function
     | Empty -> 0
-    | Segment (_, text) -> Text.width text
+    | Segment text -> Text.width text
+    | Attr     (_, (w, _)) -> w
     | Hcompose (_, (w, _)) -> w
     | Vcompose (_, (w, _)) -> w
     | Zcompose (_, (w, _)) -> w
@@ -277,6 +277,7 @@ module I = struct
   let height = function
     | Empty -> 0
     | Segment _ -> 1
+    | Attr     (_, (_, h)) -> h
     | Hcompose (_, (_, h)) -> h
     | Vcompose (_, (_, h)) -> h
     | Zcompose (_, (_, h)) -> h
@@ -287,8 +288,8 @@ module I = struct
   let equal t1 t2 =
     let rec eq t1 t2 = match (t1, t2) with
       | (Empty, Empty) -> true
-      | (Segment (a1, t1), Segment (a2, t2)) ->
-          A.equal a1 a2 && Text.equal t1 t2
+      | (Segment t1, Segment t2) -> Text.equal t1 t2
+      | (Attr ((a, a1), _), Attr ((b, a2), _)) -> A.equal a1 a2 && eq a b
       | (Hcompose ((a, b), _), Hcompose ((c, d), _))
       | (Vcompose ((a, b), _), Vcompose ((c, d), _))
       | (Zcompose ((a, b), _), Zcompose ((c, d), _)) -> eq a c && eq b d
@@ -300,6 +301,12 @@ module I = struct
     width t1 = width t2 && height t1 = height t2 && eq t1 t2
 
   let empty = Empty
+
+  let void w h = if w < 1 && h < 1 then Empty else Void (max 0 w, max 0 h)
+
+  let attr a = function
+    Attr ((t, a0), dim) -> Attr ((t, A.(a ++ a0)), dim)
+  | t                   -> Attr ((t, a), (width t, height t))
 
   let (<|>) t1 t2 = match (t1, t2) with
     | (_, Empty) -> t1
@@ -324,9 +331,6 @@ module I = struct
         let w = max (width t1) (width t2)
         and h = max (height t1) (height t2) in
         Zcompose ((t1, t2), (w, h))
-
-  let void w h =
-    if w < 1 && h < 1 then Empty else Void (max 0 w, max 0 h)
 
   let lincropinv crop void (++) init fini img =
     match (init >= 0, fini >= 0) with
@@ -364,18 +368,21 @@ module I = struct
 
   let zcat xs = List.fold_right (</>) xs empty
 
-  let text attr tx =
-    if Text.is_empty tx then void 0 1 else Segment (attr, tx)
+  let text attr tx = match Text.width tx, attr with
+    0, _ -> void 0 1
+  | w, Some a -> Attr ((Segment tx, a), (w, 1))
+  | _, _      -> Segment tx
 
-  let string attr s = text attr (Text.of_string s)
+  let string ?attr s = text attr (Text.of_string s)
 
-  let uchars attr a = text attr (Text.of_uchars a)
+  let uchars ?attr a = text attr (Text.of_uchars a)
 
   let tabulate m n f =
     let m = max m 0 and n = max n 0 in
     linspcm empty (<->) 0 n (fun y -> linspcm empty (<|>) 0 m (fun x -> f x y))
 
-  let chars ctor attr c w h =
+  let chars ctor ?attr c w h =
+    let w = max 0 w and h = max 0 h in
     if w < 1 || h < 1 then void w h else
       let line = text attr (ctor w c) in tabulate 1 h (fun _ _ -> line)
 
@@ -418,7 +425,7 @@ module I = struct
       and mark_close_tag _ =
         b.attrs <- (match b.attrs with _::t -> t | _ -> []); "" in
       let out_string s i l =
-        b.line <- string (attr ()) String.(sub0cp s i l) :: b.line
+        b.line <- string ~attr:(attr ()) String.(sub0cp s i l) :: b.line
       and out_spaces w = b.line <- void w 0 :: b.line
       and out_newline () =
         b.image <- b.image <-> hcat (List.rev b.line);
@@ -472,54 +479,56 @@ module Operation = struct
     | Skip (m, k) -> Skip (m + n, k)
     | _           -> Skip (n, k) [@@inline]
 
-  let rec scan x w row i k =
+  let rec scan x w row a i k =
     let open I in match i with
 
     | Empty | Void _ -> skip w k
 
     | Segment _ when row > 0 -> skip w k
-    | Segment (attr, text) ->
+    | Segment text ->
         let t  = Text.sub text x w in
         let w1 = Text.width t in
         let p  = if w > w1 then skip (w - w1) k else k in
-        if w1 > 0 then Text (attr, t, p) else p
+        if w1 > 0 then Text (a, t, p) else p
+
+    | Attr ((i, a0), _) -> scan x w row A.(a ++ a0) i k
 
     | Hcompose ((i1, i2), _) ->
         let w1 = width i1
         and w2 = width i2 in
         if x >= w1 + w2 then skip w k else
-        if x >= w1 then scan (x - w1) w row i2 k else
-        if x + w <= w1 then scan x w row i1 k else
-          scan x (w1 - x) row i1 @@ scan 0 (w - w1 + x) row i2 @@ k
+        if x >= w1 then scan (x - w1) w row a i2 k else
+        if x + w <= w1 then scan x w row a i1 k else
+          scan x (w1 - x) row a i1 @@ scan 0 (w - w1 + x) row a i2 @@ k
 
     | Vcompose ((i1, i2), _) ->
         let h1 = height i1
         and h2 = height i2 in
         if row >= h1 + h2 then skip w k else
-        if row >= h1 then scan x w (row - h1) i2 k else scan x w row i1 k
+        if row >= h1 then scan x w (row - h1) a i2 k else scan x w row a i1 k
 
     | Zcompose ((i1, i2), _) ->
-        let rec stitch x w row i = function
-          | End -> scan x w row i End
-          | Text (a, t, ops) as opss ->
+        let rec stitch x w row a i = function
+          | End -> scan x w row a i End
+          | Text (a0, t, ops) as opss ->
               let w1 = Text.width t in
               if w1 >= w then opss else
-                Text (a, t, stitch (x + w1) (w - w1) row i ops)
+                Text (a0, t, stitch (x + w1) (w - w1) row a i ops)
           | Skip (w1, ops) ->
-              scan x w1 row i @@
-                if w1 >= w then ops else stitch (x + w1) (w - w1) row i ops
-        in stitch x w row i2 @@ scan x w row i1 @@ k
+              scan x w1 row a i @@
+                if w1 >= w then ops else stitch (x + w1) (w - w1) row a i ops
+        in stitch x w row a i2 @@ scan x w row a i1 @@ k
 
     | Hcrop ((i, left, _), (w1, _)) ->
         if x >= w1 then skip w k else
-        if x + w <= w1 then scan (x + left) w row i k else
-          scan (x + left) (w1 - x) row i @@ skip (w - w1 + x) k
+        if x + w <= w1 then scan (x + left) w row a i k else
+          scan (x + left) (w1 - x) row a i @@ skip (w - w1 + x) k
 
     | Vcrop ((i, top, _), (_, h1)) ->
-        if row < h1 then scan x w (top + row) i k else skip w k
+        if row < h1 then scan x w (top + row) a i k else skip w k
 
   let of_image (x, y) (w, h) i =
-    List.init h (fun off -> scan x (x + w) (y + off) i End)
+    List.init h (fun off -> scan x (x + w) (y + off) A.empty i End)
 end
 
 module Cap = struct
@@ -637,7 +646,7 @@ module Render = struct
     let open Format in
     let buf    = Buffer.create (I.width img * 2) in
     let (h, w) = I.(height img, width img |> min (pp_get_margin ppf ())) in
-    let img    = I.(img </> vpad (h - 1) 0 (char A.empty ' ' w 1)) in
+    let img    = I.(img </> vpad (h - 1) 0 (char ' ' w 1)) in
     let line y = Buffer.clear buf; to_buffer buf cap (0, y) (w, 1) img;
                  pp_print_as ppf w (Buffer.contents buf) in
     pp_open_vbox ppf 0;

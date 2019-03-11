@@ -12,7 +12,7 @@
 
 open Notty
 
-(** {1:fullscreen Fullscreen input and output}. *)
+(** {1:fullscreen Fullscreen input and output} *)
 
 (** Terminal IO with concurrency.
 
