@@ -57,7 +57,7 @@ module Term : sig
       {ul
       {- [#Unescape.event], an {{!Notty.Unescape.event}event} from the input
          fd; or}
-      {- [`Resize (int * int)] whenever the terminal size changes.}}
+      {- [`Resize (cols, rows)] whenever the terminal size changes.}}
 
       {b Note} This stream is unique; for the same [t], [events t] always
       returns the same stream. *)
