@@ -86,7 +86,7 @@ module Term : sig
       {ul
       {- [#Unescape.event], an {{!Notty.Unescape.event}[event]} from the input fd;}
       {- [`End] if the input fd is closed, or the terminal was released; or}
-      {- [`Resize (cols * rows)] giving the current size of the output tty, if a
+      {- [`Resize (cols, rows)] giving the current size of the output tty, if a
          [SIGWINCH] was delivered before or during this call to [event].}}
 
       {b Note} [event] is buffered. Calls can either block or immediately
