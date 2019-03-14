@@ -242,10 +242,10 @@ module A = struct
 
   let of_tag s =
     let open String in
-    if length s <> 9 then None else
-      Some { fg = unsafe_get32 s 0 |> Int32.to_int
-           ; bg = unsafe_get32 s 4 |> Int32.to_int
-           ; st = unsafe_get s 8 |> Char.code }
+    if length s <> 9 then empty else
+      { fg = unsafe_get32 s 0 |> Int32.to_int;
+        bg = unsafe_get32 s 4 |> Int32.to_int;
+        st = unsafe_get s 8 |> Char.code }
 end
 
 module I = struct
@@ -403,60 +403,45 @@ module I = struct
 
   module Fmt = struct
 
-    type ibuf = {
-      mutable image : t;
-      mutable line  : t list;
-      mutable attrs : A.t list
-    }
-
-    let create_ibuf () = { image = empty; line = []; attrs = [] }
-
-    let reset_ibuf ({image; _} as b) = b.image <- empty; image
-
-    let flush_b ({image; line; _} as b) =
-      b.image <- image <-> hcat (List.rev line); b.line <- []; b.attrs <- []
-
     open Format
 
-    let formatter_of_image_buffer b =
-      let attr () = match b.attrs with a::_ -> a | _ -> A.empty in
-      let mark_open_tag tag =
-        b.attrs <- Option.get (attr ()) (A.of_tag tag) :: b.attrs; ""
-      and mark_close_tag _ =
-        b.attrs <- (match b.attrs with _::t -> t | _ -> []); "" in
-      let out_string s i l =
-        b.line <- string ~attr:(attr ()) String.(sub0cp s i l) :: b.line
-      and out_spaces w = b.line <- void w 0 :: b.line
+    let create () =
+      let img = ref empty and line = ref [] and attr = ref [] in
+      let curattr () = match !attr with a::_ -> a | _ -> A.empty in
+      let mark_open_tag t = attr := A.(curattr () ++ of_tag t) :: !attr; ""
+      and mark_close_tag _ = attr := (match !attr with _::t -> t | _ -> []); ""
+      and out_string s i l =
+        line := string ~attr:(curattr ()) String.(sub0cp s i l) :: !line
+      and out_spaces w = line := void w 0 :: !line
       and out_newline () =
-        b.image <- b.image <-> hcat (List.rev b.line);
-        b.line  <- [void 0 1]
-      and out_flush () = flush_b b in
+        img := !img <-> hcat (List.rev !line); line := [void 0 1]
+      and out_flush () =
+        img := !img <-> hcat (List.rev !line); line := []; attr := [] in
       let fmt = make_formatter out_string out_flush in
-      let fns = pp_get_formatter_out_functions fmt () in
-      pp_set_formatter_out_functions fmt
-        { fns with out_newline; out_spaces; (* out_indent = out_spaces *) };
-      pp_set_formatter_tag_functions fmt
-        { print_open_tag = ignore; print_close_tag = ignore
-        ; mark_open_tag; mark_close_tag };
+      pp_set_formatter_out_functions fmt {
+        (pp_get_formatter_out_functions fmt ()) with
+          out_newline; out_spaces; (* out_indent = out_spaces *) };
+      pp_set_formatter_tag_functions fmt {
+        print_open_tag = ignore; print_close_tag = ignore;
+        mark_open_tag; mark_close_tag };
       pp_set_mark_tags fmt true;
-      fmt
+      (fmt, fun () -> let i = !img in img := empty; line := []; attr := []; i)
 
-    let image_buffer = create_ibuf ()
-    let image_formatter = formatter_of_image_buffer image_buffer
+    let (ppf, reset) = create ()
 
     let pp_open_attribute_tag fmt attr = pp_open_tag fmt (A.to_tag attr)
 
-    let kstrf ?(attr=A.empty) ?(w=1000000) k format =
+    let kstrf ?(attr = A.empty) ?(w = 1000000) k format =
       let m = ref 0 in
       let f1 _ () =
-        m := pp_get_margin image_formatter ();
-        pp_set_margin image_formatter w;
-        pp_open_attribute_tag image_formatter attr
+        m := pp_get_margin ppf ();
+        pp_set_margin ppf w;
+        pp_open_attribute_tag ppf attr
       and k _ =
-        pp_print_flush image_formatter ();
-        pp_set_margin image_formatter !m;
-        reset_ibuf image_buffer |> k
-      in kfprintf k image_formatter ("%a" ^^ format) f1 ()
+        pp_print_flush ppf ();
+        pp_set_margin ppf !m;
+        reset () |> k
+      in kfprintf k ppf ("%a" ^^ format) f1 ()
 
     let strf ?attr ?w format = kstrf ?attr ?w (fun i -> i) format
 

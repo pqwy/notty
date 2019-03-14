@@ -397,8 +397,9 @@ v}
   (** [kstrf ?attr ?w k format ...] is continuation-based [strf ?attr ?w format ...]. *)
 
   val pp_attr : attr -> (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a -> unit
-  (** [pp_attr a f] is a pretty-printer like [f], except its output is styled
-      with [a]. This applies only outside of any styling [f] itself might embed. *)
+  (** [pp_attr a f] is a pretty-printer like [f], except with output styled by [a].
+
+      Nesting [pp_attr] behaves like nesting {!attr}. *)
 
   (** The 0.2 interface, making a cameo appearance. *)
   module V_0_2: sig
