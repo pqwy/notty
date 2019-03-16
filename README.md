@@ -65,3 +65,9 @@ let render (w, h) step life : image =
   * Pure platform-independent OCaml.
 
 [![Build Status](https://travis-ci.org/pqwy/notty.svg?branch=master)](https://travis-ci.org/pqwy/notty)
+
+## FAQ
+
+- What relationship does this project have to [withoutboats/notty](https://github.com/withoutboats/notty)?
+
+  None. The name clash is a coincidence.
