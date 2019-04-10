@@ -1,3 +1,3 @@
 (lang dune 1.7)
 (name notty)
-(version dev)
+(version %%VERSION_NUM%%)

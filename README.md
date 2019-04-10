@@ -25,8 +25,8 @@ Notty's core API was heavily influenced by Haskell's [Vty][vty].
 Check out the [documentation], [examples], or peek directly into the [interface]
 file.
 
-Building with `dune build @examples` will produce several little example
-programs that also double as tests.
+Building with `dune build @ex` will produce several little example programs that
+also double as tests.
 
 ```OCaml
 (* Game of Life with ZX Spectrum kitsch. *)
