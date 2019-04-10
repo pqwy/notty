@@ -124,9 +124,7 @@ module Term = struct
     let t = Lazy.force t in
     winsize fd |> whenopt (set_size t);
     Lwt.async (fun () -> write t); (* XXX async? *)
-    if dispose then
-      Lwt_sequence.add_r (fun () -> release t)
-        Lwt_main.exit_hooks [@warning "-3"] |> ignore;
+    if dispose then Lwt_main.at_exit (fun () -> release t);
     t
 
   let events t = t.events
