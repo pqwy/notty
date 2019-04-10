@@ -48,14 +48,19 @@ let render (w, h) step life : image =
 [interface]: https://github.com/pqwy/notty/blob/master/src/notty.mli
 [vty]: https://hackage.haskell.org/package/vty
 
-## Why?
+## What?
 
 - _Notty?_
   
   Terminals are tedious to program for. Notty tries to abstract the tedium away,
   leaving you with a more pleasant programming surface that's quite unlike a TTY.
   Hence, _No-TTY_.
-- Why make yet another terminal library?
+
+- A new kind of Rust terminal?
+
+  This Notty has no connection to any other body of code named Notty.
+
+- Why make yet another terminal output library?
   
   Because:
   * It allows one to *describe* what should be seen, as opposed to *commanding*
