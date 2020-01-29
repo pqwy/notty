@@ -95,11 +95,12 @@ module Text = struct
   let empty = Ascii ("", 0, 0)
 
   let graphemes str =
-    let seg = Uuseg.create `Grapheme_cluster in
+    let module Uuseg = Notty_grapheme_cluster in
+    let seg = Uuseg.create () in
     let rec f (is, w as acc) i evt =
       match Uuseg.add seg evt with
       | `Await | `End -> acc
-      | `Uchar u      -> f (is, w + Uucp.Break.tty_width_hint u) i `Await
+      | `Uchar u      -> f (is, w + Notty_uucp.tty_width_hint u) i `Await
       | `Boundary     ->
           let is = match w with 0 -> is | 1 -> i::is | _ -> i::(-1)::is in
           f (is, 0) i `Await in

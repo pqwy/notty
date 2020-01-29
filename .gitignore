@@ -9,5 +9,6 @@ tmp
 \.\#*
 \#*#
 
+*.json
 gmon.out
 rondom
