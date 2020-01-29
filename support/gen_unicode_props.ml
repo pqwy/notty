@@ -31,26 +31,21 @@ let intervals_p seq =
 let pack_u u = let i = Uchar.to_int u in if i > 0xd7ff then i - 0x800 else i
 let unpack_u i = Uchar.of_int (if i < 0xd800 then i else i + 0x800)
 
-(* 8-8-8-bit trie, 3 levels, lowest level is string.
+(* 12-6-6-bit (0xfff-0x3f-0x3f) trie, 3 levels, array-array-string.
+   Root is variable; lower levels are either empty or complete.
 
-   Current packed Uchar.max is 0x10f7ff; trie can map up to 0xffffff distinct
-   code points.
-
-   Irregular (10-7-7 or 12-6-6) tries are marginally faster, but result in
-   larger code footprint.
-
-   First level is variable size, other two are either full or empty.
-   *)
+   At the moment, packed Uchar.max is 0x10f7ff; this can map up to 0xffffff
+   distinct code points.  *)
 let trie ~default f =
-  let xs = List.init ((pack_u Uchar.max lsr 16) + 1) @@ fun b0 ->
-    let mask = b0 lsl 16 in
-    let arr = Array.init 0x100 @@ fun b1 ->
-      let mask = mask lor (b1 lsl 8) in
+  let xs = List.init ((pack_u Uchar.max lsr 12) + 1) @@ fun b0 ->
+    let mask = b0 lsl 12 in
+    let arr = Array.init 0x40 @@ fun b1 ->
+      let mask = mask lor (b1 lsl 6) in
       let v b2 = match unpack_u (mask lor b2) with
       | x -> f x
       | exception Invalid_argument _ -> default in
-      match (for b2 = 0 to 0xff do if v b2 <> default then raise Exit done) with
-      | exception Exit -> String.init 0x100 (fun b2 -> Char.chr (v b2))
+      match (for b2 = 0 to 0x3f do if v b2 <> default then raise Exit done) with
+      | exception Exit -> String.init 0x40 (fun b2 -> Char.chr (v b2))
       | () -> ""
     in
     if Array.for_all ((=) "") arr then [||] else arr
@@ -59,6 +54,7 @@ let trie ~default f =
   List.rev (trim (List.rev xs)) |> Array.of_list
 
 let pf = Format.fprintf
+let strf = Format.sprintf
 let pp_iter ?(sep = fun _ _ -> ()) iter pp ppf x =
   let fst = ref true in
   let f x = (if !fst then fst := false else sep ppf ()); pp ppf x in
@@ -67,6 +63,19 @@ let pp_u ppf u = pf ppf "0x%04x" (Uchar.to_int u)
 let pp_as_array iter pp ppf x =
   let sep ppf () = pf ppf ";@ " in
   pf ppf "@[<2>[|%a|]@]" (pp_iter ~sep iter pp) x
+
+let intern ppf_ml iter =
+  let t = Hashtbl.create 16 in
+  let n = ref 0 in
+  iter (fun s -> if not (Hashtbl.mem t s) then begin
+    let name = strf "s%03d" !n in
+    Hashtbl.add t s name; incr n;
+    pf ppf_ml "let %s = %S@." name s
+  end);
+  pf ppf_ml "@.";
+  (fun ppf s -> match Hashtbl.find_opt t s with
+   | Some name -> pf ppf "%s" name
+   | None -> pf ppf "%S" s)
 
 let dump_interval_map (ppf_mli, ppf_ml) ~name ~desc seq =
   pf ppf_mli "(* %s *)@.val %s: int array * int array * int array@.@." desc name;
@@ -82,12 +91,9 @@ let dump_interval_map (ppf_mli, ppf_ml) ~name ~desc seq =
 let dump_trie_map (ppf_mli, ppf_ml) ~name ~desc ~default f =
   pf ppf_mli "(* %s *)@.val %s: string array array@.@." desc name;
   let xs = trie ~default f in
-  pf ppf_ml "let n = \"\"@."; (* "" is not unique, unlike [||] *)
+  let pp_s = intern ppf_ml Array.(fun i -> i ""; iter (iter i) xs) in
   pf ppf_ml "@[<2>let %s =@ %a@]" name
-    (pp_as_array Array.iter
-      (pp_as_array Array.iter
-        (fun ppf -> function "" -> pf ppf "n" | s -> pf ppf "%S" s)))
-    xs
+    Array.(pp_as_array iter (pp_as_array iter pp_s)) xs
 
 let pp_header ppf = Format.fprintf ppf
 "(* Do not edit.

@@ -11,17 +11,17 @@ let find_i ~def k (xs, _, _ as tab) =
       Array.unsafe_get vs x in
   go 0 (Array.length xs - 1) tab k def
 
-(* Fixed-depth 8-8-8-bit trie; root is variable, levels 2,3 are either empty
-   or full. *)
+(* 12-6-6-bit (0xfff-0x3f-0x3f) trie, 3 levels, array-array-string.
+   Root is variable; lower levels are either empty or complete. *)
 let find_t ~def k tab =
-  let k = if k > 0xd7ff then k - 0x800 else k in
-  let b0 = (k lsr 16) land 0xff in
+  let k = if k > 0xd7ff then k - 0x800 else k in (* Pack to continuous range. *)
+  let b0 = (k lsr 12) land 0xfff in
   if Array.length tab <= b0 then def else
   match Array.unsafe_get tab b0 with
   | [||] -> def
-  | arr -> match Array.unsafe_get arr ((k lsr 8) land 0xff) with
+  | arr -> match Array.unsafe_get arr ((k lsr 6) land 0x3f) with
     | "" -> def
-    | str -> String.unsafe_get str (k land 0xff) |> Char.code
+    | str -> String.unsafe_get str (k land 0x3f) |> Char.code
 
 (* We catch w = -1 and default to w = 1 to minimize the table. *)
 let tty_width_hint u = match Uchar.to_int u with
