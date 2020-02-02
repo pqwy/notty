@@ -153,7 +153,7 @@ module Text = struct
     | s  -> if is_ascii_or_raise_ctrl s then of_ascii s else of_unicode s
 
   let of_uchars ucs = of_string @@ Buffer.mkstring @@ fun buf ->
-    Array.iter (Uutf.Buffer.add_utf_8 buf) ucs
+    Array.iter (Buffer.add_utf_8_uchar buf) ucs
 
   let replicateu w u =
     if is_ctrl (Uchar.to_int u) then
@@ -162,7 +162,7 @@ module Text = struct
     else if is_ascii (Uchar.to_int u) then
       of_ascii (String.make w (Uchar.unsafe_to_char u))
     else of_unicode @@ Buffer.mkstring @@ fun buf ->
-      for _ = 1 to w do Uutf.Buffer.add_utf_8 buf u done
+      for _ = 1 to w do Buffer.add_utf_8_uchar buf u done
 
   let replicatec w c = replicateu w (Uchar.of_char c)
 end
