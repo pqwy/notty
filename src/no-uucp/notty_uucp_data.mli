@@ -3,7 +3,7 @@
  * This module contains select unicode properties extracted from Uucp,
  * using `./support/gen_unicode_props.ml`.
  *
- * Unicode version 12.0.0.
+ * Unicode version 13.0.0.
  *)
 
 (* Uucp.Break.tty_width_hint *)
