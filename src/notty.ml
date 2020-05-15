@@ -421,7 +421,7 @@ module I = struct
       let fmt = make_formatter out_string out_flush in
       pp_set_formatter_out_functions fmt {
         (pp_get_formatter_out_functions fmt ()) with
-          out_newline; out_spaces; (* out_indent = out_spaces *) };
+          out_newline; out_spaces; out_indent = out_spaces };
       pp_set_formatter_tag_functions fmt {
         print_open_tag = ignore; print_close_tag = ignore;
         mark_open_tag; mark_close_tag };
