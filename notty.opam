@@ -15,7 +15,7 @@ description:
 build: [ [ "dune" "subst" ] {pinned}
          [ "dune" "build" "-p" name "-j" jobs ] ]
 depends: [
-  "ocaml" {>= "4.05.0"}
+  "ocaml" {>= "4.08.0"}
   "dune" {build & >= "1.7"}
   "uchar"
   "uucp" {>= "2.0.0"}

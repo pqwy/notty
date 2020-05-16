@@ -232,23 +232,6 @@ module A = struct
   let fg fg = { empty with fg }
   let bg bg = { empty with bg }
   let st st = { empty with st }
-
-  let to_tag { fg; bg; st } =
-    let open Buffer in
-    let (<<) = add_byte in
-    let enc buf = function
-      | Default -> add_char buf '\x00'
-      | Index x -> add_char buf '\x01'; buf << x
-      | Rgb x   -> add_char buf '\x02'; buf << r x; buf << g x; buf << b x in
-    mkstring (fun buf -> buf << st; enc buf fg; enc buf bg)
-
-  let of_tag s =
-    let b8 i shift = Char.code s.[i] lsl shift in
-    let dec i = match s.[i] with
-      | '\x00' -> (Default, i + 1)
-      | '\x01' -> (Index (b8 (i + 1) 0), i + 2)
-      | _      -> (Rgb (b8 (i + 1) 16 lor b8 (i + 2) 8 lor b8 (i + 3) 0), i + 4)
-    in let (fg, i) = dec 1 in Some { st = b8 0 0; fg; bg = fst (dec i) }
 end
 
 module I = struct
@@ -412,50 +395,51 @@ module I = struct
 
     open Format
 
-    let formatter_of_image_buffer b =
-      let attr () = match b.attrs with a::_ -> a | _ -> A.empty in
-      let mark_open_tag tag =
-        b.attrs <- Option.get (attr ()) (A.of_tag tag) :: b.attrs; ""
-      and mark_close_tag _ =
-        b.attrs <- (match b.attrs with _::t -> t | _ -> []); "" in
-      let out_string s i l =
-        b.line <- string (attr ()) String.(sub0cp s i l) :: b.line
-      and out_spaces w = b.line <- void w 0 :: b.line
-      and out_newline () =
-        b.image <- b.image <-> hcat (List.rev b.line);
-        b.line  <- [void 0 1]
-      and out_flush () = flush_b b in
-      let fmt = make_formatter out_string out_flush in
-      let fns = pp_get_formatter_out_functions fmt () in
-      pp_set_formatter_out_functions fmt
-        { fns with out_newline; out_spaces; (* out_indent = out_spaces *) };
-      pp_set_formatter_tag_functions fmt
-        { print_open_tag = ignore; print_close_tag = ignore
-        ; mark_open_tag; mark_close_tag };
+    type stag += Attr of A.t
+
+    let push r x = r := x :: !r
+    let pop r = r := (match !r with _::xs -> xs | _ -> [])
+    let top_a r = match !r with a::_ -> a | _ -> A.empty
+
+    let create () =
+      let img, line, attr = ref empty, ref empty, ref [] in
+      let fmt = formatter_of_out_functions {
+          out_flush = (fun () ->
+            img := !img <-> !line; line := empty; attr := [])
+        ; out_newline = (fun () ->
+            img := !img <-> !line; line := void 0 1)
+        ; out_string = (fun s i n ->
+            line := !line <|> string (top_a attr) String.(sub0cp s i n))
+        (* Not entirely clear; either or both could be void: *)
+        ; out_spaces = (fun w -> line := !line <|> char (top_a attr) ' ' w 1)
+        ; out_indent = (fun w -> line := !line <|> char (top_a attr) ' ' w 1)
+      } in
+      pp_set_formatter_stag_functions fmt {
+        (pp_get_formatter_stag_functions fmt ()) with
+            mark_open_stag =
+              (function Attr a -> push attr A.(top_a attr ++ a); "" | _ -> "")
+          ; mark_close_stag = (fun _ -> pop attr; "") };
       pp_set_mark_tags fmt true;
-      fmt
+      fmt, fun () -> let i = !img in img := empty; line := empty; attr := []; i
 
-    let image_buffer = create_ibuf ()
-    let image_formatter = formatter_of_image_buffer image_buffer
-
-    let pp_open_attribute_tag fmt attr = pp_open_tag fmt (A.to_tag attr)
+    let ppf, reset = create ()
 
     let kstrf ?(attr=A.empty) ?(w=1000000) k format =
       let m = ref 0 in
       let f1 _ () =
-        m := pp_get_margin image_formatter ();
-        pp_set_margin image_formatter w;
-        pp_open_attribute_tag image_formatter attr
+        m := pp_get_margin ppf ();
+        pp_set_margin ppf w;
+        pp_open_stag ppf (Attr attr)
       and k _ =
-        pp_print_flush image_formatter ();
-        pp_set_margin image_formatter !m;
-        reset_ibuf image_buffer |> k
-      in kfprintf k image_formatter ("%a" ^^ format) f1 ()
+        pp_print_flush ppf ();
+        pp_set_margin ppf !m;
+        reset () |> k
+      in kfprintf k ppf ("%a" ^^ format) f1 ()
 
     let strf ?attr ?w format = kstrf ?attr ?w (fun i -> i) format
 
-    let attr attr f fmt a =
-      pp_open_attribute_tag fmt attr; f fmt a; pp_close_tag fmt ()
+    let attr attr f fmt x =
+      pp_open_stag fmt (Attr attr); f fmt x; pp_close_stag fmt ()
   end
 
   let (kstrf, strf, pp_attr) = Fmt.(kstrf, strf, attr)
