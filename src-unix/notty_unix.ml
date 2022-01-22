@@ -156,7 +156,7 @@ module Term = struct
             Buffer.reset t.buf; t.winched <- true; set_size t dim in f)
     } in
     winsize output |> iter (set_size t);
-    Lazy.force t.unwinch |> ignore;
+    (Lazy.force t.unwinch |> ignore) [@ocaml.warning "-5"];
     if dispose then at_exit (fun () -> release t);
     write t;
     t

@@ -51,7 +51,6 @@ module Buffer = struct
         0x30 + d3 |> Char.unsafe_chr |> add_char b
     | x -> string_of_int x |> add_string b
   let add_chars b c n = for _ = 1 to n do add_char b c done
-  let add_byte b n = add_char b (n land 0xff |> Char.unsafe_chr)
 end
 
 module String = struct
@@ -379,19 +378,6 @@ module I = struct
       | `Middle -> let h1 = off / 2 in vcrop h1 (off - h1) img
 
   module Fmt = struct
-
-    type ibuf = {
-      mutable image : t;
-      mutable line  : t list;
-      mutable attrs : A.t list
-    }
-
-    let create_ibuf () = { image = empty; line = []; attrs = [] }
-
-    let reset_ibuf ({image; _} as b) = b.image <- empty; image
-
-    let flush_b ({image; line; _} as b) =
-      b.image <- image <-> hcat (List.rev line); b.line <- []; b.attrs <- []
 
     open Format
 
