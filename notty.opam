@@ -17,6 +17,7 @@ build: [ [ "dune" "subst" ] {pinned}
 depends: [
   "ocaml" {>= "4.08.0"}
   "dune" {build & >= "1.7"}
+  "cppo" {build & >= "1.1.0"}
   "uutf" {>= "1.0.0"}
 ]
 depopts: [ "lwt" ]
