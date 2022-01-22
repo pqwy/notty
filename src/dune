@@ -14,6 +14,7 @@
   (name notty_top)
   (wrapped false)
   (modules notty_top)
+  (preprocess (action (run %{bin:cppo} -V OCAML:%{ocaml_version} %{input-file})))
   (libraries notty compiler-libs.toplevel))
 
 (install
