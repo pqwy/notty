@@ -1,3 +1,11 @@
+## v0.2.3 (2022-09-02)
+
+* Moved to Dune.
+* Renders faster, uses less memory.
+* Nested uses of `I.pp_attr` within `I.strf` now stack, instead of replacing.
+* Removed dependency on Uucp. Uses internal data instead (Unicode 13).
+* Support OCaml 4.08 - 4.14. Thanks to @kit-ty-kate for the 4.14 fixes.
+
 ## v0.2.2 (2019-02-19)
 
 * Fix a long-standing terminal cleanup bug. Reported by @ttamttam, fix by @cfcs.
