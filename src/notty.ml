@@ -33,12 +33,6 @@ let memo (type a) ?(hash=Hashtbl.hash) ?(eq=(=)) ~size f =
   let t = H.create size in fun x ->
     try H.find t x with Not_found -> let y = f x in H.add t x y; y
 
-module List = struct
-  include List
-  let init n f =
-    let rec go a n = if n < 0 then a else go (f n :: a) (n - 1) in go [] (n - 1)
-end
-
 module Buffer = struct
   include Buffer
   let buf = Buffer.create 1024
@@ -606,14 +600,21 @@ module Render = struct
 
   let pp cap ppf img =
     let open Format in
-    let buf    = Buffer.create (I.width img * 2) in
-    let (h, w) = I.(height img, width img |> min (pp_get_margin ppf ())) in
-    let img    = I.(img </> vpad (h - 1) 0 (char A.empty ' ' w 1)) in
-    let line y = Buffer.clear buf; to_buffer buf cap (0, y) (w, 1) img;
-                 pp_print_as ppf w (Buffer.contents buf) in
+    let buf = Buffer.create (I.width img * 2) in
+    let h, w = I.(height img, width img |> min (pp_get_margin ppf ())) in
+    let img = I.(img </> vpad (h - 1) 0 (char A.empty ' ' w 1)) in
     pp_open_vbox ppf 0;
-    for y = 0 to h - 1 do line y; if y < h - 1 then pp_print_cut ppf () done;
+    for y = 0 to h - 1 do
+      Buffer.clear buf; to_buffer buf cap (0, y) (w, 1) img;
+      pp_print_as ppf w (Buffer.contents buf);
+      if y < h - 1 then pp_print_cut ppf ()
+    done;
     pp_close_box ppf ()
+
+  let pp_image = pp Cap.ansi
+  let pp_attr ppf a =
+    let string_ = I.string A.empty in
+    pp_image ppf I.(string_ "<" <|> string a "ATTR" <|> string_ ">")
 end
 
 module Unescape = struct

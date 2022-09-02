@@ -435,6 +435,12 @@ module Render : sig
       {b Note} [pp] is generally meant for development and debugging. It tries
       to be reasonable, but dedicated IO modules handle the actual output
       better. *)
+
+  (**/**)
+  (* Toplevel. *)
+  val pp_image : Format.formatter -> image -> unit
+  val pp_attr : Format.formatter -> attr -> unit
+  (**/**)
 end
 
 (** Parse and decode escape sequences in character streams. *)
