@@ -68,5 +68,3 @@ let render (w, h) step life : image =
   * It's pretty compact. Both bells and whistles can be implemented separately.
   * Core is easy to glue onto various IO backends.
   * Pure platform-independent OCaml.
-
-[![Build Status](https://travis-ci.org/pqwy/notty.svg?branch=master)](https://travis-ci.org/pqwy/notty)
