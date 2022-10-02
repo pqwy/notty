@@ -44,7 +44,7 @@ let render (w, h) step life : image =
 ```
 
 [documentation]: https://pqwy.github.io/notty/doc
-[examples]: http://pqwy.github.io/notty/doc/Notty.html#examples
+[examples]: https://pqwy.github.io/notty/doc/notty/Notty/index.html#examples
 [interface]: https://github.com/pqwy/notty/blob/master/src/notty.mli
 [vty]: https://hackage.haskell.org/package/vty
 
