@@ -210,6 +210,7 @@ module A = struct
 
   let bold      = 1
   and italic    = 2
+  and dim       = 3
   and underline = 4
   and blink     = 8
   and reverse   = 16

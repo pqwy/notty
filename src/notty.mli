@@ -139,6 +139,7 @@ module A : sig
 
   val bold      : style
   val italic    : style
+  val dim       : style
   val underline : style
   val blink     : style
   val reverse   : style
