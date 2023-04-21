@@ -547,8 +547,8 @@ module Cap = struct
     ; cr      = (fun b -> b <| "\x1b[1G")
     ; clreol  = (fun b -> b <| "\x1b[K")
     ; cursvis = (fun x b -> b <| if x then "\x1b[34h\x1b[?25h" else "\x1b[?25l")
-    ; mouse   = (fun x b -> b <| if x then "\x1b[?1000;1002;1005;1015;1006h"
-                                      else "\x1b[?1000;1002;1005;1015;1006l")
+    ; mouse   = (fun x b -> b <| if x then "\x1b[?1000;1003;1005;1015;1006h"
+                                      else "\x1b[?1000;1003;1005;1015;1006l")
     ; bpaste  = (fun x b -> b <| if x then "\x1b[?2004h" else "\x1b[?2004l")
     ; sgr }
 
@@ -638,7 +638,7 @@ module Unescape = struct
 
   type key = [ special | `Uchar of Uchar.t  | `ASCII of char ] * mods
 
-  type mouse = [ `Press of button | `Drag | `Release ] * (int * int) * mods
+  type mouse = [ `Press of button | `Drag | `Release | `Move ] * (int * int) * mods
 
   type paste = [ `Start | `End ]
 
@@ -790,7 +790,7 @@ module Unescape = struct
           | ('M', (#button as b), false) -> Some (`Press b)
           | ('M', #button, true)         -> Some `Drag
           | ('m', #button, false)        -> Some `Release
-          (* | ('M', `ALL   , true)         -> Some `Move *)
+          | ('M', `ALL   , true)         -> Some `Move
           | _                            -> None
         ) >>| fun e -> `Mouse (e, (x - 1, y - 1), mods)
 
@@ -801,7 +801,7 @@ module Unescape = struct
           | (#button as b, false) -> Some (`Press b)
           | (#button     , true ) -> Some `Drag
           | (`ALL        , false) -> Some `Release
-          (* | (`ALL        , true)  -> Some `Move *)
+          | (`ALL        , true)  -> Some `Move
           | _                     -> None
         ) >>| fun e -> `Mouse (e, (x - 1, y - 1), mods)
 

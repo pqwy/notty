@@ -471,7 +471,7 @@ module Unescape : sig
   type key = [ special | `Uchar of Uchar.t | `ASCII of char ] * mods
   (** Keypress event. *)
 
-  type mouse = [ `Press of button | `Drag | `Release ] * (int * int) * mods
+  type mouse = [ `Press of button | `Drag | `Release | `Move ] * (int * int) * mods
   (** Mouse event. *)
 
   type paste = [ `Start | `End ]
