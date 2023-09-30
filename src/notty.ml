@@ -209,10 +209,12 @@ module A = struct
   and b x = x land 0xff
 
   let bold      = 1
-  and italic    = 2
-  and underline = 4
-  and blink     = 8
-  and reverse   = 16
+  and dim       = 2
+  and faint     = 2
+  and italic    = 4
+  and underline = 8
+  and blink     = 16
+  and reverse   = 32
 
   let empty = { fg = 0; bg = 0; st = 0 }
 
@@ -510,7 +512,7 @@ module Cap = struct
 
   let ((<|), (<.), (<!)) = Buffer.(add_string, add_char, add_decimal)
 
-  let sts = [ ";1"; ";3"; ";4"; ";5"; ";7" ]
+  let sts = [ ";1"; ";2"; ";3"; ";4"; ";5"; ";7" ]
 
   let sgr { A.fg; bg; st } buf =
     buf <| "\x1b[0";

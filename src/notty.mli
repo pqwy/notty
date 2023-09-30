@@ -138,6 +138,8 @@ module A : sig
   (** Additional text properties. *)
 
   val bold      : style
+  val dim       : style
+  val faint     : style
   val italic    : style
   val underline : style
   val blink     : style

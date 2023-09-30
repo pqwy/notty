@@ -27,15 +27,18 @@ let colors = A.[
 ]
 
 let styles = A.[
-  "empty"      , empty
-; "bold"       , st bold
-; "italic"     , st italic
-; "underline"  , st underline
-; "blink"      , st blink
-; "reverse"    , st reverse
-; "bold/italic", st bold ++ st italic
-; "rev/underln", st underline ++ st reverse
-; "bold/rev"   , st reverse ++ st bold
+  "empty"       , empty
+; "bold"        , st bold
+; "faint"       , st faint
+; "italic"      , st italic
+; "underline"   , st underline
+; "blink"       , st blink
+; "reverse"     , st reverse
+; "bold/italic" , st bold ++ st italic
+; "faint/italic", st faint ++ st italic
+; "rev/underln" , st underline ++ st reverse
+; "bold/rev"    , st reverse ++ st bold
+; "faint/rev"   , st reverse ++ st faint
 ]
 
 let image w =
